@@ -1,1 +1,32 @@
-"use strict";const t=require("electron");t.contextBridge.exposeInMainWorld("ipcRenderer",{on(...e){const[n,r]=e;return t.ipcRenderer.on(n,(o,...i)=>r(o,...i))},off(...e){const[n,...r]=e;return t.ipcRenderer.off(n,...r)},send(...e){const[n,...r]=e;return t.ipcRenderer.send(n,...r)},invoke(...e){const[n,...r]=e;return t.ipcRenderer.invoke(n,...r)}});t.contextBridge.exposeInMainWorld("plcAPI",{sendCoilCommand:(e,n)=>t.ipcRenderer.invoke("write-plc-coil",{address:e,value:n}),onLiveData:e=>t.ipcRenderer.on("plc-live-data",(n,r)=>e(r)),onStatusError:e=>t.ipcRenderer.on("plc-status",(n,r)=>e(r)),removeListeners:()=>{t.ipcRenderer.removeAllListeners("plc-live-data"),t.ipcRenderer.removeAllListeners("plc-status")}});
+"use strict";
+const electron = require("electron");
+electron.contextBridge.exposeInMainWorld("ipcRenderer", {
+  on(...args) {
+    const [channel, listener] = args;
+    return electron.ipcRenderer.on(channel, (event, ...args2) => listener(event, ...args2));
+  },
+  off(...args) {
+    const [channel, ...omit] = args;
+    return electron.ipcRenderer.off(channel, ...omit);
+  },
+  send(...args) {
+    const [channel, ...omit] = args;
+    return electron.ipcRenderer.send(channel, ...omit);
+  },
+  invoke(...args) {
+    const [channel, ...omit] = args;
+    return electron.ipcRenderer.invoke(channel, ...omit);
+  }
+});
+electron.contextBridge.exposeInMainWorld("plcAPI", {
+  // UI Commands -> Backend Main Process
+  sendCoilCommand: (address, value) => electron.ipcRenderer.invoke("write-plc-coil", { address, value }),
+  // Backend Stream -> UI Component Listener
+  onLiveData: (callback) => electron.ipcRenderer.on("plc-live-data", (_event, data) => callback(data)),
+  onStatusError: (callback) => electron.ipcRenderer.on("plc-status", (_event, data) => callback(data)),
+  // Cleanup helper to avoid memory leaks when component unmounts
+  removeListeners: () => {
+    electron.ipcRenderer.removeAllListeners("plc-live-data");
+    electron.ipcRenderer.removeAllListeners("plc-status");
+  }
+});
