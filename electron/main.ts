@@ -34,7 +34,6 @@ function createWindow() {
   if (VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(VITE_DEV_SERVER_URL);
   } else {
-    // win.loadFile('dist/index.html')
     mainWindow.loadFile(path.join(RENDERER_DIST, "index.html"));
   }
 }
@@ -56,18 +55,18 @@ let socket: net.Socket | null = null;
 let plcClient: any = null;
 
 function connectToPLC(): void {
-  // 💡 Prevent multiple reconnection loops from running at the same time
+  // Prevent multiple reconnection loops from running at the same time
   if (isReconnecting) return;
 
-  console.log("🔄 Attempting to initialize communication line...");
+  console.log("Attempting to initialize communication line...");
 
-  // 💡 1. STOP active polling loops immediately so they don't fire on broken pipes
+  // 1. STOP active polling loops immediately so they don't fire on broken pipes
   if (pollingInterval) {
     clearInterval(pollingInterval);
     pollingInterval = null;
   }
 
-  // 💡 2. CLEAN UP and destroy the old socket reference completely if it exists
+  // 2. CLEAN UP and destroy the old socket reference completely if it exists
   if (socket) {
     socket.removeAllListeners();
     socket.destroy();
@@ -75,19 +74,19 @@ function connectToPLC(): void {
     plcClient = null;
   }
 
-  // 💡 3. INITIALIZE a completely fresh network container instance
+  // 3. INITIALIZE a completely fresh network container instance
   socket = new net.Socket();
   plcClient = new Modbus.client.TCP(socket);
 
   // 4. Attach Event Observers
   socket.on("connect", () => {
-    console.log("🔌 Delta PLC Connection Successful! Starting telemetry polling...");
+    console.log("Delta PLC Connection Successful! Starting telemetry polling...");
     isReconnecting = false;
     startRealTimePolling();
   });
 
   socket.on("error", (err: Error) => {
-    console.error(`❌ Network Line Drop (${err.message}). Scheduling retry...`);
+    console.error(`Network Line Drop (${err.message}). Scheduling retry...`);
 
     if (mainWindow) {
       mainWindow.webContents.send("plc-status", { error: `Disconnected: ${err.message}` });
@@ -99,7 +98,7 @@ function connectToPLC(): void {
   // Handle case where socket drops silently without throwing a direct error event
   socket.on("close", () => {
     if (!isReconnecting && pollingInterval) {
-      console.log("⚠️ Network socket closed unexpectedly.");
+      console.log("Network socket closed unexpectedly.");
       handleReconnectionDelay();
     }
   });
@@ -118,7 +117,7 @@ function handleReconnectionDelay(): void {
   if (isReconnecting) return;
   isReconnecting = true;
 
-  // Wait exactly 5 seconds before trying again with a fresh socket configuration
+  // Wait exactly 3 seconds before trying again with a fresh socket configuration
   setTimeout(() => {
     isReconnecting = false;
     connectToPLC();
@@ -156,8 +155,8 @@ function startRealTimePolling(): void {
         });
       }
     } catch (err: any) {
-      // 💡 If a single poll instruction drops or times out, trigger the central disconnect sequence
-      console.warn("⚠️ Register transaction lost. Tearing down line connection:", err.message);
+      // If a single poll instruction drops or times out, trigger the central disconnect sequence
+      console.warn("Register transaction lost. Tearing down line connection:", err.message);
       handleReconnectionDelay();
     }
   }, 100);
