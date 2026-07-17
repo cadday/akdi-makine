@@ -44,11 +44,10 @@ export const colorWithOpacity = (color?: string, alpha: number = 0.1) => {
 };
 
 export const tooltipHooksToDataset = ({
-  axesTooltip,
   itemTooltip,
   trigger = "axis",
 }: {
-  axesTooltip: UseAxesTooltipReturnValue[] | null;
+  axesTooltip?: UseAxesTooltipReturnValue[] | null;
   itemTooltip: UseItemTooltipReturnValue<ChartSeriesType> | null;
   trigger: ChartsTooltipProps["trigger"];
 }): IDataset[] | null => {
@@ -89,23 +88,24 @@ export const tooltipHooksToDataset = ({
     ];
   }
 
-  if (!trigger || trigger === "axis") {
-    if (!axesTooltip) return null;
 
-    return axesTooltip.map(({ seriesItems, axisFormattedValue, axisValue }) => ({
-      id: crypto.randomUUID(),
-      title: {
-        label: axisFormattedValue ?? axisValue,
-      },
-      values: seriesItems.map(({ color, formattedLabel, formattedValue, value }) => ({
-        id: crypto.randomUUID(),
-        showMark: true,
-        color,
-        label: formattedLabel,
-        value: formattedValue ?? value,
-      })),
-    }));
-  }
+  // if (!trigger || trigger === "axis") {
+  //   if (!axesTooltip) return null;
+
+  //   return axesTooltip.map(({ seriesItems, axisFormattedValue, axisValue }) => ({
+  //     id: crypto.randomUUID(),
+  //     title: {
+  //       label: axisFormattedValue ?? axisValue,
+  //     },
+  //     values: seriesItems.map(({ color, formattedLabel, formattedValue, value }) => ({
+  //       id: crypto.randomUUID(),
+  //       showMark: true,
+  //       color,
+  //       label: formattedLabel,
+  //       value: formattedValue ?? value,
+  //     })),
+  //   }));
+  // }
 
   return null;
 };

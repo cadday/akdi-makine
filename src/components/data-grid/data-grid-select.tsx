@@ -24,6 +24,7 @@ export default function DataGridSelect(props: DataGridSelectProps) {
       <Select
         defaultValue={value}
         label="Small"
+        variant="standard"
         IconComponent={NiChevronDownSmall}
         MenuProps={{ className: "outlined" }}
         onChange={handleValueChange}

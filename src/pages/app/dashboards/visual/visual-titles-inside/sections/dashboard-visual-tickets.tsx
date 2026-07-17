@@ -107,7 +107,7 @@ export default function DashboardVisualRecentTickets() {
               exportIcon: NiArrowInDown,
               openFilterButtonIcon: NiFilter,
               baseSelect: (props) => {
-                const propsCasted = props as SelectProps;
+                const propsCasted = props as unknown as SelectProps;
                 return (
                   <FormControl size="small" variant="outlined">
                     <InputLabel>{props.label}</InputLabel>

@@ -6,7 +6,7 @@ import i18n from "@/i18n/i18n";
 
 // Get client locale from cookie
 export function getClientLocale(): LocaleOption {
-  return (Cookies.get(COOKIE_KEYS.locale) as LocaleOption) || DEFAULTS.locale;
+  return (Cookies.get(COOKIE_KEYS.locale) as LocaleOption) || DEFAULTS.locale as LocaleOption;
 }
 
 // Set client locale in cookie

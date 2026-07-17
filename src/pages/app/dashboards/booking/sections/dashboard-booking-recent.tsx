@@ -364,7 +364,7 @@ export default function DashboardBookingRecent() {
           filterPanelDeleteIcon: NiCross,
           filterPanelRemoveAllIcon: NiBinEmpty,
           baseSelect: (props: any) => {
-            const propsCasted = props as SelectProps;
+            const propsCasted = props as unknown as SelectProps;
             return (
               <FormControl size="small" variant="outlined">
                 <InputLabel>{props.label}</InputLabel>
