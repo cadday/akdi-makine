@@ -16,12 +16,15 @@ import NiMenuSplit from "@/icons/nexture/ni-menu-split";
 import { cn } from "@/lib/utils";
 import { MenuShowState } from "@/types/types";
 import NiCheckSquare from "@/icons/nexture/ni-check-square";
+import { usePlcData } from "@/context/plc-context";
+import NiCrossHexagon from "@/icons/nexture/ni-cross-hexagon";
 
 export default function Header() {
   const { showLeftInMobile, showLeftMobileButton, leftPrimaryCurrent, leftShowBackdrop } = useLayoutContext();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const [rightButtonsVisibleMobile, setRightButtonsVisibleMobile] = useState(false);
+  const { connectionStatus } = usePlcData();
 
   const handleRightButtonsMobileToggle = () => {
     setRightButtonsVisibleMobile((prevValue) => !prevValue);
@@ -59,10 +62,11 @@ export default function Header() {
           <Fade in={!rightButtonsVisibleMobile || !isMobile}>
             <Box component={Link} to={"#"} className='bg-grey-75  flex flex-row gap-5 rounded-lg py-1.5 ps-3 pe-2 transition-all! hover:shadow-md'>
               <Box className='flex flex-row items-center gap-2'>
-                <NiCheckSquare size='large' className='text-success' />
+                {connectionStatus.isError && <NiCrossHexagon size='large' className='text-error' />}
+                {!connectionStatus.isError && <NiCheckSquare size='large' className='text-success' />}
+
                 <Box className='flex flex-row gap-1'>
-                  <Typography variant='subtitle1'>Connection</Typography>
-                  <Typography variant='body1'>Succesfull</Typography>
+                  <Typography variant='subtitle1'>{connectionStatus.text}</Typography>
                 </Box>
               </Box>
             </Box>

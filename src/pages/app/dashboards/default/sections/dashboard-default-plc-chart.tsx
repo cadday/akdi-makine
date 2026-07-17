@@ -27,9 +27,9 @@ export function DashboardDefaultPLCChart() {
 
     // Define the custom light-themed configuration
     chart.setOption({
+      animation: false, 
       backgroundColor: "transparent",
       title: {
-        text: "Real-Time Register Trends",
         textStyle: { color: "#1e293b", fontSize: 14, fontWeight: "bold" },
       },
       tooltip: {
@@ -40,15 +40,15 @@ export function DashboardDefaultPLCChart() {
         extraCssText: "box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); border-radius: 8px;",
       },
       legend: {
-        data: ["Register D10", "Register D20"],
+        data: ["D10", "D20"],
         textStyle: { color: "#475569", fontWeight: 500 },
-        right: "10%",
+        bottom: "-1%",
       },
       grid: {
-        left: "4%",
-        right: "4%",
-        bottom: "12%", // 💡 Expanded slightly from 10% to prevent slanted X labels from clipping
-        top: "15%",
+        left: "0%",
+        right: "0%",
+        bottom: "10%", // 💡 Expanded slightly from 10% to prevent slanted X labels from clipping
+        top: "4%",
         containLabel: true, // 💡 Crucial: Forces the grid box to always resize so text is fully visible
       },
       xAxis: {
@@ -77,7 +77,7 @@ export function DashboardDefaultPLCChart() {
       },
       series: [
         {
-          name: "Register D10",
+          name: "D10",
           type: "line",
           showSymbol: false,
           smooth: true,
@@ -86,7 +86,7 @@ export function DashboardDefaultPLCChart() {
           itemStyle: { color: "#0097DC" },
         },
         {
-          name: "Register D20",
+          name: "D20",
           type: "line",
           showSymbol: false,
           smooth: true,
@@ -129,8 +129,8 @@ export function DashboardDefaultPLCChart() {
         data: history.map((pt) => pt.time),
       },
       series: [
-        { name: "Register D10", data: history.map((pt) => pt.d10) },
-        { name: "Register D20", data: history.map((pt) => pt.d20) },
+        { name: "D10", data: history.map((pt) => pt.d10) },
+        { name: "D20", data: history.map((pt) => pt.d20) },
       ],
     });
   }, [history]);

@@ -282,7 +282,7 @@ export default function ThemeProvider({ children }: { children: ReactNode }) {
   }, [mode]);
 
   useEffect(() => {
-    setTimeout(() => document.documentElement.style.setProperty("--layout-duration", `${DEFAULTS.transitionDuration}ms`), 200);
+    setTimeout(() => document.documentElement.style.setProperty("--layout-duration", `${DEFAULTS.transitionDuration}ms`), 30);
   }, []);
 
   return (

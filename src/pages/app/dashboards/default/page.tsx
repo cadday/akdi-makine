@@ -11,7 +11,7 @@ import { ContentType } from "@/types/types";
 import DashboardDefaultPLCSettings from "./sections/dashboard-default-plc-settings";
 import { DashboardDefaultPLCChart } from "./sections/dashboard-default-plc-chart";
 
-export default function LevelTwo() {
+export default function Page() {
   const { content } = useThemeContext();
 
   return (
