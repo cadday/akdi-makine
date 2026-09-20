@@ -3,7 +3,7 @@ import UserModeSwitch from "./user-mode-switch";
 import UserThemeSwitch from "./user-theme-switch";
 import { SyntheticEvent, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router";
 
 import {
   Accordion,

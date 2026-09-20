@@ -1,7 +1,7 @@
 import { useLayoutContext } from "../layout-context";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 
 import { Box, Button, Divider, Drawer, Tooltip, Typography } from "@mui/material";
 

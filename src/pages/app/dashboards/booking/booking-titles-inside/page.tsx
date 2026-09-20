@@ -6,7 +6,7 @@ import DashboardBookingRecent from "./sections/dashboard-booking-recent";
 import DashboardBookingStats from "./sections/dashboard-booking-stats";
 import DashboardBookingTrending from "./sections/dashboard-booking-trending";
 import { SyntheticEvent, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 
 import { Breadcrumbs, Button, Menu, MenuItem, PopoverVirtualElement, Tooltip, Typography } from "@mui/material";
 import { Grid } from "@mui/material";

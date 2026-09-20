@@ -1,7 +1,7 @@
 import { OpenedAccordion } from "./left-menu";
 import { Dispatch, useCallback, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router";
 
 import { Accordion, AccordionDetails, AccordionSummary, Button } from "@mui/material";
 

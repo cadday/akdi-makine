@@ -1,7 +1,7 @@
 import "@/style/global.css";
 
 import { Suspense, useEffect } from "react";
-import { Outlet, useLocation } from "react-router-dom";
+import { Outlet, useLocation } from "react-router";
 
 import ContentWrapper from "@/components/layout/containers/content-wrapper";
 import Header from "@/components/layout/containers/header";

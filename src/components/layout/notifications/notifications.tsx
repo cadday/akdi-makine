@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router";
 
 import TabContext from "@mui/lab/TabContext";
 import TabList from "@mui/lab/TabList";

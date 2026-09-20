@@ -1,4 +1,4 @@
-import { ipcMain, app, BrowserWindow, session } from "electron";
+import { app, BrowserWindow, session } from "electron";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import require$$1 from "tty";
@@ -6,7 +6,7 @@ import require$$1$1 from "util";
 import require$$0 from "os";
 import require$$0$1 from "buffer";
 import require$$0$2 from "events";
-import net from "net";
+import "net";
 var commonjsGlobal = typeof globalThis !== "undefined" ? globalThis : typeof window !== "undefined" ? window : typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : {};
 var modbus = {};
 var modbusTcpClient = {};
@@ -1445,12 +1445,12 @@ const Debug$g = srcExports;
 const debug$g = Debug$g("modbus-client");
 const request_1 = request;
 class MBClient {
-  constructor(socket2) {
+  constructor(socket) {
     if (new.target === MBClient) {
       throw new TypeError("Cannot instantiate ModbusClient directly.");
     }
-    this._socket = socket2;
-    if (!socket2) {
+    this._socket = socket;
+    if (!socket) {
       throw new Error("NoSocketException.");
     }
     this._socket.on("data", this._onData.bind(this));
@@ -1777,11 +1777,11 @@ const exception_js_1$1 = __importDefault$p(exception);
 const user_request_error_1$3 = userRequestError;
 const user_request_js_1$1 = __importDefault$p(userRequest);
 class MBClientRequestHandler {
-  constructor(socket2, timeout) {
+  constructor(socket, timeout) {
     if (new.target === MBClientRequestHandler) {
       throw new TypeError("Cannot instantiate ModbusClientRequestHandler directly.");
     }
-    this._socket = socket2;
+    this._socket = socket;
     this._timeout = timeout;
     this._state = "offline";
   }
@@ -2035,8 +2035,8 @@ const user_request_error_1$2 = userRequestError;
 const OUT_OF_SYNC = "OutOfSync";
 const PROTOCOL = "Protocol";
 class ModbusTCPClientRequestHandler extends client_request_handler_js_1$1.default {
-  constructor(socket2, unitId, timeout = 5e3) {
-    super(socket2, timeout);
+  constructor(socket, unitId, timeout = 5e3) {
+    super(socket, timeout);
     this._requestId = 0;
     this._unitId = unitId;
     this._requests = [];
@@ -2874,9 +2874,9 @@ const modbus_client_js_1$1 = __importDefault$9(modbusClient);
 const tcp_client_request_handler_js_1 = __importDefault$9(tcpClientRequestHandler);
 const tcp_client_response_handler_js_1 = __importDefault$9(tcpClientResponseHandler);
 class ModbusTCPClient extends modbus_client_js_1$1.default {
-  constructor(socket2, unitId = 1, timeout = 5e3) {
-    super(socket2);
-    this._requestHandler = new tcp_client_request_handler_js_1.default(socket2, unitId, timeout);
+  constructor(socket, unitId = 1, timeout = 5e3) {
+    super(socket);
+    this._requestHandler = new tcp_client_request_handler_js_1.default(socket, unitId, timeout);
     this._responseHandler = new tcp_client_response_handler_js_1.default();
     this._unitId = unitId;
     this._timeout = timeout;
@@ -3261,8 +3261,8 @@ const client_request_handler_js_1 = __importDefault$7(clientRequestHandler);
 const rtu_request_js_1$1 = __importDefault$7(rtuRequest);
 const user_request_error_1$1 = userRequestError;
 class ModbusRTUClientRequestHandler extends client_request_handler_js_1.default {
-  constructor(socket2, address, timeout = 5e3) {
-    super(socket2, timeout);
+  constructor(socket, address, timeout = 5e3) {
+    super(socket, timeout);
     this._address = address;
     this._requests = [];
     this._currentRequest = null;
@@ -3418,9 +3418,9 @@ const modbus_client_js_1 = __importDefault$4(modbusClient);
 const rtu_client_request_handler_js_1 = __importDefault$4(rtuClientRequestHandler);
 const rtu_client_response_handler_js_1 = __importDefault$4(rtuClientResponseHandler);
 class ModbusRTUClient extends modbus_client_js_1.default {
-  constructor(socket2, address, timeout = 5e3) {
-    super(socket2);
-    this._requestHandler = new rtu_client_request_handler_js_1.default(socket2, address, timeout);
+  constructor(socket, address, timeout = 5e3) {
+    super(socket);
+    this._requestHandler = new rtu_client_request_handler_js_1.default(socket, address, timeout);
     this._responseHandler = new rtu_client_response_handler_js_1.default();
   }
   get slaveId() {
@@ -3813,9 +3813,9 @@ const debug$1 = Debug$1("modbus tcp client socket");
 const modbus_server_request_handler_js_1 = __importDefault$3(requireModbusServerRequestHandler());
 const modbus_server_response_handler_js_1 = __importDefault$3(requireModbusServerResponseHandler());
 class ModbusServerClient {
-  constructor(server, socket2, fromBufferMethod, fromRequestMethod) {
+  constructor(server, socket, fromBufferMethod, fromRequestMethod) {
     this._server = server;
-    this._socket = socket2;
+    this._socket = socket;
     this._requestHandler = new modbus_server_request_handler_js_1.default(fromBufferMethod);
     this._responseHandler = new modbus_server_response_handler_js_1.default(this._server, fromRequestMethod);
     this._socket.on("data", this._onData.bind(this));
@@ -3860,11 +3860,11 @@ class ModbusTCPServer extends modbus_server_1.default {
     this._server = server;
     server.on("connection", this._onConnection.bind(this));
   }
-  _onConnection(socket2) {
+  _onConnection(socket) {
     debug("new connection coming in");
     const Request = tcp_request_js_1.default.fromBuffer;
     const Response = tcp_response_js_1.default.fromRequest;
-    const client = new modbus_server_client_js_1$1.default(this, socket2, Request, Response);
+    const client = new modbus_server_client_js_1$1.default(this, socket, Request, Response);
     this.emit("connection", client);
   }
 }
@@ -3879,12 +3879,12 @@ const modbus_server_js_1 = __importDefault$1(modbusServer);
 const rtu_request_js_1 = __importDefault$1(rtuRequest);
 const rtu_response_js_1 = __importDefault$1(rtuResponse);
 class ModbusRTUServer extends modbus_server_js_1.default {
-  constructor(socket2, options) {
+  constructor(socket, options) {
     super(options);
-    this._socket = socket2;
+    this._socket = socket;
     const fromBuffer = rtu_request_js_1.default.fromBuffer;
     const fromRequest = rtu_response_js_1.default.fromRequest;
-    const client = new modbus_server_client_js_1.default(this, socket2, fromBuffer, fromRequest);
+    const client = new modbus_server_client_js_1.default(this, socket, fromBuffer, fromRequest);
     this.emit("connection", client);
   }
 }
@@ -4027,6 +4027,7 @@ const VITE_DEV_SERVER_URL = process.env["VITE_DEV_SERVER_URL"];
 const MAIN_DIST = path.join(process.env.APP_ROOT, "dist-electron");
 const RENDERER_DIST = path.join(process.env.APP_ROOT, "dist");
 process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, "public") : RENDERER_DIST;
+app.commandLine.appendSwitch("enable-features", "OverlayScrollbar");
 let mainWindow;
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -4036,112 +4037,17 @@ function createWindow() {
     },
     autoHideMenuBar: true,
     show: false
+    // frame: false,
+    // titleBarStyle: "hidden",
   });
   mainWindow.maximize();
   mainWindow.show();
-  mainWindow.webContents.on("did-finish-load", connectToPLC);
   if (VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(VITE_DEV_SERVER_URL);
   } else {
     mainWindow.loadFile(path.join(RENDERER_DIST, "index.html"));
   }
 }
-const PLC_IP = "192.168.0.100";
-const PLC_PORT = 502;
-const REG_START_ADDRESS = 4106;
-const REG_COUNT = 11;
-const COIL_START_ADDRESS = 2049;
-const COIL_COUNT = 2;
-let pollingInterval = null;
-let isReconnecting = false;
-let socket = null;
-let plcClient = null;
-function connectToPLC() {
-  if (isReconnecting) return;
-  console.log("🔄 Attempting to initialize communication line...");
-  if (pollingInterval) {
-    clearInterval(pollingInterval);
-    pollingInterval = null;
-  }
-  if (socket) {
-    socket.removeAllListeners();
-    socket.destroy();
-    socket = null;
-    plcClient = null;
-  }
-  socket = new net.Socket();
-  plcClient = new modbus.client.TCP(socket);
-  socket.on("connect", () => {
-    console.log("🔌 Delta PLC Connection Successful! Starting telemetry polling...");
-    isReconnecting = false;
-    startRealTimePolling();
-  });
-  socket.on("error", (err) => {
-    console.error(`❌ Network Line Drop (${err.message}). Scheduling retry...`);
-    if (mainWindow) {
-      mainWindow.webContents.send("plc-status", { error: `Disconnected: ${err.message}` });
-    }
-    handleReconnectionDelay();
-  });
-  socket.on("close", () => {
-    if (!isReconnecting && pollingInterval) {
-      console.log("⚠️ Network socket closed unexpectedly.");
-      handleReconnectionDelay();
-    }
-  });
-  socket.connect({ host: PLC_IP, port: PLC_PORT });
-}
-function handleReconnectionDelay() {
-  if (pollingInterval) {
-    clearInterval(pollingInterval);
-    pollingInterval = null;
-  }
-  if (isReconnecting) return;
-  isReconnecting = true;
-  setTimeout(() => {
-    isReconnecting = false;
-    connectToPLC();
-  }, 3e3);
-}
-function startRealTimePolling() {
-  if (pollingInterval) clearInterval(pollingInterval);
-  pollingInterval = setInterval(async () => {
-    if (!socket || !socket.writable || isReconnecting) return;
-    try {
-      const [regResponse, coilResponse] = await Promise.all([
-        plcClient.readHoldingRegisters(REG_START_ADDRESS, REG_COUNT),
-        plcClient.readCoils(COIL_START_ADDRESS, COIL_COUNT)
-      ]);
-      const rawRegs = regResponse.response.body.values;
-      const uInt16D10 = rawRegs[0];
-      const uInt16D20 = rawRegs[10];
-      const rawCoils = coilResponse.response.body.valuesAsArray || coilResponse.response.body.values;
-      const statusM1 = rawCoils && rawCoils.length > 0 ? rawCoils[0] : false;
-      const statusM2 = rawCoils && rawCoils.length > 1 ? rawCoils[1] : false;
-      if (mainWindow) {
-        mainWindow.webContents.send("plc-live-data", {
-          timestamp: (/* @__PURE__ */ new Date()).toLocaleTimeString(),
-          d10Value: uInt16D10,
-          d20Value: uInt16D20,
-          m1Status: statusM1,
-          m2Status: statusM2
-        });
-      }
-    } catch (err) {
-      console.warn("⚠️ Register transaction lost. Tearing down line connection:", err.message);
-      handleReconnectionDelay();
-    }
-  }, 100);
-}
-ipcMain.handle("write-plc-coil", async (_event, { address, value }) => {
-  if (!socket.writable) return { success: false, error: "PLC communication line down" };
-  try {
-    await plcClient.writeSingleCoil(address, value);
-    return { success: true, message: `Coil ${address} set to ${value}` };
-  } catch (err) {
-    return { success: false, error: err.message };
-  }
-});
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {
     app.quit();

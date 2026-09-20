@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 
 import { Box, Button, Card, CardActionArea, CardContent, CardMedia, Chip, Grid, Typography } from "@mui/material";
 

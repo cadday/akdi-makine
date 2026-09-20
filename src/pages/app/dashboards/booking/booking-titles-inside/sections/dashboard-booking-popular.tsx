@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 
 import { Box, Card, CardContent, Chip, FormControl, MenuItem, Select, Typography } from "@mui/material";
 

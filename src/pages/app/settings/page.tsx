@@ -2,7 +2,7 @@ import SettingsContact from "./components/settings-contact";
 import SettingsPublicInfo from "./components/settings-public-info";
 import SettingsWork from "./components/settings-work";
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 
 import {
   Box,

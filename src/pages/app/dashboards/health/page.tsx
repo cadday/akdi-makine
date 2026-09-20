@@ -5,7 +5,7 @@ import DashboardHealthInfo from "./sections/dashboard-health-info";
 import DashboardHealthResults from "./sections/dashboard-health-results";
 import DashboardHealthVitals from "./sections/dashboard-health-vitals";
 import { SyntheticEvent, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 
 import { Breadcrumbs, Button, Menu, MenuItem, PopoverVirtualElement, Tooltip, Typography } from "@mui/material";
 import { Grid } from "@mui/material";

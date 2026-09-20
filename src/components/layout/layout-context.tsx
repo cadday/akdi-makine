@@ -17,7 +17,7 @@ function useLayoutContextValue() {
 
   const leftMenu = useMenu({
     primaryBreakpoint: "md",
-    secondaryBreakpoint: "xl",
+    secondaryBreakpoint: "3xl",
     storageKey: LOCAL_STORAGE_KEYS.leftMenuType,
     defaultMenuType: DEFAULTS.leftMenuType,
     menuDefaultWidth: DEFAULTS.leftMenuWidth,

@@ -8,6 +8,13 @@
   "site-name": "Gogo MUI Admin",
   "site-description": "A premium admin dashboard crafted with Material-UI and TailwindCSS for exceptional modern interfaces.",
 
+  "menu-overview":"Overview",
+  "menu-tests":"Tests",
+  "menu-specimens":"Specimens",
+  "menu-presets":"Presets",
+  "menu-data-fields":"Data Fields",
+  "menu-settings":"Settings",
+
   "menu-dashboards": "Dashboards",
   "menu-dashboards-description": "Elegant analytics views to visualize and control your data effortlessly.",
   "menu-default": "Default",
@@ -190,7 +197,6 @@
   "menu-level-five": "Level 5",
 
   "menu-documentation": "Docs",
-  "menu-settings": "Settings",
   "menu-palette": "Palette",
   "menu-cols": "Cols",
   "menu-document-image": "Document Image",
@@ -437,7 +443,6 @@
   "menu-invoice-description": "Presents billing details, payment status, and transaction records for purchases or services.",
 
   "menu-user": "User",
-  "menu-overview": "Overview",
   "menu-projects": "Projects",
   "menu-permissions": "Permissions",
   "menu-friends": "Friends",

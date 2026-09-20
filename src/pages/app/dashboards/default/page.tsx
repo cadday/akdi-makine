@@ -1,15 +1,14 @@
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 
 import { Box, Breadcrumbs, Button, Tooltip, Typography } from "@mui/material";
 import { Grid } from "@mui/material";
 
-import NiEllipsisHorizontal from "@/icons/nexture/ni-ellipsis-horizontal";
-import NiSendUpRight from "@/icons/nexture/ni-send-up-right";
 import { cn } from "@/lib/utils";
 import { useThemeContext } from "@/theme/theme-provider";
 import { ContentType } from "@/types/types";
 import DashboardDefaultPLCSettings from "./sections/dashboard-default-plc-settings";
 import { DashboardDefaultPLCChart } from "./sections/dashboard-default-plc-chart";
+import { Ellipsis, Send } from "lucide-react";
 
 export default function Page() {
   const { content } = useThemeContext();
@@ -39,7 +38,7 @@ export default function Page() {
                 variant='surface'
                 component={Link}
                 to='#'
-                startIcon={<NiSendUpRight size={"medium"} />}
+                startIcon={<Send /> }
               >
                 Button
               </Button>
@@ -49,7 +48,7 @@ export default function Page() {
                   size='medium'
                   color='grey'
                   variant='surface'
-                  startIcon={<NiEllipsisHorizontal size={"medium"} />}
+                  startIcon={<Ellipsis /> }
                 />
               </Tooltip>
             </Grid>
@@ -63,6 +62,45 @@ export default function Page() {
           </Grid>
           <Grid size={{ xs: 12 }}>
             <DashboardDefaultPLCChart />
+            <br/>
+            <br/>
+            <br/>
+            <br/>
+            <br/>
+            <br/>
+            <br/>
+            <br/>
+            <br/>
+            <br/>
+            <br/>
+            <br/>
+            <br/>
+            <br/>
+            <br/>
+            <br/>
+            <br/>
+            <br/>
+            <br/>
+            <br/>
+            <br/>
+            <br/>
+            <br/>
+            <br/>
+            <br/>
+            <br/>
+            <br/>
+            <br/>
+            <br/>
+            <br/>
+            <br/>
+            <br/>
+            <br/>
+            <br/>
+            <br/>
+            <br/>
+            <br/>
+            <br/>
+            <br/>
           </Grid>
         </Grid>
       </Box>

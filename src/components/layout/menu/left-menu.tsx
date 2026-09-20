@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router";
 
 import { Box, Paper, Typography } from "@mui/material";
 
@@ -294,7 +294,7 @@ export default function LeftMenu() {
                   {!activeItem?.content && !menuSelectedSecondaryItem?.content && (
                     <>
                       {activeItem?.label && (
-                        <Typography variant="h6" className={"text-primary mb-4 px-2.5"}>
+                        <Typography variant="h6" className={"text-primary mb-5 px-2.5"}>
                           {t(activeItem?.label)}
                         </Typography>
                       )}

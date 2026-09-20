@@ -4,20 +4,17 @@ import Search from "../search/search";
 import Shortcuts from "../shortcuts/shortcuts";
 import User from "../user/user";
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 
 import { Box, Button, Fade, Typography, useMediaQuery, useTheme } from "@mui/material";
 
 import { useLayoutContext } from "@/components/layout/layout-context";
 import Logo from "@/components/logo/logo";
 import { DEFAULTS } from "@/config";
-import NiListSquare from "@/icons/nexture/ni-list-square";
-import NiMenuSplit from "@/icons/nexture/ni-menu-split";
+import { CircleCheck, ListChevronsUpDown, Menu, OctagonX } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MenuShowState } from "@/types/types";
-import NiCheckSquare from "@/icons/nexture/ni-check-square";
 import { usePlcData } from "@/context/plc-context";
-import NiCrossHexagon from "@/icons/nexture/ni-cross-hexagon";
 
 export default function Header() {
   const { showLeftInMobile, showLeftMobileButton, leftPrimaryCurrent, leftShowBackdrop } = useLayoutContext();
@@ -31,7 +28,10 @@ export default function Header() {
   };
 
   return (
-    <Box className='shadow-grey-100 bg-background/75 sticky top-0 z-1 h-15 w-full shadow-[0_1px_0px_0px_rgba(0,0,0,0.1)] backdrop-blur-xs' component='header'>
+    <Box
+      className='mui-fixed shadow-grey-100 bg-background/75 sticky top-0 z-1 h-15 w-full shadow-[0_1px_0px_0px_rgba(0,0,0,0.1)] backdrop-blur-xs'
+      component='header'
+    >
       {/* 1px line to cover left side */}
       <Box className='bg-background absolute -left-0.25 h-15 w-0.25 rtl:-right-0.25 rtl:left-[unset]'></Box>
       <Box
@@ -49,7 +49,7 @@ export default function Header() {
             leftPrimaryCurrent !== MenuShowState.Hide && "active",
           )}
           onClick={() => showLeftInMobile()}
-          startIcon={<NiMenuSplit size={24} />}
+          startIcon={<Menu />}
         />
 
         <Box className='flex h-full flex-1 flex-row items-center gap-4 md:gap-6'>
@@ -62,8 +62,8 @@ export default function Header() {
           <Fade in={!rightButtonsVisibleMobile || !isMobile}>
             <Box component={Link} to={"#"} className='bg-grey-75  flex flex-row gap-5 rounded-lg py-1.5 ps-3 pe-2 transition-all! hover:shadow-md'>
               <Box className='flex flex-row items-center gap-2'>
-                {connectionStatus.isError && <NiCrossHexagon size='large' className='text-error' />}
-                {!connectionStatus.isError && <NiCheckSquare size='large' className='text-success' />}
+                {connectionStatus.isError && <OctagonX className='text-error' />}
+                {!connectionStatus.isError && <CircleCheck className='text-success' />}
 
                 <Box className='flex flex-row gap-1'>
                   <Typography variant='subtitle1'>{connectionStatus.text}</Typography>
@@ -94,7 +94,7 @@ export default function Header() {
               rightButtonsVisibleMobile && "active",
             )}
             onClick={handleRightButtonsMobileToggle}
-            startIcon={<NiListSquare size={"large"} />}
+            startIcon={<ListChevronsUpDown />}
           />
         </Box>
 

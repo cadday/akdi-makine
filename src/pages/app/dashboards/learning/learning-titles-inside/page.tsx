@@ -4,7 +4,7 @@ import DashboardLearningLevels from "./sections/dashboard-learning-levels";
 import DashboardLearningRecommended from "./sections/dashboard-learning-recommended";
 import DashboardLearningSchedule from "./sections/dashboard-learning-schedule";
 import { SyntheticEvent, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 
 import { Breadcrumbs, Button, Menu, MenuItem, PopoverVirtualElement, Tooltip, Typography } from "@mui/material";
 import { Grid } from "@mui/material";

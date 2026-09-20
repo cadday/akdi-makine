@@ -2,7 +2,7 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { useCallback, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 
 import { Box, Button, capitalize, FormControl, InputLabel, Select, SelectProps, Typography } from "@mui/material";
 import {

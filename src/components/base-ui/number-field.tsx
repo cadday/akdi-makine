@@ -7,10 +7,9 @@ import InputAdornment from "@mui/material/InputAdornment";
 import InputLabel from "@mui/material/InputLabel";
 import OutlinedInput from "@mui/material/OutlinedInput";
 
-import NiChevronDownSmall from "@/icons/nexture/ni-chevron-down-small";
-import NiChevronUpSmall from "@/icons/nexture/ni-chevron-up-small";
 import { cn } from "@/lib/utils";
 import { NumberField as BaseNumberField } from "@base-ui/react/number-field";
+import { ChevronDown, ChevronUp } from "lucide-react";
 
 function SSRInitialFilled() {
   return null;
@@ -85,14 +84,14 @@ export default function NumberField({
                       disabled={readOnly}
                       render={<IconButton size={"tiny"} aria-label="Increase" className="py-0!" />}
                     >
-                      <NiChevronUpSmall size={"small"} />
+                      <ChevronUp size={16} />
                     </BaseNumberField.Increment>
 
                     <BaseNumberField.Decrement
                       disabled={readOnly}
                       render={<IconButton size={"tiny"} aria-label="Decrease" className="py-0!" />}
                     >
-                      <NiChevronDownSmall size={"small"} />
+                      <ChevronDown size={16} />
                     </BaseNumberField.Decrement>
                   </InputAdornment>
                 }
@@ -128,13 +127,13 @@ export default function NumberField({
                       disabled={readOnly}
                       render={<IconButton size={"tiny"} aria-label="Increase" edge="end" className="mt-0! py-0.5!" />}
                     >
-                      <NiChevronUpSmall size={"small"} />
+                      <ChevronUp size={16} />
                     </BaseNumberField.Increment>
                     <BaseNumberField.Decrement
                       disabled={readOnly}
                       render={<IconButton size={"tiny"} aria-label="Increase" edge="end" className="mt-0! py-0.5!" />}
                     >
-                      <NiChevronDownSmall size={"small"} />
+                      <ChevronDown size={16} />
                     </BaseNumberField.Decrement>
                   </InputAdornment>
                 }
@@ -180,14 +179,14 @@ export default function NumberField({
                       disabled={readOnly}
                       render={<IconButton size={"tiny"} aria-label="Increase" className="py-0!" />}
                     >
-                      <NiChevronUpSmall size={"small"} />
+                      <ChevronUp size={16} />
                     </BaseNumberField.Increment>
 
                     <BaseNumberField.Decrement
                       disabled={readOnly}
                       render={<IconButton size={"tiny"} aria-label="Decrease" className="py-0!" />}
                     >
-                      <NiChevronDownSmall size={"small"} />
+                      <ChevronDown size={16} />
                     </BaseNumberField.Decrement>
                   </InputAdornment>
                 }

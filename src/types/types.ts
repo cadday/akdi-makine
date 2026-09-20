@@ -1,6 +1,6 @@
 import { ButtonProps } from "@mui/material";
+import { IconName } from "lucide-react/dynamic";
 
-import { IconName } from "@/icons/nexture-icons";
 
 export type Screens = {
   sm: string;

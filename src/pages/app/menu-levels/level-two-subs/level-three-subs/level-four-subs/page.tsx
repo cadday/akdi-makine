@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 
 import { Breadcrumbs, Typography } from "@mui/material";
 import { Grid } from "@mui/material";

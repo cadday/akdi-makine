@@ -1,10 +1,9 @@
 import { memo, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useLocation } from "react-router-dom";
-
+import { useLocation } from "react-router";
+import { DynamicIcon } from "lucide-react/dynamic";
 import { Box, Button, Tooltip, Typography } from "@mui/material";
 
-import NextureIcons from "@/icons/nexture-icons";
 import { cn } from "@/lib/utils";
 import { isPathMatch } from "@/lib/utils";
 import { MenuItem, MenuType } from "@/types/types";
@@ -52,15 +51,7 @@ export const PrimaryItem = memo(function PrimaryItem({ item, onSelect, isActive,
               : undefined
           }
         >
-          {item.icon && (
-            <NextureIcons
-              variant={selected ? "contained" : "outlined"}
-              icon={item.icon}
-              size={"large"}
-              strokeWidth={0.75}
-              className={cn("transition-transform group-hover:scale-[0.85]", (selected || isActive) && "text-primary scale-[0.85]")}
-            />
-          )}
+          {item.icon && <DynamicIcon  name={item.icon} className={cn((selected || isActive) && "text-primary")} />}
 
           <Typography
             variant='body2'
@@ -98,16 +89,7 @@ export const PrimaryItem = memo(function PrimaryItem({ item, onSelect, isActive,
                 selected && `bg-grey-25 active ${item.color ? `text-${item.color.replace("text-", "")}!` : "text-primary!"}`,
                 isActive && "active",
               )}
-              startIcon={
-                item.icon && (
-                  <NextureIcons
-                    variant={selected ? "contained" : "outlined"}
-                    icon={item.icon}
-                    size={24}
-                    className={cn("transition-transform group-hover:scale-[0.85]", (selected || isActive) && "scale-[0.85]")}
-                  />
-                )
-              }
+              startIcon={item.icon && <DynamicIcon name={item.icon} className={cn((selected || isActive) && "text-primary")} />}
               aria-label={t(item.label)}
               {...(item.isExternalLink
                 ? {

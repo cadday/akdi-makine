@@ -1,6 +1,6 @@
 import Footer from "./footer";
 import { PropsWithChildren, useEffect, useMemo, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation } from "react-router";
 
 import { useLayoutContext } from "@/components/layout/layout-context";
 import { isPathMatch } from "@/lib/utils";
