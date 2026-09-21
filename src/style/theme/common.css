@@ -225,3 +225,7 @@
     --main-padding: 8px;
   }
 }
+
+body {
+  overflow: hidden;
+}

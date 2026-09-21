@@ -9,6 +9,7 @@ import Main from "@/components/layout/containers/main";
 import LeftMenu from "@/components/layout/menu/left-menu";
 import MenuBackdrop from "@/components/layout/menu/menu-backdrop";
 import Loading from "@/pages/loading";
+import Footer from "@/components/layout/containers/footer";
 
 export default function AppLayout() {
   const { pathname, search } = useLocation();
@@ -27,6 +28,7 @@ export default function AppLayout() {
             <Outlet />
           </Suspense>
         </ContentWrapper>
+        <Footer />
       </Main>
       <MenuBackdrop />
     </>

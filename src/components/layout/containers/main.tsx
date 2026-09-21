@@ -1,4 +1,3 @@
-import Footer from "./footer";
 import { PropsWithChildren, useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router";
 
@@ -60,9 +59,8 @@ export default function Main({ children }: PropsWithChildren) {
   );
 
   return (
-    <main className='flex h-full min-h-0 w-full flex-col duration-(--layout-duration)' style={styles}>
+    <main className='flex min-h-0 w-full flex-col duration-(--layout-duration)' style={styles}>
       {children}
-      <Footer />
     </main>
   );
 }

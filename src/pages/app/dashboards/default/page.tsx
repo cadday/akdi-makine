@@ -15,7 +15,7 @@ export default function Page() {
 
   return (
     <Box>
-      <Box className='outline-grey-100 rounded-b-3xl py-5 outline outline-offset-0'>
+      <Box className='outline-grey-100 rounded-b-3xl pb-3 pt-4 outline outline-offset-0'>
         <Box className={cn("mx-auto px-4 md:px-6 lg:px-8", content === ContentType.Boxed && "max-w-screen-lg")}>
           <Grid container spacing={2.5} className='w-full' size={12}>
             <Grid size={{ xs: 12, md: "grow" }}>

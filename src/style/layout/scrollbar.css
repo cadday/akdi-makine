@@ -16,7 +16,7 @@
   }
 
   *::-webkit-scrollbar-thumb:hover {
-    background-color: hsla(var(--grey-400));
+    background-color: hsla(var(--grey-600));
   }
 
   *::-webkit-scrollbar-button {
@@ -26,4 +26,16 @@
   *::-webkit-scrollbar-corner {
     background: rgba(0, 0, 0, 0);
   }
+}
+
+.os-scrollbar-handle {
+  background-color: hsla(var(--grey-300));
+}
+
+.os-scrollbar-handle:hover {
+  background-color: hsla(var(--grey-600));
+}
+
+.os-scrollbar-body .os-scrollbar-vertical {
+  @apply pt-15;
 }

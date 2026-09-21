@@ -29,13 +29,13 @@ export default function Header() {
 
   return (
     <Box
-      className='drag mui-fixed shadow-grey-100 bg-background/75 sticky top-0 z-1 h-15 w-full shadow-[0_1px_0px_0px_rgba(0,0,0,0.1)] backdrop-blur-xs'
+      className='flex-none drag mui-fixed shadow-grey-100 bg-background/75 sticky top-0 z-1 h-14 w-full shadow-[0_1px_0px_0px_rgba(0,0,0,0.1)] backdrop-blur-xs'
       component='header'
     >
       {/* 1px line to cover left side */}
-      <Box className='bg-background absolute -left-0.25 h-15 w-0.25 rtl:-right-0.25 rtl:left-[unset]'></Box>
+      <Box className='bg-background absolute -left-0.25 h-14 w-0.25 rtl:-right-0.25 rtl:left-[unset]'></Box>
       <Box
-        className={cn("flex h-full w-full flex-none flex-row items-center", leftShowBackdrop && "pointer-events-none")}
+        className={cn("flex h-full w-full flex-none flex-row items-center pe-0!", leftShowBackdrop && "pointer-events-none")}
         style={{ padding: `0 var(--main-padding)` }}
       >
         {/* Left menu button */}
