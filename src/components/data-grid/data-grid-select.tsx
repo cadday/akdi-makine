@@ -1,8 +1,8 @@
 import { FormControl, MenuItem, Select, SelectChangeEvent } from "@mui/material";
 import { SelectProps } from "@mui/material/Select";
 import { GridRenderEditCellParams, GridSingleSelectColDef, useGridApiContext } from "@mui/x-data-grid-pro";
+import { ChevronDown } from "lucide-react";
 
-import NiChevronDownSmall from "@/icons/nexture/ni-chevron-down-small";
 
 interface DataGridSelectProps extends GridRenderEditCellParams {
   editorProps?: Omit<SelectProps<any>, "value" | "onChange" | "defaultValue" | "children">;
@@ -25,7 +25,7 @@ export default function DataGridSelect(props: DataGridSelectProps) {
         defaultValue={value}
         label="Small"
         variant="standard"
-        IconComponent={NiChevronDownSmall}
+        IconComponent={ChevronDown}
         MenuProps={{ className: "outlined" }}
         onChange={handleValueChange}
         {...(props.editorProps || {})}

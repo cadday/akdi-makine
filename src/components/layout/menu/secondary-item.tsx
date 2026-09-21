@@ -5,11 +5,11 @@ import { Link, useLocation } from "react-router";
 
 import { Accordion, AccordionDetails, AccordionSummary, Button } from "@mui/material";
 
-import NiChevronRightSmall from "@/icons/nexture/ni-chevron-right-small";
-import NextureIcons from "@/icons/nexture-icons";
 import { cn } from "@/lib/utils";
 import { isPathMatch } from "@/lib/utils";
 import { MenuItem } from "@/types/types";
+import { DynamicIcon } from "lucide-react/dynamic";
+import { ChevronRight } from "lucide-react";
 
 type Props = {
   item: MenuItem;
@@ -53,29 +53,16 @@ export function SecondaryItem({ item, indent = 0, openedAccordions, setOpenedAcc
   if (item.isExternalLink) {
     return (
       <Button
-        variant="text"
+        variant='text'
         size={indent === 1 ? "large" : "medium"}
-        color="text-primary"
-        className={cn(
-          "full-width-button group hover:bg-grey-25 px-4",
-          isActive && "active text-primary! bg-grey-25!",
-          className,
-        )}
-        component="a"
+        color='text-primary'
+        className={cn("full-width-button group hover:bg-grey-25 px-4", isActive && "active text-primary! bg-grey-25!", className)}
+        component='a'
         href={item.href}
-        target="_blank"
-        startIcon={
-          item.icon && (
-            <NextureIcons
-              variant={isActive ? "contained" : "outlined"}
-              icon={item.icon}
-              size={indent === 1 ? "large" : "medium"}
-              className={cn("transition-transform group-hover:scale-[0.85]", isActive && "scale-[0.85]")}
-            />
-          )
-        }
+        target='_blank'
+        startIcon={item.icon && <DynamicIcon name={item.icon} className={cn("transition-transform ", isActive && "scale-[0.85]")} />}
         aria-label={t(item.label)}
-        rel="noreferrer"
+        rel='noreferrer'
       >
         {t(item.label)}
       </Button>
@@ -84,24 +71,11 @@ export function SecondaryItem({ item, indent = 0, openedAccordions, setOpenedAcc
   if (item.content) {
     return (
       <Button
-        variant="text"
+        variant='text'
         size={"large"}
-        color="text-primary"
-        className={cn(
-          "full-width-button group hover:bg-grey-25 px-4",
-          isActive && "active text-primary! bg-grey-25!",
-          className,
-        )}
-        startIcon={
-          item.icon && (
-            <NextureIcons
-              variant={isActive ? "contained" : "outlined"}
-              icon={item.icon}
-              size={"large"}
-              className={cn("transition-transform group-hover:scale-[0.85]", isActive && "scale-[0.85]")}
-            />
-          )
-        }
+        color='text-primary'
+        className={cn("full-width-button group hover:bg-grey-25 px-4", isActive && "active text-primary! bg-grey-25!", className)}
+        startIcon={item.icon && <DynamicIcon name={item.icon} size={"large"} className={cn("transition-transform", isActive && "scale-[0.85]")} />}
         aria-label={t(item.label)}
         onClick={() => {
           onSelect?.(item);
@@ -117,24 +91,11 @@ export function SecondaryItem({ item, indent = 0, openedAccordions, setOpenedAcc
   if ((!item.children || item.children.filter((x) => !x.hideInMenu).length === 0) && item.href) {
     return (
       <Button
-        variant="text"
+        variant='text'
         size={"large"}
-        color="text-primary"
-        className={cn(
-          "full-width-button group hover:bg-grey-25 px-4",
-          isActive && "active text-primary! bg-grey-25!",
-          className,
-        )}
-        startIcon={
-          item.icon && (
-            <NextureIcons
-              variant={isActive ? "contained" : "outlined"}
-              icon={item.icon}
-              size={"large"}
-              className={cn("transition-transform group-hover:scale-[0.85]", isActive && "scale-[0.85]")}
-            />
-          )
-        }
+        color='text-primary'
+        className={cn("full-width-button group hover:bg-grey-25 px-4", isActive && "active text-primary! bg-grey-25!", className)}
+        startIcon={item.icon && <DynamicIcon name={item.icon} className={cn("transition-transform", isActive && "scale-[0.85]")} />}
         aria-label={t(item.label)}
         component={Link}
         to={item.href}
@@ -151,35 +112,23 @@ export function SecondaryItem({ item, indent = 0, openedAccordions, setOpenedAcc
     <Accordion expanded={isExpanded} onChange={(_, expanded) => handleOnChange(expanded)}>
       <AccordionSummary>
         <Button
-          variant="text"
+          variant='text'
           size={"large"}
-          color="text-primary"
+          color='text-primary'
           className={cn(
             "full-width-button group hover:bg-grey-25 px-4",
             isActive && "text-primary! bg-grey-25!",
             (isExpanded || isActive) && "active",
             className,
           )}
-          startIcon={
-            item.icon && (
-              <NextureIcons
-                variant={isActive ? "contained" : "outlined"}
-                icon={item.icon}
-                size={"large"}
-                className={cn(
-                  "transition-transform group-hover:scale-[0.85]",
-                  (isActive || isExpanded) && "scale-[0.85]",
-                )}
-              />
-            )
-          }
-          endIcon={<NiChevronRightSmall size="medium" className="accordion-rotate" />}
-          component="div"
+          startIcon={item.icon && <DynamicIcon name={item.icon} className={cn("transition-transform", (isActive || isExpanded) && "scale-[0.85]")} />}
+          endIcon={<ChevronRight size={16} className='accordion-rotate' />}
+          component='div'
         >
           {t(item.label)}
         </Button>
       </AccordionSummary>
-      <AccordionDetails className="ms-7 flex flex-col gap-1 pt-2">
+      <AccordionDetails className='ms-7 flex flex-col gap-1 pt-2'>
         {item.children
           ?.filter((x) => !x.hideInMenu)
           .map((child) => (

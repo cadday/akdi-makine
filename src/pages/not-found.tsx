@@ -1,10 +1,10 @@
 import { Box, Button, Paper, Typography } from "@mui/material";
 
 import Logo from "@/components/logo/logo";
-import NiHome from "@/icons/nexture/ni-home";
 import { cn } from "@/lib/utils";
 import { useThemeContext } from "@/theme/theme-provider";
 import { LINKS } from "@/constants";
+import { Home } from "lucide-react";
 
 export default function Page() {
   const { isDarkMode } = useThemeContext();
@@ -33,7 +33,7 @@ export default function Page() {
               <Typography variant="body1" color="text.secondary">
                 Error Code: 404
               </Typography>
-              <Button variant="outlined" startIcon={<NiHome />} href={LINKS.home} component="a">
+              <Button variant="outlined" startIcon={<Home />} href={LINKS.home} component="a">
                 Home
               </Button>
             </Box>

@@ -7,10 +7,9 @@ import {
   useGridSelector,
 } from "@mui/x-data-grid";
 
-import NiChevronDownSmall from "@/icons/nexture/ni-chevron-down-small";
-import NiChevronLeftSmall from "@/icons/nexture/ni-chevron-left-small";
-import NiChevronRightSmall from "@/icons/nexture/ni-chevron-right-small";
+
 import { cn } from "@/lib/utils";
+import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 
 function Pagination({
   page,
@@ -34,10 +33,10 @@ function Pagination({
         <PaginationItem
           slots={{
             previous: () => {
-              return <NiChevronLeftSmall size="small" />;
+              return <ChevronLeft size={16} />;
             },
             next: () => {
-              return <NiChevronRightSmall size="small" />;
+              return <ChevronRight size={16} />;
             },
           }}
           {...item}
@@ -63,7 +62,7 @@ export default function DataGridPagination(props: any) {
         select: {
           IconComponent: () => {
             return (
-              <NiChevronDownSmall size="medium" className="pointer-events-none absolute inset-e-1"></NiChevronDownSmall>
+              <ChevronDown size={16} className="pointer-events-none absolute inset-e-1"></ChevronDown>
             );
           },
           className: "hidden!",
@@ -95,10 +94,10 @@ function PaginationFullPage({
         <PaginationItem
           slots={{
             previous: () => {
-              return <NiChevronLeftSmall size="small" />;
+              return <ChevronLeft size={16} />;
             },
             next: () => {
-              return <NiChevronRightSmall size="small" />;
+              return <ChevronRight size={16} />;
             },
           }}
           {...item}
@@ -133,7 +132,7 @@ export function DataGridPaginationFullPage(props: any) {
         select: {
           IconComponent: () => {
             return (
-              <NiChevronDownSmall size="medium" className="pointer-events-none absolute inset-e-1"></NiChevronDownSmall>
+              <ChevronDown size={16} className="pointer-events-none absolute inset-e-1"></ChevronDown>
             );
           },
         },

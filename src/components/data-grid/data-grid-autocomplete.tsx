@@ -4,8 +4,7 @@ import { Autocomplete, FormControl, TextField } from "@mui/material";
 import { AutocompleteProps } from "@mui/material/Autocomplete";
 import { GridRenderEditCellParams, GridSingleSelectColDef, useGridApiContext } from "@mui/x-data-grid-pro";
 
-import NiChevronDownSmall from "@/icons/nexture/ni-chevron-down-small";
-import NiCross from "@/icons/nexture/ni-cross";
+import { ChevronDown, X } from "lucide-react";
 
 interface DataGridAutocompleteProps extends GridRenderEditCellParams {
   editorProps?: Omit<AutocompleteProps<any, any, any, any>, "value" | "onChange" | "renderInput" | "options">;
@@ -23,16 +22,16 @@ export default function DataGridAutocomplete(props: DataGridAutocompleteProps) {
   const valueOptions = (colDef.valueOptions as []) || [];
 
   return (
-    <FormControl fullWidth className="edit-autocomplete">
+    <FormControl fullWidth className='edit-autocomplete'>
       <Autocomplete
-        size="small"
-        popupIcon={<NiChevronDownSmall />}
-        clearIcon={<NiCross />}
+        size='small'
+        popupIcon={<ChevronDown size={16} />}
+        clearIcon={<X size={16} />}
         options={valueOptions}
         defaultValue={currentValue}
         value={currentValue}
         onChange={handleChange}
-        renderInput={(params) => <TextField {...params} variant="standard" className="outlined mb-0" />}
+        renderInput={(params) => <TextField {...params} variant='standard' className='outlined mb-0' />}
         slotProps={{
           popper: { className: "outlined" },
           chip: { variant: "filled", size: "small" },

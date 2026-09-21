@@ -4,9 +4,9 @@ import { Breadcrumbs, Button, Grid, Typography } from "@mui/material";
 
 import ContentWrapper from "@/components/layout/containers/content-wrapper";
 import TitleWrapper from "@/components/layout/containers/title-wrapper";
-import NiEllipsisHorizontal from "@/icons/nexture/ni-ellipsis-horizontal";
 import { LINKS } from "@/constants";
 import { useTranslation } from "react-i18next";
+import { Ellipsis } from "lucide-react";
 
 export default function Page() {
   const { t } = useTranslation();
@@ -28,7 +28,7 @@ export default function Page() {
           </Grid>
           <Grid size={{ xs: 12, md: "auto" }}>
             <Button className='icon-only surface-standard' color='grey' variant='surface'>
-              <NiEllipsisHorizontal size={"medium"} />
+              <Ellipsis size={16} />
             </Button>
           </Grid>
         </Grid>

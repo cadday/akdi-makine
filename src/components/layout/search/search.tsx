@@ -23,23 +23,24 @@ import {
   Typography,
 } from "@mui/material";
 
-import NiBriefcase from "@/icons/nexture/ni-briefcase";
-import NiCheckSquare from "@/icons/nexture/ni-check-square";
-import NiChevronLeftSmall from "@/icons/nexture/ni-chevron-left-small";
-import NiChevronRightSmall from "@/icons/nexture/ni-chevron-right-small";
-import NiController from "@/icons/nexture/ni-controller";
-import NiCrossSquare from "@/icons/nexture/ni-cross-square";
-import NiDirectory from "@/icons/nexture/ni-directory";
-import NiDocumentCode from "@/icons/nexture/ni-document-code";
-import NiDocumentImage from "@/icons/nexture/ni-document-image";
-import NiEllipsisHorizontal from "@/icons/nexture/ni-ellipsis-horizontal";
-import NiPlus from "@/icons/nexture/ni-plus";
-import NiSearch from "@/icons/nexture/ni-search";
-import NiSlashHexagon from "@/icons/nexture/ni-slash-hexagon";
-import NiStructure from "@/icons/nexture/ni-structure";
-import NiUsers from "@/icons/nexture/ni-users";
 import { cn } from "@/lib/utils";
-import { SearchIcon } from "lucide-react";
+import {
+  Briefcase,
+  CheckCircle,
+  ChevronLeft,
+  ChevronRight,
+  Code,
+  Ellipsis,
+  FolderTree,
+  GalleryVerticalEnd,
+  Gamepad2,
+  Image,
+  Plus,
+  SearchIcon,
+  SlashSquare,
+  SquareX,
+  Users,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 export default function Search() {
@@ -100,7 +101,7 @@ export default function Search() {
             placeholder='Search'
             startAdornment={
               <InputAdornment position='start'>
-                <NiSearch size='medium' />
+                <SearchIcon />
               </InputAdornment>
             }
           />
@@ -112,41 +113,31 @@ export default function Search() {
               allowScrollButtonsMobile
               slots={{
                 endScrollButtonIcon: () => {
-                  return <NiChevronRightSmall size='medium' />;
+                  return <ChevronRight size={16} />;
                 },
                 startScrollButtonIcon: () => {
-                  return <NiChevronLeftSmall size='medium' />;
+                  return <ChevronLeft size={16} />;
                 },
               }}
               className='flex-none'
               value={tabValue}
             >
               <Tab
-                icon={<NiStructure size='medium' className='me-0! md:me-1!' />}
+                icon={<GalleryVerticalEnd className='me-0! md:me-1!' />}
                 iconPosition='start'
                 label={<Box className='hidden md:flex'>All</Box>}
                 value='all'
               />
+              <Tab icon={<Image className='me-0! md:me-1!' />} iconPosition='start' label={<Box className='hidden md:flex'>Products</Box>} value='products' />
               <Tab
-                icon={<NiDocumentImage size='medium' className='me-0! md:me-1!' />}
-                iconPosition='start'
-                label={<Box className='hidden md:flex'>Products</Box>}
-                value='products'
-              />
-              <Tab
-                icon={<NiDirectory size='medium' className='me-0! md:me-1!' />}
+                icon={<FolderTree className='me-0! md:me-1!' />}
                 iconPosition='start'
                 label={<Box className='hidden md:flex'>Categories</Box>}
                 value='categories'
               />
+              <Tab icon={<Users className='me-0! md:me-1!' />} iconPosition='start' label={<Box className='hidden md:flex'>Users</Box>} value='users' />
               <Tab
-                icon={<NiUsers size='medium' className='me-0! md:me-1!' />}
-                iconPosition='start'
-                label={<Box className='hidden md:flex'>Users</Box>}
-                value='users'
-              />
-              <Tab
-                icon={<NiSlashHexagon size='medium' className='me-0! md:me-1!' />}
+                icon={<SlashSquare className='me-0! md:me-1!' />}
                 iconPosition='start'
                 label={<Box className='hidden md:flex'>No Result</Box>}
                 value='result'
@@ -172,13 +163,7 @@ export default function Search() {
                           }
                           secondary='/products/wooden-toys'
                         />
-                        <Button
-                          className='pointer-events-none self-center'
-                          size='tiny'
-                          color='success'
-                          variant='pastel'
-                          startIcon={<NiCheckSquare size={"tiny"} />}
-                        >
+                        <Button className='pointer-events-none self-center' size='tiny' color='success' variant='pastel' startIcon={<CheckCircle size={16} />}>
                           Active
                         </Button>
                       </ListItemButton>
@@ -196,13 +181,7 @@ export default function Search() {
                           }
                           secondary='/products/wooden-toys'
                         />
-                        <Button
-                          className='pointer-events-none self-center'
-                          size='tiny'
-                          color='success'
-                          variant='pastel'
-                          startIcon={<NiCheckSquare size={"tiny"} />}
-                        >
+                        <Button className='pointer-events-none self-center' size='tiny' color='success' variant='pastel' startIcon={<CheckCircle size={16} />}>
                           Active
                         </Button>
                       </ListItemButton>
@@ -220,13 +199,7 @@ export default function Search() {
                           }
                           secondary='/products/wooden-toys'
                         />
-                        <Button
-                          className='pointer-events-none self-center'
-                          size='tiny'
-                          color='grey'
-                          variant='pastel'
-                          startIcon={<NiCrossSquare size={"tiny"} />}
-                        >
+                        <Button className='pointer-events-none self-center' size='tiny' color='grey' variant='pastel' startIcon={<SquareX size={16} />}>
                           Inactive
                         </Button>
                       </ListItemButton>
@@ -242,7 +215,7 @@ export default function Search() {
                       <ListItemButton classes={{ root: "group items-start" }}>
                         <ListItemAvatar>
                           <Avatar className='medium bg-primary-light/10 me-3'>
-                            <NiController size='medium' className='text-primary' />
+                            <Gamepad2 className='text-primary' />
                           </Avatar>
                         </ListItemAvatar>
                         <ListItemText
@@ -259,14 +232,14 @@ export default function Search() {
                             size='tiny'
                             color='grey'
                             variant='text'
-                            startIcon={<NiPlus size={"small"} />}
+                            startIcon={<Plus size={16} />}
                           />
                           <Button
                             className='icon-only hover:text-text-primary hover:bg-grey-100 mt-1 flex-none opacity-0 group-hover:opacity-100'
                             size='tiny'
                             color='grey'
                             variant='text'
-                            startIcon={<NiEllipsisHorizontal size={"small"} />}
+                            startIcon={<Ellipsis size={16} />}
                           />
                         </Box>
                       </ListItemButton>
@@ -275,7 +248,7 @@ export default function Search() {
                       <ListItemButton classes={{ root: "group items-start" }}>
                         <ListItemAvatar>
                           <Avatar className='medium bg-secondary-light/10 me-3'>
-                            <NiDocumentCode size='medium' className='text-secondary' />
+                            <Code className='text-secondary' />
                           </Avatar>
                         </ListItemAvatar>
                         <ListItemText
@@ -292,14 +265,14 @@ export default function Search() {
                             size='tiny'
                             color='grey'
                             variant='text'
-                            startIcon={<NiPlus size={"small"} />}
+                            startIcon={<Plus size={16} />}
                           />
                           <Button
                             className='icon-only hover:text-text-primary hover:bg-grey-100 mt-1 flex-none opacity-0 group-hover:opacity-100'
                             size='tiny'
                             color='grey'
                             variant='text'
-                            startIcon={<NiEllipsisHorizontal size={"small"} />}
+                            startIcon={<Ellipsis size={16} />}
                           />
                         </Box>
                       </ListItemButton>
@@ -308,7 +281,7 @@ export default function Search() {
                       <ListItemButton classes={{ root: "group items-start" }}>
                         <ListItemAvatar>
                           <Avatar className='medium bg-accent-1/10 me-3'>
-                            <NiBriefcase size='medium' className='text-accent-1' />
+                            <Briefcase className='text-accent-1' />
                           </Avatar>
                         </ListItemAvatar>
                         <ListItemText
@@ -325,14 +298,14 @@ export default function Search() {
                             size='tiny'
                             color='grey'
                             variant='text'
-                            startIcon={<NiPlus size={"small"} />}
+                            startIcon={<Plus size={16} />}
                           />
                           <Button
                             className='icon-only hover:text-text-primary hover:bg-grey-100 mt-1 flex-none opacity-0 group-hover:opacity-100'
                             size='tiny'
                             color='grey'
                             variant='text'
-                            startIcon={<NiEllipsisHorizontal size={"small"} />}
+                            startIcon={<Ellipsis size={16} />}
                           />
                         </Box>
                       </ListItemButton>
@@ -362,7 +335,7 @@ export default function Search() {
                           size='tiny'
                           color='grey'
                           variant='text'
-                          startIcon={<NiEllipsisHorizontal size={"small"} />}
+                          startIcon={<Ellipsis size={16} />}
                         />
                       </ListItemButton>
                     </ListItem>
@@ -384,7 +357,7 @@ export default function Search() {
                           size='tiny'
                           color='grey'
                           variant='text'
-                          startIcon={<NiEllipsisHorizontal size={"small"} />}
+                          startIcon={<Ellipsis size={16} />}
                         />
                       </ListItemButton>
                     </ListItem>
@@ -406,7 +379,7 @@ export default function Search() {
                           size='tiny'
                           color='grey'
                           variant='text'
-                          startIcon={<NiEllipsisHorizontal size={"small"} />}
+                          startIcon={<Ellipsis size={16} />}
                         />
                       </ListItemButton>
                     </ListItem>

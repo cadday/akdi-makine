@@ -1,16 +1,13 @@
 import { SnackbarProvider } from "notistack";
 import { PropsWithChildren } from "react";
 
-import NiCheckSquare from "@/icons/nexture/ni-check-square";
-import NiCrossSquare from "@/icons/nexture/ni-cross-square";
-import NiExclamationSquare from "@/icons/nexture/ni-exclamation-square";
-import NiInfoSquare from "@/icons/nexture/ni-info-square";
+import { CheckCircle, CircleAlert, CircleX, Info } from "lucide-react";
 
 const iconVariants = {
-  success: <NiCheckSquare className="me-2" />,
-  error: <NiCrossSquare className="me-2" />,
-  warning: <NiExclamationSquare className="me-2" />,
-  info: <NiInfoSquare className="me-2" />,
+  success: <CheckCircle className="me-2" />,
+  error: <CircleX className="me-2" />,
+  warning: <CircleAlert className="me-2" />,
+  info: <Info className="me-2" />,
 };
 
 export default function SnackbarWrapper({ children }: PropsWithChildren) {

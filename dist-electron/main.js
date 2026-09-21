@@ -4047,6 +4047,7 @@ ipcMain.handle("window:is-maximized", () => {
   return !!mainWindow && mainWindow.isMaximized();
 });
 function createWindow() {
+  if (mainWindow && !mainWindow.isDestroyed()) return;
   mainWindow = new BrowserWindow({
     icon: path.join(process.env.VITE_PUBLIC, "favicon.ico"),
     webPreferences: {

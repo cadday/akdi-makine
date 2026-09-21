@@ -1,6 +1,5 @@
 import Mode from "../mode/mode";
 import Search from "../search/search";
-import User from "../user/user";
 import { useState } from "react";
 import { Link } from "react-router";
 
@@ -98,7 +97,6 @@ export default function Header() {
         </Box>
 
         {/* User Avatar and Menu */}
-        <User />
         <WindowControls />
       </Box>
     </Box>

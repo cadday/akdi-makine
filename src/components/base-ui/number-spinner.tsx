@@ -7,10 +7,9 @@ import InputAdornment from "@mui/material/InputAdornment";
 import InputLabel from "@mui/material/InputLabel";
 import OutlinedInput from "@mui/material/OutlinedInput";
 
-import NiMinus from "@/icons/nexture/ni-minus";
-import NiPlus from "@/icons/nexture/ni-plus";
 import { cn } from "@/lib/utils";
 import { NumberField as BaseNumberField } from "@base-ui/react/number-field";
+import { Minus, Plus } from "lucide-react";
 
 function SSRInitialFilled() {
   return null;
@@ -54,7 +53,7 @@ export default function NumberSpinner({
           variant={variant}
           className={formControlClassName}
         >
-          {variant === "standard" && <FormLabel component="label">{label}</FormLabel>}
+          {variant === "standard" && <FormLabel component='label'>{label}</FormLabel>}
           {props.children}
         </FormControl>
       )}
@@ -79,22 +78,16 @@ export default function NumberSpinner({
                   input: { ...props, className: cn(props.className, centered && "text-center") },
                 }}
                 startAdornment={
-                  <InputAdornment position="start" className="-ms-2!">
-                    <BaseNumberField.Decrement
-                      disabled={readOnly}
-                      render={<IconButton size={"tiny"} aria-label="Decrease" />}
-                    >
-                      <NiMinus size={"small"} />
+                  <InputAdornment position='start' className='-ms-2!'>
+                    <BaseNumberField.Decrement disabled={readOnly} render={<IconButton size={"tiny"} aria-label='Decrease' />}>
+                      <Minus size={16} />
                     </BaseNumberField.Decrement>
                   </InputAdornment>
                 }
                 endAdornment={
-                  <InputAdornment position="end">
-                    <BaseNumberField.Increment
-                      disabled={readOnly}
-                      render={<IconButton size={"tiny"} aria-label="Increase" />}
-                    >
-                      <NiPlus size={"small"} />
+                  <InputAdornment position='end'>
+                    <BaseNumberField.Increment disabled={readOnly} render={<IconButton size={"tiny"} aria-label='Increase' />}>
+                      <Plus size={16} />
                     </BaseNumberField.Increment>
                   </InputAdornment>
                 }
@@ -122,22 +115,16 @@ export default function NumberSpinner({
                   input: { ...props, className: cn(props.className, centered && "text-center") },
                 }}
                 startAdornment={
-                  <InputAdornment position="start" className="-ms-2 mt-3">
-                    <BaseNumberField.Decrement
-                      disabled={readOnly}
-                      render={<IconButton size={"tiny"} aria-label="Increase" className="mt-0" />}
-                    >
-                      <NiMinus size={"small"} />
+                  <InputAdornment position='start' className='-ms-2 mt-3'>
+                    <BaseNumberField.Decrement disabled={readOnly} render={<IconButton size={"tiny"} aria-label='Increase' className='mt-0' />}>
+                      <Minus size={16} />
                     </BaseNumberField.Decrement>
                   </InputAdornment>
                 }
                 endAdornment={
-                  <InputAdornment position="end" className="mt-3">
-                    <BaseNumberField.Increment
-                      disabled={readOnly}
-                      render={<IconButton size={"tiny"} aria-label="Increase" className="mt-0" />}
-                    >
-                      <NiPlus size={"small"} />
+                  <InputAdornment position='end' className='mt-3'>
+                    <BaseNumberField.Increment disabled={readOnly} render={<IconButton size={"tiny"} aria-label='Increase' className='mt-0' />}>
+                      <Plus size={16} />
                     </BaseNumberField.Increment>
                   </InputAdornment>
                 }
@@ -167,30 +154,22 @@ export default function NumberSpinner({
                     className: cn(
                       props.className,
                       size === "medium" ? "py-2.5!" : "py-2!",
-                      formControlClassName?.indexOf("outlined") !== -1 &&
-                        size === "medium" &&
-                        "py-[calc(.625rem-1px)]!",
+                      formControlClassName?.indexOf("outlined") !== -1 && size === "medium" && "py-[calc(.625rem-1px)]!",
                       formControlClassName?.indexOf("outlined") !== -1 && size === "small" && "py-[calc(.5rem-1px)]!",
                     ),
                   },
                 }}
                 startAdornment={
-                  <InputAdornment position="start">
-                    <BaseNumberField.Decrement
-                      disabled={readOnly}
-                      render={<IconButton size={"tiny"} aria-label="Decrease" />}
-                    >
-                      <NiMinus size={"small"} />
+                  <InputAdornment position='start'>
+                    <BaseNumberField.Decrement disabled={readOnly} render={<IconButton size={"tiny"} aria-label='Decrease' />}>
+                      <Minus size={16} />
                     </BaseNumberField.Decrement>
                   </InputAdornment>
                 }
                 endAdornment={
-                  <InputAdornment position="end">
-                    <BaseNumberField.Increment
-                      disabled={readOnly}
-                      render={<IconButton size={"tiny"} aria-label="Increase" />}
-                    >
-                      <NiPlus size={"small"} />
+                  <InputAdornment position='end'>
+                    <BaseNumberField.Increment disabled={readOnly} render={<IconButton size={"tiny"} aria-label='Increase' />}>
+                      <Plus size={16} />
                     </BaseNumberField.Increment>
                   </InputAdornment>
                 }
