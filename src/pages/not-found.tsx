@@ -1,10 +1,10 @@
 import { Box, Button, Paper, Typography } from "@mui/material";
 
 import Logo from "@/components/logo/logo";
-import { DEFAULTS } from "@/config";
 import NiHome from "@/icons/nexture/ni-home";
 import { cn } from "@/lib/utils";
 import { useThemeContext } from "@/theme/theme-provider";
+import { LINKS } from "@/constants";
 
 export default function Page() {
   const { isDarkMode } = useThemeContext();
@@ -28,12 +28,12 @@ export default function Page() {
 
             <Box className="flex flex-col items-center gap-4">
               <Typography variant="h1" component="h1">
-                Page not found!️
+                Page not found!
               </Typography>
               <Typography variant="body1" color="text.secondary">
                 Error Code: 404
               </Typography>
-              <Button variant="outlined" startIcon={<NiHome />} href={DEFAULTS.appRoot} component="a">
+              <Button variant="outlined" startIcon={<NiHome />} href={LINKS.home} component="a">
                 Home
               </Button>
             </Box>

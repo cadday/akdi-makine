@@ -2,7 +2,6 @@ import { ModeVariant, ThemeVariant } from "@/constants";
 import { ContentType, MenuType } from "@/types/types";
 
 export const DEFAULTS = {
-  appRoot: "/dashboards/default",
   locale: "en",
   themeColor: "theme-blue" as ThemeVariant,
   themeMode: "system" as ModeVariant,

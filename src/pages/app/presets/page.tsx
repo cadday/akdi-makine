@@ -14,13 +14,13 @@ export default function Page() {
         <Grid size={12} container spacing={2.5}>
           <Grid size={{ xs: 12, md: "grow" }}>
             <Typography variant='h1' component='h1' className='mb-0'>
-              Settings
+              Presets
             </Typography>
             <Breadcrumbs>
               <Link color='inherit' to={LINKS.home}>
                 Home
               </Link>
-              <Typography variant='body2'>Settings</Typography>
+              <Typography variant='body2'>Presets</Typography>
             </Breadcrumbs>
           </Grid>
           <Grid size={{ xs: 12, md: "auto" }}>

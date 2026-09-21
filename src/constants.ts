@@ -34,4 +34,5 @@ export const LINKS = {
   login: "/auth/sign-in",
   components: "/ui",
   dashboard: "/dashboards/default",
+  home: "/overview",
 } as const;

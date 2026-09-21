@@ -13,6 +13,7 @@ import IllustrationLaunch from "@/icons/illustrations/illustration-launch";
 import { cn, isPathMatch } from "@/lib/utils";
 import { leftMenuBottomItems, leftMenuItems } from "@/menu-items";
 import { MenuItem, MenuShowState, MenuType } from "@/types/types";
+import { LINKS } from "@/constants";
 
 export type OpenedAccordion = { indent: number; id: string };
 
@@ -183,7 +184,7 @@ export default function LeftMenu() {
             leftMenuType === MenuType.Comfort &&
               leftPrimaryCurrent !== MenuShowState.Hide &&
               leftMenuWidth.primary > 0 &&
-              "overflow-y-scroll ps-2.5",
+              "overflow-y-scroll ps-2.5 pb-2",
           )}
           style={{
             ...(leftPrimaryCurrent !== MenuShowState.Hide && leftMenuWidth.primary > 0
@@ -200,7 +201,7 @@ export default function LeftMenu() {
             </Box>
           ) : (
             <>
-              <Link to={DEFAULTS.appRoot} className="mb-4 flex w-full justify-center">
+              <Link to={LINKS.home} className="mb-4 flex w-full justify-center">
                 <Logo classNameFull="hidden" />
               </Link>
 

@@ -9,12 +9,12 @@ import { Box, Button, Fade, Typography, useMediaQuery, useTheme } from "@mui/mat
 
 import { useLayoutContext } from "@/components/layout/layout-context";
 import Logo from "@/components/logo/logo";
-import { DEFAULTS } from "@/config";
 import { CircleCheck, ListChevronsUpDown, Menu, OctagonX } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MenuShowState } from "@/types/types";
 import { usePlcData } from "@/context/plc-context";
 import WindowControls from "./window-controls";
+import { LINKS } from "@/constants";
 
 export default function Header() {
   const { showLeftInMobile, showLeftMobileButton, leftPrimaryCurrent, leftShowBackdrop } = useLayoutContext();
@@ -54,7 +54,7 @@ export default function Header() {
 
         <Box className='flex h-full flex-1 flex-row items-center gap-4 md:gap-6'>
           {/* Logo */}
-          <Link to={DEFAULTS.appRoot} className='ms-2 flex md:hidden'>
+          <Link to={LINKS.home} className='ms-2 flex md:hidden'>
             <Logo classNameFull='hidden' classNameMobile='md:hidden' />
           </Link>
 
