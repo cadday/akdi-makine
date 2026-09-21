@@ -1,4 +1,4 @@
-export const LOCALES = ["de", "en", "fr", "es", "ar"] as const;
+export const LOCALES = ["en", "tr"] as const;
 export type LocaleOption = (typeof LOCALES)[number];
 
 export const THEME_OPTIONS = {
@@ -24,8 +24,7 @@ export const LOCAL_STORAGE_KEYS = {
 };
 
 export const LINKS = {
-  figma:
-    "https://www.figma.com/design/we8zcbO9TjdXbah8DNj0xd/prod-gogo-design-8.3.0?node-id=9242-145711&t=oVUL1I0Mj6Rgdlf9-4",
+  figma: "https://www.figma.com/design/we8zcbO9TjdXbah8DNj0xd/prod-gogo-design-8.3.0?node-id=9242-145711&t=oVUL1I0Mj6Rgdlf9-4",
   purchase: "https://themeforest.net/cart/configure_before_adding/22544383?license=regular",
   purchase_extended: "https://themeforest.net/cart/configure_before_adding/22544383?license=extended",
   docs: "/docs/welcome/introduction",

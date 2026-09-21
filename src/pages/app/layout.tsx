@@ -8,7 +8,6 @@ import Main from "@/components/layout/containers/main";
 import LeftMenu from "@/components/layout/menu/left-menu";
 import MenuBackdrop from "@/components/layout/menu/menu-backdrop";
 import Loading from "@/pages/loading";
-import Footer from "@/components/layout/containers/footer";
 import { Box } from "@mui/material";
 
 export default function AppLayout() {
@@ -23,13 +22,11 @@ export default function AppLayout() {
       <LeftMenu />
       <Main>
         <Header />
-        <Box className='min-h-[calc(100vh-2.5rem-3.5rem)] *:mb-2'>
+        <Box className='min-h-[calc(100vh-3.5rem)]'>
           <Suspense fallback={<Loading />}>
             <Outlet />
           </Suspense>
         </Box>
-
-        <Footer />
       </Main>
       <MenuBackdrop />
     </>

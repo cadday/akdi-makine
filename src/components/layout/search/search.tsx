@@ -39,6 +39,8 @@ import NiSlashHexagon from "@/icons/nexture/ni-slash-hexagon";
 import NiStructure from "@/icons/nexture/ni-structure";
 import NiUsers from "@/icons/nexture/ni-users";
 import { cn } from "@/lib/utils";
+import { SearchIcon } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export default function Search() {
   const isMac = navigator.userAgent.includes("Mac");
@@ -68,19 +70,24 @@ export default function Search() {
   }, []);
 
   const [tabValue] = useState("all");
+  const { t } = useTranslation();
 
   return (
     <>
-      <Tooltip title={`Search (${isMac ? "cmd" : "ctrl"}+k)`} placement='bottom' arrow open={!open && tooltipShow}>
+      <Tooltip title={`${t("search")} (${isMac ? "cmd" : "ctrl"}+k)`} placement='bottom' open={!open && tooltipShow}>
         <Button
           variant='text'
           size='large'
           color='text-primary'
-          className={cn("icon-only hover-icon-shrink [&.active]:text-primary! hover:bg-grey-75", open && "active bg-grey-75 text-primary!")}
+          className={cn("icon-only [&.active]:text-primary! hover:bg-grey-75", open && "active bg-grey-75 text-primary!")}
           onClick={handleClickOpenDialog}
           onMouseEnter={() => setTooltipShow(true)}
           onMouseLeave={() => setTooltipShow(false)}
-          startIcon={<NiSearch variant={open ? "contained" : "outlined"} size={24} />}
+          startIcon={
+            <Box className='w-6 h-6 flex items-center justify-center '>
+              <SearchIcon />
+            </Box>
+          }
         />
       </Tooltip>
 

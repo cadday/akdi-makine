@@ -1,4 +1,4 @@
-import { app, ipcMain, BrowserWindow, session } from "electron";
+import { app, ipcMain, BrowserWindow, session, shell } from "electron";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import require$$1 from "tty";
@@ -4056,6 +4056,13 @@ function createWindow() {
     show: false,
     frame: false,
     titleBarStyle: "hidden"
+  });
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (url.startsWith("http:") || url.startsWith("https:")) {
+      shell.openExternal(url);
+      return { action: "deny" };
+    }
+    return { action: "allow" };
   });
   mainWindow.on("maximize", () => {
     mainWindow == null ? void 0 : mainWindow.webContents.send("window:maximized-state-changed", true);

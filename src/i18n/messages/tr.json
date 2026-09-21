@@ -1,0 +1,20 @@
+{
+  "current-language": "Türkçe",
+  "en": "English",
+  "tr": "Türkçe",
+
+  "menu-overview": "Özet",
+  "menu-tests": "Testler",
+  "menu-specimens": "Numuneler",
+  "menu-presets": "Ön Tanımlar",
+  "menu-data-fields": "Veri Alanları",
+  "menu-settings": "Ayarlar",
+  "menu-home": "Anasayfa",
+
+  "mode": "Mod",
+  "mode-light": "Aydınlat",
+  "mode-dark": "Karart",
+  "mode-system": "Sistem",
+  "language": "Dil",
+  "search": "Ara"
+}

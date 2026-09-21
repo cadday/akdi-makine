@@ -1,9 +1,9 @@
-import { Button, Tooltip } from "@mui/material";
+import { Box, Button, Tooltip } from "@mui/material";
 
-import NiMoon from "@/icons/nexture/ni-moon";
-import NiSun from "@/icons/nexture/ni-sun";
 import { cn } from "@/lib/utils";
 import { useThemeContext } from "@/theme/theme-provider";
+import { Moon, Sun } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export default function Mode() {
   const { isDarkMode } = useThemeContext();
@@ -13,16 +13,28 @@ export default function Mode() {
     setMode(isDarkMode ? "light" : "dark");
   };
 
+  const { t } = useTranslation();
+
   return (
     <>
-      <Tooltip title={isDarkMode ? "Light Up" : "Go Dark"} placement='bottom' arrow>
+      <Tooltip title={isDarkMode ? t("mode-light") : t("mode-dark")} placement='bottom'>
         <Button
           variant='text'
           size='large'
           color='text-primary'
-          className={cn("icon-only hover-icon-shrink [&.active]:text-primary hover:bg-grey-75")}
+          className={cn("icon-only [&.active]:text-primary hover:bg-grey-75")}
           onClick={handleToggle}
-          startIcon={isDarkMode ? <NiSun size={"large"} /> : <NiMoon size={"large"} />}
+          startIcon={
+            isDarkMode ? (
+              <Box className='w-6 h-6 flex items-center justify-center '>
+                <Sun />
+              </Box>
+            ) : (
+              <Box className='w-6 h-6 flex items-center justify-center '>
+                <Moon />
+              </Box>
+            )
+          }
         />
       </Tooltip>
     </>

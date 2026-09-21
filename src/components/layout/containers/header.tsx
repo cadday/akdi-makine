@@ -1,6 +1,5 @@
 import Mode from "../mode/mode";
 import Search from "../search/search";
-import Shortcuts from "../shortcuts/shortcuts";
 import User from "../user/user";
 import { useState } from "react";
 import { Link } from "react-router";
@@ -9,12 +8,13 @@ import { Box, Button, Fade, Typography, useMediaQuery, useTheme } from "@mui/mat
 
 import { useLayoutContext } from "@/components/layout/layout-context";
 import Logo from "@/components/logo/logo";
-import { CircleCheck, ListChevronsUpDown, Menu, OctagonX } from "lucide-react";
+import { ArrowUpDown, ListChevronsUpDown, Menu, OctagonX } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MenuShowState } from "@/types/types";
 import { usePlcData } from "@/context/plc-context";
 import WindowControls from "./window-controls";
 import { LINKS } from "@/constants";
+import Language from "../language/language";
 
 export default function Header() {
   const { showLeftInMobile, showLeftMobileButton, leftPrimaryCurrent, leftShowBackdrop } = useLayoutContext();
@@ -29,7 +29,7 @@ export default function Header() {
 
   return (
     <Box
-      className='flex-none drag mui-fixed shadow-grey-100 bg-background/75 sticky top-0 z-1 h-14 w-full shadow-[0_1px_0px_0px_rgba(0,0,0,0.1)] backdrop-blur-xs'
+      className='flex-none drag mui-fixed shadow-grey-75 bg-background/75 sticky top-0 z-1 h-14 w-full shadow-[0_1px_0px_0px_rgba(0,0,0,0.1)] backdrop-blur-xs'
       component='header'
     >
       {/* 1px line to cover left side */}
@@ -60,13 +60,13 @@ export default function Header() {
 
           {/* Subscribe CTA */}
           <Fade in={!rightButtonsVisibleMobile || !isMobile}>
-            <Box component={Link} to={"#"} className='bg-grey-75  flex flex-row gap-5 rounded-lg py-1.5 ps-3 pe-2 transition-all! hover:shadow-md'>
+            <Box component={Link} to={"#"} className='bg-grey-75 flex flex-row gap-5 rounded-lg py-2.5 px-4 transition-all! hover:bg-grey-200 no-drag'>
               <Box className='flex flex-row items-center gap-2'>
                 {connectionStatus.isError && <OctagonX className='text-error' />}
-                {!connectionStatus.isError && <CircleCheck className='text-success' />}
+                {!connectionStatus.isError && <ArrowUpDown className='text-success' />}
 
                 <Box className='flex flex-row gap-1'>
-                  <Typography variant='subtitle1'>{connectionStatus.text}</Typography>
+                  <Typography variant='subtitle1' className="leading-1">{connectionStatus.text}</Typography>
                 </Box>
               </Box>
             </Box>
@@ -78,7 +78,7 @@ export default function Header() {
           <Fade in={rightButtonsVisibleMobile || !isMobile}>
             <Box className={cn("hidden flex-row sm:flex! sm:gap-1", rightButtonsVisibleMobile ? "flex" : "hidden")}>
               <Search />
-              <Shortcuts />
+              <Language />
               <Mode />
             </Box>
           </Fade>

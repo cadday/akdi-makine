@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, session } from "electron";
+import { app, BrowserWindow, ipcMain, session, shell } from "electron";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { shutdownPlcService } from "./plc-service";
@@ -48,6 +48,15 @@ function createWindow() {
     show: false,
     frame: false,
     titleBarStyle: "hidden",
+  });
+
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    // Optionally check if the URL is external
+    if (url.startsWith("http:") || url.startsWith("https:")) {
+      shell.openExternal(url);
+      return { action: "deny" }; // Prevents Electron from opening a new window
+    }
+    return { action: "allow" };
   });
 
   mainWindow.on("maximize", () => {

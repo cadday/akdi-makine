@@ -1,4 +1,3 @@
-import UserLanguageSwitch from "./user-language-switch";
 import UserModeSwitch from "./user-mode-switch";
 import UserThemeSwitch from "./user-theme-switch";
 import { SyntheticEvent, useRef, useState } from "react";
@@ -250,7 +249,6 @@ export default function User() {
 
                         <UserModeSwitch />
                         <UserThemeSwitch />
-                        <UserLanguageSwitch />
 
                         <Divider className='large' />
                         <MenuItem
