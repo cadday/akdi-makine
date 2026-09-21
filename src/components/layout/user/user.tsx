@@ -61,7 +61,7 @@ export default function User() {
           variant='text'
           color='text-primary'
           className={cn(
-            "group hover:bg-grey-75 ms-2 hidden gap-2 rounded-lg py-0! pe-0! hover:py-1! hover:pe-1.5! md:flex",
+            "no-drag group hover:bg-grey-75 ms-2 hidden gap-2 rounded-lg py-0! pe-0! hover:py-1! hover:pe-1.5! md:flex",
             open && "active bg-grey-75 py-1! pe-1.5!",
           )}
           onClick={handleToggle}

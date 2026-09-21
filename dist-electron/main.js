@@ -1,4 +1,4 @@
-import { app, BrowserWindow, session } from "electron";
+import { app, ipcMain, BrowserWindow, session } from "electron";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import require$$1 from "tty";
@@ -4029,6 +4029,23 @@ const RENDERER_DIST = path.join(process.env.APP_ROOT, "dist");
 process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, "public") : RENDERER_DIST;
 app.commandLine.appendSwitch("enable-features", "OverlayScrollbar");
 let mainWindow;
+ipcMain.handle("window:minimize", () => {
+  mainWindow == null ? void 0 : mainWindow.minimize();
+});
+ipcMain.handle("window:maximize", () => {
+  if (!mainWindow) return;
+  if (mainWindow.isMaximized()) {
+    mainWindow.restore();
+    return;
+  }
+  mainWindow.maximize();
+});
+ipcMain.handle("window:close", () => {
+  mainWindow == null ? void 0 : mainWindow.close();
+});
+ipcMain.handle("window:is-maximized", () => {
+  return !!mainWindow && mainWindow.isMaximized();
+});
 function createWindow() {
   mainWindow = new BrowserWindow({
     icon: path.join(process.env.VITE_PUBLIC, "favicon.ico"),
@@ -4036,9 +4053,15 @@ function createWindow() {
       preload: path.join(__dirname$1, "preload.mjs")
     },
     autoHideMenuBar: true,
-    show: false
-    // frame: false,
-    // titleBarStyle: "hidden",
+    show: false,
+    frame: false,
+    titleBarStyle: "hidden"
+  });
+  mainWindow.on("maximize", () => {
+    mainWindow == null ? void 0 : mainWindow.webContents.send("window:maximized-state-changed", true);
+  });
+  mainWindow.on("unmaximize", () => {
+    mainWindow == null ? void 0 : mainWindow.webContents.send("window:maximized-state-changed", false);
   });
   mainWindow.maximize();
   mainWindow.show();

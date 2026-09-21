@@ -1,4 +1,4 @@
-import { app, BrowserWindow, session } from "electron";
+import { app, BrowserWindow, ipcMain, session } from "electron";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { shutdownPlcService } from "./plc-service";
@@ -15,6 +15,29 @@ process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, 
 app.commandLine.appendSwitch("enable-features", "OverlayScrollbar");
 let mainWindow: BrowserWindow | null;
 
+ipcMain.handle("window:minimize", () => {
+  mainWindow?.minimize();
+});
+
+ipcMain.handle("window:maximize", () => {
+  if (!mainWindow) return;
+
+  if (mainWindow.isMaximized()) {
+    mainWindow.restore();
+    return;
+  }
+
+  mainWindow.maximize();
+});
+
+ipcMain.handle("window:close", () => {
+  mainWindow?.close();
+});
+
+ipcMain.handle("window:is-maximized", () => {
+  return !!mainWindow && mainWindow.isMaximized();
+});
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     icon: path.join(process.env.VITE_PUBLIC, "favicon.ico"),
@@ -23,8 +46,16 @@ function createWindow() {
     },
     autoHideMenuBar: true,
     show: false,
-    // frame: false,
-    // titleBarStyle: "hidden",
+    frame: false,
+    titleBarStyle: "hidden",
+  });
+
+  mainWindow.on("maximize", () => {
+    mainWindow?.webContents.send("window:maximized-state-changed", true);
+  });
+
+  mainWindow.on("unmaximize", () => {
+    mainWindow?.webContents.send("window:maximized-state-changed", false);
   });
 
   mainWindow.maximize();

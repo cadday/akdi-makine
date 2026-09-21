@@ -26,8 +26,17 @@ interface PlcAPI {
   removeListeners: () => void;
 }
 
+interface ElectronAPI {
+  minimize: () => Promise<void>;
+  maximize: () => Promise<void>;
+  close: () => Promise<void>;
+  isMaximized: () => Promise<boolean>;
+  onMaximizedStateChange: (callback: (isMaximized: boolean) => void) => void;
+}
+
 declare global {
   interface Window {
     plcAPI: PlcAPI;
+    electronAPI: ElectronAPI;
   }
 }

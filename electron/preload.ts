@@ -20,6 +20,21 @@ contextBridge.exposeInMainWorld("ipcRenderer", {
   },
 });
 
+contextBridge.exposeInMainWorld("electronAPI", {
+  isMaximized: () => ipcRenderer.invoke("window:is-maximized"),
+  onMaximizedStateChange: (callback: (isMaximized: boolean) => void) => {
+    const listener = (_event: any, value: boolean) => callback(value);
+    ipcRenderer.on("window:maximized-state-changed", listener);
+
+    return () => {
+      ipcRenderer.removeListener("window:maximized-state-changed", listener);
+    };
+  },
+  minimize: () => ipcRenderer.invoke("window:minimize"),
+  maximize: () => ipcRenderer.invoke("window:maximize"),
+  close: () => ipcRenderer.invoke("window:close"),
+});
+
 contextBridge.exposeInMainWorld("plcAPI", {
   // UI Commands -> Backend Main Process
   sendCoilCommand: (address, value) => ipcRenderer.invoke("write-plc-coil", { address, value }),

@@ -1,5 +1,4 @@
 import Mode from "../mode/mode";
-import Notifications from "../notifications/notifications";
 import Search from "../search/search";
 import Shortcuts from "../shortcuts/shortcuts";
 import User from "../user/user";
@@ -15,6 +14,7 @@ import { CircleCheck, ListChevronsUpDown, Menu, OctagonX } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MenuShowState } from "@/types/types";
 import { usePlcData } from "@/context/plc-context";
+import WindowControls from "./window-controls";
 
 export default function Header() {
   const { showLeftInMobile, showLeftMobileButton, leftPrimaryCurrent, leftShowBackdrop } = useLayoutContext();
@@ -29,7 +29,7 @@ export default function Header() {
 
   return (
     <Box
-      className='mui-fixed shadow-grey-100 bg-background/75 sticky top-0 z-1 h-15 w-full shadow-[0_1px_0px_0px_rgba(0,0,0,0.1)] backdrop-blur-xs'
+      className='drag mui-fixed shadow-grey-100 bg-background/75 sticky top-0 z-1 h-15 w-full shadow-[0_1px_0px_0px_rgba(0,0,0,0.1)] backdrop-blur-xs'
       component='header'
     >
       {/* 1px line to cover left side */}
@@ -74,12 +74,11 @@ export default function Header() {
         </Box>
 
         {/* Right buttons */}
-        <Box className='flex flex-row sm:gap-1'>
+        <Box className='flex flex-row sm:gap-1 no-drag'>
           <Fade in={rightButtonsVisibleMobile || !isMobile}>
             <Box className={cn("hidden flex-row sm:flex! sm:gap-1", rightButtonsVisibleMobile ? "flex" : "hidden")}>
               <Search />
               <Shortcuts />
-              <Notifications />
               <Mode />
             </Box>
           </Fade>
@@ -100,6 +99,7 @@ export default function Header() {
 
         {/* User Avatar and Menu */}
         <User />
+        <WindowControls />
       </Box>
     </Box>
   );

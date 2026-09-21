@@ -189,6 +189,7 @@ const config: Config = {
           20: "hsl(var(--grey-20))",
           25: "hsl(var(--grey-25))",
           50: "hsl(var(--grey-50))",
+          75: "hsl(var(--grey-75))",
           100: "hsl(var(--grey-100))",
           200: "hsl(var(--grey-200))",
           300: "hsl(var(--grey-300))",
@@ -204,6 +205,7 @@ const config: Config = {
           20: "hsl(var(--grey-20))",
           25: "hsl(var(--grey-25))",
           50: "hsl(var(--grey-50))",
+          75: "hsl(var(--grey-75))",
           100: "hsl(var(--grey-100))",
           200: "hsl(var(--grey-200))",
           300: "hsl(var(--grey-300))",
@@ -223,6 +225,16 @@ const config: Config = {
     },
   },
   plugins: [
+    function ({ addUtilities }) {
+      addUtilities({
+        '.drag': {
+          '-webkit-app-region': 'drag',
+        },
+        '.no-drag': {
+          '-webkit-app-region': 'no-drag',
+        },
+      })
+    },
     plugin(function ({ matchUtilities, theme }) {
       matchUtilities(
         {

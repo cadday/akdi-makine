@@ -20,7 +20,7 @@ const App = () => {
     <HashRouter>
       <StyledEngineProvider enableCssLayer>
         <Box lang={i18n.language} dir={direction} className='font-mulish font-urbanist relative antialiased'>
-          <LucideProvider size={20} strokeWidth={1.5}>
+          <LucideProvider size={20} strokeWidth={1.5} nonScalingStroke>
             <PlcProvider>
               <ThemeProvider>
                 <LayoutContextProvider>
