@@ -22,17 +22,17 @@
     @apply font-body my-0.5 min-h-auto! rounded-sm px-4 py-2 text-base leading-5 font-medium tracking-normal normal-case shadow-none;
 
     &:hover {
-      @apply bg-grey-500/10 text-text-primary;
+      @apply bg-grey-25 text-text-primary;
     }
 
     &:active,
     &.active {
-      @apply bg-grey-500/15 text-primary;
+      @apply bg-grey-50 text-primary;
     }
 
     &.Mui-selected,
     &[aria-selected="true"] {
-      @apply bg-grey-500/10! text-primary;
+      @apply bg-grey-25! text-primary;
     }
 
     &.Mui-focused,

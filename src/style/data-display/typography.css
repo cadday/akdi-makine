@@ -75,6 +75,6 @@
   }
 
   *::selection {
-    @apply bg-primary/50;
+    @apply bg-primary/50 text-text-contrast;
   }
 }

@@ -25,18 +25,19 @@ import {
   Toolbar,
   GridRowSelectionModel,
 } from "@mui/x-data-grid";
-import { ChevronRight, Columns, Download, FileText, Filter, Printer, Search, X, XSquare } from "lucide-react";
+import { ChevronRight, Columns, Copy, Download, FileText, Filter, Printer, Search, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
 export type ListingToolbarProps = {
   rowSelectionModel?: GridRowSelectionModel;
   deleteRows?: (ids: string[]) => Promise<void>;
+  duplicateRows?: (ids: string[]) => Promise<void>;
   onAddItem?: () => void;
   addLabel?: string;
 };
 
-export const ListingToolbar = ({ rowSelectionModel, deleteRows, onAddItem, addLabel = "Add" }: ListingToolbarProps) => {
+export const DataGridListingToolbar = ({ rowSelectionModel, deleteRows, duplicateRows, onAddItem, addLabel = "Add" }: ListingToolbarProps) => {
   const [anchorElExport, setAnchorElExport] = useState<EventTarget | Element | PopoverVirtualElement | null>(null);
   const openExport = Boolean(anchorElExport);
   const handleClickExport = (event: Event | SyntheticEvent) => {
@@ -118,15 +119,29 @@ export const ListingToolbar = ({ rowSelectionModel, deleteRows, onAddItem, addLa
                 onClose={handleCloseSelection}
                 className='mt-1'
               >
+                {duplicateRows && rowSelectionModel && (
+                  <MenuItem
+                    onClick={() => {
+                      handleCloseSelection();
+                      void duplicateRows(Array.from(rowSelectionModel.ids, String));
+                    }}
+                  >
+                    <ListItemIcon>
+                      <Copy size={16} />
+                    </ListItemIcon>
+                    <ListItemText>Duplicate</ListItemText>
+                  </MenuItem>
+                )}
                 {deleteRows && rowSelectionModel && (
                   <MenuItem
+                    className='hover:bg-error-light/10 hover:text-error'
                     onClick={() => {
                       handleCloseSelection();
                       void deleteRows(Array.from(rowSelectionModel.ids, String));
                     }}
                   >
                     <ListItemIcon>
-                      <XSquare />
+                      <X size={16} />
                     </ListItemIcon>
                     <ListItemText>Delete</ListItemText>
                   </MenuItem>
@@ -180,7 +195,7 @@ export const ListingToolbar = ({ rowSelectionModel, deleteRows, onAddItem, addLa
               render={
                 <MenuItem>
                   <ListItemIcon>
-                    <Printer />
+                    <Printer size={16} />
                   </ListItemIcon>
                   <ListItemText>Print</ListItemText>
                 </MenuItem>
@@ -191,7 +206,7 @@ export const ListingToolbar = ({ rowSelectionModel, deleteRows, onAddItem, addLa
               render={
                 <MenuItem>
                   <ListItemIcon>
-                    <FileText />
+                    <FileText size={16} />
                   </ListItemIcon>
                   <ListItemText>Export CSV</ListItemText>
                 </MenuItem>

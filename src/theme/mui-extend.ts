@@ -5,6 +5,7 @@ declare module "@mui/x-data-grid" {
   interface ToolbarPropsOverrides {
     rowSelectionModel?: GridRowSelectionModel;
     deleteRows?: (ids: string[]) => Promise<void>;
+    duplicateRows?: (ids: string[]) => Promise<void>;
     onAddItem?: () => void;
     addLabel?: string;
   }

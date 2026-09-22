@@ -1,7 +1,7 @@
 import { Link } from "react-router";
 
 import { DataGridPaginationFullPage } from "@/components/data-grid/data-grid-pagination";
-import { ListingToolbar } from "@/components/data-grid/listing-toolbar";
+import { DataGridListingToolbar } from "@/components/data-grid/data-grid-listing-toolbar";
 import ContentWrapper from "@/components/layout/containers/content-wrapper";
 import TitleWrapper from "@/components/layout/containers/title-wrapper";
 import { LINKS } from "@/constants";
@@ -20,7 +20,6 @@ import {
   OctagonAlert,
   Plus,
   Repeat2,
-  Shield,
   Trash,
   X,
   XSquare,
@@ -38,7 +37,7 @@ type SpecimenGridRow = SpecimenRecord;
 export default function Page() {
   const { t } = useTranslation();
 
-  const { getSpecimens, deleteSpecimen, deleteSpecimens } = useDb();
+  const { getSpecimens, deleteSpecimen, deleteSpecimens, duplicateSpecimens, duplicateSpecimen } = useDb();
   const [specimens, setSpecimens] = useState<SpecimenRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -86,6 +85,30 @@ export default function Page() {
       cancelled = true;
     };
   }, [getSpecimens]);
+
+  const duplicateRows = useCallback(
+    async (ids: string[]) => {
+      if (ids.length === 0) return;
+
+      try {
+        const duplicated = ids.length === 1 ? [await duplicateSpecimen(ids[0])] : await duplicateSpecimens(ids);
+        const newSpecimens = duplicated.filter((item): item is SpecimenRecord => Boolean(item));
+
+        setSpecimens((current) => [...newSpecimens, ...current]);
+        setRowSelectionModel({ type: "include", ids: new Set() });
+      } catch (err) {
+        setError("Failed to duplicate specimen(s): " + err);
+      }
+    },
+    [duplicateSpecimens, duplicateSpecimen],
+  );
+
+  const duplicateRow = useCallback(
+    (id: string) => async () => {
+      await duplicateRows([id]);
+    },
+    [duplicateRows],
+  );
 
   const deleteRows = useCallback(
     async (ids: string[]) => {
@@ -174,12 +197,8 @@ export default function Page() {
       align: "right",
       headerAlign: "right",
       getActions: (params) => [
-        // <GridActionsCellItem key={1} icon={<Shield />} label='Toggle Admin' onClick={toggleAdmin(params.id)} showInMenu />,
-        // <GridActionsCellItem key={2} icon={<Copy />} label='Duplicate' onClick={duplicateUser(params.id)} showInMenu />,
-        // <GridActionsCellItem key={0} icon={<XSquare />} label='Delete' onClick={deleteUser(params.id)} showInMenu />,
-        <GridActionsCellItem key={1} icon={<Shield />} label='Toggle Admin' onClick={() => {}} showInMenu />,
-        <GridActionsCellItem key={2} icon={<Copy />} label='Duplicate' onClick={() => {}} showInMenu />,
-        <GridActionsCellItem key={0} icon={<XSquare />} label='Delete' onClick={deleteRow(params.id as string)} showInMenu />,
+        <GridActionsCellItem key={0} icon={<Copy size={16} />} label='Duplicate' onClick={duplicateRow(params.id as string)} showInMenu />,
+        <GridActionsCellItem className="hover:bg-error-light/10 hover:text-error" key={1} icon={<XSquare size={16} />} label='Delete' onClick={deleteRow(params.id as string)} showInMenu />,
       ],
     },
   ];
@@ -200,7 +219,7 @@ export default function Page() {
             </Breadcrumbs>
           </Grid>
           <Grid size={{ xs: 12, md: "auto" }}>
-            <Button size="large" className='icon-only surface-standard' color='grey' variant='surface'>
+            <Button size='large' className='icon-only surface-standard' color='grey' variant='surface'>
               <Ellipsis size={16} />
             </Button>
           </Grid>
@@ -271,6 +290,7 @@ export default function Page() {
                   toolbar: {
                     rowSelectionModel,
                     deleteRows,
+                    duplicateRows,
                     onAddItem: handleAddItem,
                   },
                 }}
@@ -322,7 +342,7 @@ export default function Page() {
                   moreActionsIcon: () => {
                     return <Ellipsis size={16} />;
                   },
-                  toolbar: ListingToolbar,
+                  toolbar: DataGridListingToolbar,
                 }}
               />
             )}

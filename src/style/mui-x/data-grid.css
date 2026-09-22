@@ -505,4 +505,11 @@
       @apply -top-1.25;
     }
   }
+
+  .MuiDataGrid-actionsCell .MuiButtonBase-root {
+    @apply hover:bg-grey-25;
+  }
+  .MuiDataGrid-actionsCell .MuiButtonBase-root[aria-expanded="true"] {
+    @apply bg-grey-25;
+  }
 }
