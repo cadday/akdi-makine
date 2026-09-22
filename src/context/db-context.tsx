@@ -1,11 +1,18 @@
 import { createContext, type PropsWithChildren, useContext, useMemo } from "react";
-
 import {
   createDataField,
   createPreset,
   createSpecimen,
   createTest,
   db,
+  deleteDataField,
+  deleteDataFields,
+  deletePreset,
+  deletePresets,
+  deleteSpecimen,
+  deleteSpecimens,
+  deleteTest,
+  deleteTests,
   getDataFields,
   getPresets,
   getSpecimens,
@@ -30,15 +37,23 @@ interface DbContextType {
   createSpecimen: typeof createSpecimen;
   getSpecimens: typeof getSpecimens;
   updateSpecimen: typeof updateSpecimen;
+  deleteSpecimen: typeof deleteSpecimen;
+  deleteSpecimens: typeof deleteSpecimens;
   createTest: typeof createTest;
   getTests: typeof getTests;
   updateTest: typeof updateTest;
+  deleteTest: typeof deleteTest;
+  deleteTests: typeof deleteTests;
   createPreset: typeof createPreset;
   getPresets: typeof getPresets;
   updatePreset: typeof updatePreset;
+  deletePreset: typeof deletePreset;
+  deletePresets: typeof deletePresets;
   createDataField: typeof createDataField;
   getDataFields: typeof getDataFields;
   updateDataField: typeof updateDataField;
+  deleteDataField: typeof deleteDataField;
+  deleteDataFields: typeof deleteDataFields;
 }
 
 const DbContext = createContext<DbContextType | null>(null);
@@ -50,15 +65,23 @@ export function DbProvider({ children }: PropsWithChildren) {
       createSpecimen,
       getSpecimens,
       updateSpecimen,
+      deleteSpecimen,
+      deleteSpecimens,
       createTest,
       getTests,
       updateTest,
+      deleteTest,
+      deleteTests,
       createPreset,
       getPresets,
       updatePreset,
+      deletePreset,
+      deletePresets,
       createDataField,
       getDataFields,
       updateDataField,
+      deleteDataField,
+      deleteDataFields,
     }),
     [],
   );
@@ -76,14 +99,4 @@ export function useDb() {
   return context;
 }
 
-export type {
-  DataFieldContainer,
-  DataFieldDefinition,
-  DataFieldType,
-  DynamicDataValue,
-  PresetRecord,
-  PresetType,
-  SpecimenRecord,
-  TestRecord,
-  UploadedImage,
-};
+export type { DataFieldContainer, DataFieldDefinition, DataFieldType, DynamicDataValue, PresetRecord, PresetType, SpecimenRecord, TestRecord, UploadedImage };

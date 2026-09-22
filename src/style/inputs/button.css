@@ -1,7 +1,8 @@
 /* --------------------------- */
 /* Button */
 /* --------------------------- */
-@layer utilities {
+
+@layer style {
   /* Root */
   .MuiButtonBase-root {
     @apply font-body font-medium tracking-normal normal-case transition-all focus:outline-transparent!;
@@ -158,14 +159,15 @@
     }
   }
 
-  .MuiButton-containedPrimary {
+  .MuiButton-contained.MuiButton-colorPrimary {
     &:hover {
       @apply bg-primary-light;
     }
 
     &:active,
-    &.active {
-      @apply bg-primary;
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-primary-dark;
     }
 
     &.Mui-disabled {
@@ -173,14 +175,15 @@
     }
   }
 
-  .MuiButton-containedSecondary {
+  .MuiButton-contained.MuiButton-colorSecondary {
     &:hover {
       @apply bg-secondary-light;
     }
 
     &:active,
-    &.active {
-      @apply bg-secondary;
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-secondary-dark;
     }
 
     &.Mui-disabled {
@@ -188,14 +191,15 @@
     }
   }
 
-  .MuiButton-containedAccent-1 {
+  .MuiButton-contained.MuiButton-colorAccent-1 {
     &:hover {
       @apply bg-accent-1-light;
     }
 
     &:active,
-    &.active {
-      @apply bg-accent-1;
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-accent-1-dark;
     }
 
     &.Mui-disabled {
@@ -203,14 +207,15 @@
     }
   }
 
-  .MuiButton-containedAccent-2 {
+  .MuiButton-contained.MuiButton-colorAccent-2 {
     &:hover {
       @apply bg-accent-2-light;
     }
 
     &:active,
-    &.active {
-      @apply bg-accent-2;
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-accent-2-dark;
     }
 
     &.Mui-disabled {
@@ -218,14 +223,15 @@
     }
   }
 
-  .MuiButton-containedAccent-3 {
+  .MuiButton-contained.MuiButton-colorAccent-3 {
     &:hover {
       @apply bg-accent-3-light;
     }
 
     &:active,
-    &.active {
-      @apply bg-accent-3;
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-accent-3-dark;
     }
 
     &.Mui-disabled {
@@ -233,14 +239,15 @@
     }
   }
 
-  .MuiButton-containedAccent-4 {
+  .MuiButton-contained.MuiButton-colorAccent-4 {
     &:hover {
       @apply bg-accent-4-light;
     }
 
     &:active,
-    &.active {
-      @apply bg-accent-4;
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-accent-4-dark;
     }
 
     &.Mui-disabled {
@@ -248,14 +255,15 @@
     }
   }
 
-  .MuiButton-containedAccent-5 {
+  .MuiButton-contained.MuiButton-colorAccent-5 {
     &:hover {
       @apply bg-accent-5-light;
     }
 
     &:active,
-    &.active {
-      @apply bg-accent-5;
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-accent-5-dark;
     }
 
     &.Mui-disabled {
@@ -263,14 +271,15 @@
     }
   }
 
-  .MuiButton-containedAccent-6 {
+  .MuiButton-contained.MuiButton-colorAccent-6 {
     &:hover {
       @apply bg-accent-6-light;
     }
 
     &:active,
-    &.active {
-      @apply bg-accent-6;
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-accent-6-dark;
     }
 
     &.Mui-disabled {
@@ -278,14 +287,15 @@
     }
   }
 
-  .MuiButton-containedText-primary {
+  .MuiButton-contained.MuiButton-colorText-primary {
     &:hover {
       @apply bg-text-primary-light;
     }
 
     &:active,
-    &.active {
-      @apply bg-text-primary;
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-text-primary-dark;
     }
 
     &.Mui-disabled {
@@ -293,14 +303,15 @@
     }
   }
 
-  .MuiButton-containedText-secondary {
+  .MuiButton-contained.MuiButton-colorText-secondary {
     &:hover {
       @apply bg-text-secondary-light;
     }
 
     &:active,
-    &.active {
-      @apply bg-text-secondary;
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-text-secondary-dark;
     }
 
     &.Mui-disabled {
@@ -308,14 +319,15 @@
     }
   }
 
-  .MuiButton-containedText-disabled {
+  .MuiButton-contained.MuiButton-colorText-disabled {
     &:hover {
       @apply bg-text-disabled-light;
     }
 
     &:active,
-    &.active {
-      @apply bg-text-disabled;
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-text-disabled-dark;
     }
 
     &.Mui-disabled {
@@ -323,14 +335,15 @@
     }
   }
 
-  .MuiButton-containedSuccess {
+  .MuiButton-contained.MuiButton-colorSuccess {
     &:hover {
       @apply bg-success-light;
     }
 
     &:active,
-    &.active {
-      @apply bg-success;
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-success-dark;
     }
 
     &.Mui-disabled {
@@ -338,14 +351,15 @@
     }
   }
 
-  .MuiButton-containedError {
+  .MuiButton-contained.MuiButton-colorError {
     &:hover {
       @apply bg-error-light;
     }
 
     &:active,
-    &.active {
-      @apply bg-error;
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-error-dark;
     }
 
     &.Mui-disabled {
@@ -353,14 +367,15 @@
     }
   }
 
-  .MuiButton-containedWarning {
+  .MuiButton-contained.MuiButton-colorWarning {
     &:hover {
       @apply bg-warning-light;
     }
 
     &:active,
-    &.active {
-      @apply bg-warning;
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-warning-dark;
     }
 
     &.Mui-disabled {
@@ -368,14 +383,15 @@
     }
   }
 
-  .MuiButton-containedInfo {
+  .MuiButton-contained.MuiButton-colorInfo {
     &:hover {
       @apply bg-info-light;
     }
 
     &:active,
-    &.active {
-      @apply bg-info;
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-info-dark;
     }
 
     &.Mui-disabled {
@@ -383,15 +399,16 @@
     }
   }
 
-  .MuiButton-containedGrey {
+  .MuiButton-contained.MuiButton-colorGrey {
     @apply bg-grey-25 text-text-primary;
     &:hover {
       @apply bg-grey-50;
     }
 
     &:active,
-    &.active {
-      @apply bg-grey-50;
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-grey-100;
     }
 
     &.Mui-disabled {
@@ -436,13 +453,14 @@
     }
   }
 
-  .MuiButton-outlinedPrimary {
+  .MuiButton-outlined.MuiButton-colorPrimary {
     &:hover {
       @apply bg-primary-light/10 text-primary-dark;
     }
 
     &:active,
-    &.active {
+    &.active,
+    &[aria-expanded="true"] {
       @apply bg-primary-light/15 text-primary-dark;
     }
 
@@ -455,13 +473,14 @@
     }
   }
 
-  .MuiButton-outlinedSecondary {
+  .MuiButton-outlined.MuiButton-colorSecondary {
     &:hover {
       @apply bg-secondary-light/10 text-secondary-dark;
     }
 
     &:active,
-    &.active {
+    &.active,
+    &[aria-expanded="true"] {
       @apply bg-secondary-light/15 text-secondary-dark;
     }
 
@@ -474,13 +493,14 @@
     }
   }
 
-  .MuiButton-outlinedAccent-1 {
+  .MuiButton-outlined.MuiButton-colorAccent-1 {
     &:hover {
       @apply bg-accent-1-light/10 text-accent-1-dark;
     }
 
     &:active,
-    &.active {
+    &.active,
+    &[aria-expanded="true"] {
       @apply bg-accent-1-light/15 text-accent-1-dark;
     }
 
@@ -493,13 +513,14 @@
     }
   }
 
-  .MuiButton-outlinedAccent-2 {
+  .MuiButton-outlined.MuiButton-colorAccent-2 {
     &:hover {
       @apply bg-accent-2-light/10 text-accent-2-dark;
     }
 
     &:active,
-    &.active {
+    &.active,
+    &[aria-expanded="true"] {
       @apply bg-accent-2-light/15 text-accent-2-dark;
     }
 
@@ -512,13 +533,14 @@
     }
   }
 
-  .MuiButton-outlinedAccent-3 {
+  .MuiButton-outlined.MuiButton-colorAccent-3 {
     &:hover {
       @apply bg-accent-3-light/10 text-accent-3-dark;
     }
 
     &:active,
-    &.active {
+    &.active,
+    &[aria-expanded="true"] {
       @apply bg-accent-3-light/15 text-accent-3-dark;
     }
 
@@ -531,13 +553,14 @@
     }
   }
 
-  .MuiButton-outlinedAccent-4 {
+  .MuiButton-outlined.MuiButton-colorAccent-4 {
     &:hover {
       @apply bg-accent-4-light/10 text-accent-4-dark;
     }
 
     &:active,
-    &.active {
+    &.active,
+    &[aria-expanded="true"] {
       @apply bg-accent-4-light/15 text-accent-4-dark;
     }
 
@@ -550,13 +573,14 @@
     }
   }
 
-  .MuiButton-outlinedAccent-5 {
+  .MuiButton-outlined.MuiButton-colorAccent-5 {
     &:hover {
       @apply bg-accent-5-light/10 text-accent-5-dark;
     }
 
     &:active,
-    &.active {
+    &.active,
+    &[aria-expanded="true"] {
       @apply bg-accent-5-light/15 text-accent-5-dark;
     }
 
@@ -569,13 +593,14 @@
     }
   }
 
-  .MuiButton-outlinedAccent-6 {
+  .MuiButton-outlined.MuiButton-colorAccent-6 {
     &:hover {
       @apply bg-accent-6-light/10 text-accent-6-dark;
     }
 
     &:active,
-    &.active {
+    &.active,
+    &[aria-expanded="true"] {
       @apply bg-accent-6-light/15 text-accent-6-dark;
     }
 
@@ -588,13 +613,14 @@
     }
   }
 
-  .MuiButton-outlinedSuccess {
+  .MuiButton-outlined.MuiButton-colorSuccess {
     &:hover {
       @apply bg-success-light/10 text-success-dark;
     }
 
     &:active,
-    &.active {
+    &.active,
+    &[aria-expanded="true"] {
       @apply bg-success-light/15 text-success-dark;
     }
 
@@ -607,13 +633,14 @@
     }
   }
 
-  .MuiButton-outlinedError {
+  .MuiButton-outlined.MuiButton-colorError {
     &:hover {
       @apply bg-error-light/10 text-error-dark;
     }
 
     &:active,
-    &.active {
+    &.active,
+    &[aria-expanded="true"] {
       @apply bg-error-light/15 text-error-dark;
     }
 
@@ -626,13 +653,14 @@
     }
   }
 
-  .MuiButton-outlinedWarning {
+  .MuiButton-outlined.MuiButton-colorWarning {
     &:hover {
       @apply bg-warning-light/10 text-warning-dark;
     }
 
     &:active,
-    &.active {
+    &.active,
+    &[aria-expanded="true"] {
       @apply bg-warning-light/15 text-warning-dark;
     }
 
@@ -645,13 +673,14 @@
     }
   }
 
-  .MuiButton-outlinedInfo {
+  .MuiButton-outlined.MuiButton-colorInfo {
     &:hover {
       @apply bg-info-light/10 text-info-dark;
     }
 
     &:active,
-    &.active {
+    &.active,
+    &[aria-expanded="true"] {
       @apply bg-info-light/15 text-info-dark;
     }
 
@@ -664,13 +693,14 @@
     }
   }
 
-  .MuiButton-outlinedText-primary {
+  .MuiButton-outlined.MuiButton-colorText-primary {
     &:hover {
       @apply bg-grey-500/10 text-text-primary;
     }
 
     &:active,
-    &.active {
+    &.active,
+    &[aria-expanded="true"] {
       @apply bg-grey-500/15 text-text-primary;
     }
 
@@ -683,13 +713,14 @@
     }
   }
 
-  .MuiButton-outlinedText-secondary {
+  .MuiButton-outlined.MuiButton-colorText-secondary {
     &:hover {
       @apply bg-grey-500/10 text-text-secondary;
     }
 
     &:active,
-    &.active {
+    &.active,
+    &[aria-expanded="true"] {
       @apply bg-grey-500/15 text-text-secondary;
     }
 
@@ -702,13 +733,14 @@
     }
   }
 
-  .MuiButton-outlinedText-disabled {
+  .MuiButton-outlined.MuiButton-colorText-disabled {
     &:hover {
       @apply bg-grey-500/10 text-text-disabled;
     }
 
     &:active,
-    &.active {
+    &.active,
+    &[aria-expanded="true"] {
       @apply bg-grey-500/15 text-text-disabled;
     }
 
@@ -721,14 +753,15 @@
     }
   }
 
-  .MuiButton-outlinedGrey {
+  .MuiButton-outlined.MuiButton-colorGrey {
     @apply border-grey-200 text-text-primary;
     &:hover {
       @apply bg-grey-200/10 text-text-primary-dark;
     }
 
     &:active,
-    &.active {
+    &.active,
+    &[aria-expanded="true"] {
       @apply bg-grey-200/15 text-text-primary-dark;
     }
 
@@ -742,13 +775,14 @@
   }
 
   /* Text Buttons */
-  .MuiButton-textPrimary {
+  .MuiButton-text.MuiButton-colorPrimary {
     &:hover {
       @apply bg-primary-light/10 text-primary-dark;
     }
 
     &:active,
-    &.active {
+    &.active,
+    &[aria-expanded="true"] {
       @apply bg-primary-light/15 text-primary-dark;
     }
 
@@ -761,13 +795,14 @@
     }
   }
 
-  .MuiButton-textSecondary {
+  .MuiButton-text.MuiButton-colorSecondary {
     &:hover {
       @apply bg-secondary-light/10 text-secondary-dark;
     }
 
     &:active,
-    &.active {
+    &.active,
+    &[aria-expanded="true"] {
       @apply bg-secondary-light/15 text-secondary-dark;
     }
 
@@ -780,13 +815,14 @@
     }
   }
 
-  .MuiButton-textAccent-1 {
+  .MuiButton-text.MuiButton-colorAccent-1 {
     &:hover {
       @apply bg-accent-1-light/10 text-accent-1-dark;
     }
 
     &:active,
-    &.active {
+    &.active,
+    &[aria-expanded="true"] {
       @apply bg-accent-1-light/15 text-accent-1-dark;
     }
 
@@ -799,13 +835,14 @@
     }
   }
 
-  .MuiButton-textAccent-2 {
+  .MuiButton-text.MuiButton-colorAccent-2 {
     &:hover {
       @apply bg-accent-2-light/10 text-accent-2-dark;
     }
 
     &:active,
-    &.active {
+    &.active,
+    &[aria-expanded="true"] {
       @apply bg-accent-2-light/15 text-accent-2-dark;
     }
 
@@ -818,13 +855,14 @@
     }
   }
 
-  .MuiButton-textAccent-3 {
+  .MuiButton-text.MuiButton-colorAccent-3 {
     &:hover {
       @apply bg-accent-3-light/10 text-accent-3-dark;
     }
 
     &:active,
-    &.active {
+    &.active,
+    &[aria-expanded="true"] {
       @apply bg-accent-3-light/15 text-accent-3-dark;
     }
 
@@ -837,13 +875,14 @@
     }
   }
 
-  .MuiButton-textAccent-4 {
+  .MuiButton-text.MuiButton-colorAccent-4 {
     &:hover {
       @apply bg-accent-4-light/10 text-accent-4-dark;
     }
 
     &:active,
-    &.active {
+    &.active,
+    &[aria-expanded="true"] {
       @apply bg-accent-4-light/15 text-accent-4-dark;
     }
 
@@ -856,13 +895,14 @@
     }
   }
 
-  .MuiButton-textAccent-5 {
+  .MuiButton-text.MuiButton-colorAccent-5 {
     &:hover {
       @apply bg-accent-5-light/10 text-accent-5-dark;
     }
 
     &:active,
-    &.active {
+    &.active,
+    &[aria-expanded="true"] {
       @apply bg-accent-5-light/15 text-accent-5-dark;
     }
 
@@ -875,13 +915,14 @@
     }
   }
 
-  .MuiButton-textAccent-6 {
+  .MuiButton-text.MuiButton-colorAccent-6 {
     &:hover {
       @apply bg-accent-6-light/10 text-accent-6-dark;
     }
 
     &:active,
-    &.active {
+    &.active,
+    &[aria-expanded="true"] {
       @apply bg-accent-6-light/15 text-accent-6-dark;
     }
 
@@ -894,13 +935,14 @@
     }
   }
 
-  .MuiButton-textSuccess {
+  .MuiButton-text.MuiButton-colorSuccess {
     &:hover {
       @apply bg-success-light/10 text-success-dark;
     }
 
     &:active,
-    &.active {
+    &.active,
+    &[aria-expanded="true"] {
       @apply bg-success-light/15 text-success-dark;
     }
 
@@ -913,13 +955,14 @@
     }
   }
 
-  .MuiButton-textError {
+  .MuiButton-text.MuiButton-colorError {
     &:hover {
       @apply bg-error-light/10 text-error-dark;
     }
 
     &:active,
-    &.active {
+    &.active,
+    &[aria-expanded="true"] {
       @apply bg-error-light/15 text-error-dark;
     }
 
@@ -932,13 +975,14 @@
     }
   }
 
-  .MuiButton-textWarning {
+  .MuiButton-text.MuiButton-colorWarning {
     &:hover {
       @apply bg-warning-light/10 text-warning-dark;
     }
 
     &:active,
-    &.active {
+    &.active,
+    &[aria-expanded="true"] {
       @apply bg-warning-light/15 text-warning-dark;
     }
 
@@ -951,13 +995,14 @@
     }
   }
 
-  .MuiButton-textInfo {
+  .MuiButton-text.MuiButton-colorInfo {
     &:hover {
       @apply bg-info-light/10 text-info-dark;
     }
 
     &:active,
-    &.active {
+    &.active,
+    &[aria-expanded="true"] {
       @apply bg-info-light/15 text-info-dark;
     }
 
@@ -970,13 +1015,14 @@
     }
   }
 
-  .MuiButton-textText-primary {
+  .MuiButton-text.MuiButton-colorText-primary {
     &:hover {
       @apply bg-grey-500/10 text-text-primary;
     }
 
     &:active,
-    &.active {
+    &.active,
+    &[aria-expanded="true"] {
       @apply bg-grey-500/15 text-text-primary;
     }
 
@@ -989,13 +1035,14 @@
     }
   }
 
-  .MuiButton-textText-secondary {
+  .MuiButton-text.MuiButton-colorText-secondary {
     &:hover {
       @apply bg-grey-500/10 text-text-secondary;
     }
 
     &:active,
-    &.active {
+    &.active,
+    &[aria-expanded="true"] {
       @apply bg-grey-500/15 text-text-secondary;
     }
 
@@ -1008,13 +1055,14 @@
     }
   }
 
-  .MuiButton-textText-disabled {
+  .MuiButton-text.MuiButton-colorText-disabled {
     &:hover {
       @apply bg-grey-500/10 text-text-disabled;
     }
 
     &:active,
-    &.active {
+    &.active,
+    &[aria-expanded="true"] {
       @apply bg-grey-500/15 text-text-disabled;
     }
 
@@ -1027,14 +1075,15 @@
     }
   }
 
-  .MuiButton-textGrey {
+  .MuiButton-text.MuiButton-colorGrey {
     @apply text-text-primary;
     &:hover {
       @apply bg-grey-25;
     }
 
     &:active,
-    &.active {
+    &.active,
+    &[aria-expanded="true"] {
       @apply bg-grey-50 text-text-primary;
     }
 
@@ -1052,14 +1101,15 @@
     @apply outline-1 -outline-offset-1 outline-transparent;
   }
 
-  .MuiButton-pastelPrimary {
+  .MuiButton-pastel.MuiButton-colorPrimary {
     @apply bg-primary-light/10 text-primary-dark;
     &:hover {
       @apply bg-primary-light/20;
     }
 
     &:active,
-    &.active {
+    &.active,
+    &[aria-expanded="true"] {
       @apply bg-primary-light/25;
     }
 
@@ -1072,14 +1122,15 @@
     }
   }
 
-  .MuiButton-pastelSecondary {
+  .MuiButton-pastel.MuiButton-colorSecondary {
     @apply bg-secondary-light/10 text-secondary-dark;
     &:hover {
       @apply bg-secondary-light/20;
     }
 
     &:active,
-    &.active {
+    &.active,
+    &[aria-expanded="true"] {
       @apply bg-secondary-light/25;
     }
 
@@ -1092,14 +1143,15 @@
     }
   }
 
-  .MuiButton-pastelAccent-1 {
+  .MuiButton-pastel.MuiButton-colorAccent-1 {
     @apply bg-accent-1-light/10 text-accent-1-dark;
     &:hover {
       @apply bg-accent-1-light/20;
     }
 
     &:active,
-    &.active {
+    &.active,
+    &[aria-expanded="true"] {
       @apply bg-accent-1-light/25;
     }
 
@@ -1112,14 +1164,15 @@
     }
   }
 
-  .MuiButton-pastelAccent-2 {
+  .MuiButton-pastel.MuiButton-colorAccent-2 {
     @apply bg-accent-2-light/10 text-accent-2-dark;
     &:hover {
       @apply bg-accent-2-light/20;
     }
 
     &:active,
-    &.active {
+    &.active,
+    &[aria-expanded="true"] {
       @apply bg-accent-2-light/25;
     }
 
@@ -1132,14 +1185,15 @@
     }
   }
 
-  .MuiButton-pastelAccent-3 {
+  .MuiButton-pastel.MuiButton-colorAccent-3 {
     @apply bg-accent-3-light/10 text-accent-3-dark;
     &:hover {
       @apply bg-accent-3-light/20;
     }
 
     &:active,
-    &.active {
+    &.active,
+    &[aria-expanded="true"] {
       @apply bg-accent-3-light/25;
     }
 
@@ -1152,14 +1206,15 @@
     }
   }
 
-  .MuiButton-pastelAccent-4 {
+  .MuiButton-pastel.MuiButton-colorAccent-4 {
     @apply bg-accent-4-light/10 text-accent-4-dark;
     &:hover {
       @apply bg-accent-4-light/20;
     }
 
     &:active,
-    &.active {
+    &.active,
+    &[aria-expanded="true"] {
       @apply bg-accent-4-light/25;
     }
 
@@ -1172,14 +1227,15 @@
     }
   }
 
-  .MuiButton-pastelAccent-5 {
+  .MuiButton-pastel.MuiButton-colorAccent-5 {
     @apply bg-accent-5-light/10 text-accent-5-dark;
     &:hover {
       @apply bg-accent-5-light/20;
     }
 
     &:active,
-    &.active {
+    &.active,
+    &[aria-expanded="true"] {
       @apply bg-accent-5-light/25;
     }
 
@@ -1192,14 +1248,15 @@
     }
   }
 
-  .MuiButton-pastelAccent-6 {
+  .MuiButton-pastel.MuiButton-colorAccent-6 {
     @apply bg-accent-6-light/10 text-accent-6-dark;
     &:hover {
       @apply bg-accent-6-light/20;
     }
 
     &:active,
-    &.active {
+    &.active,
+    &[aria-expanded="true"] {
       @apply bg-accent-6-light/25;
     }
 
@@ -1212,14 +1269,15 @@
     }
   }
 
-  .MuiButton-pastelError {
+  .MuiButton-pastel.MuiButton-colorError {
     @apply bg-error-light/10 text-error-dark;
     &:hover {
       @apply bg-error-light/20;
     }
 
     &:active,
-    &.active {
+    &.active,
+    &[aria-expanded="true"] {
       @apply bg-error-light/25;
     }
 
@@ -1232,14 +1290,15 @@
     }
   }
 
-  .MuiButton-pastelInfo {
+  .MuiButton-pastel.MuiButton-colorInfo {
     @apply bg-info-light/10 text-info-dark;
     &:hover {
       @apply bg-info-light/20;
     }
 
     &:active,
-    &.active {
+    &.active,
+    &[aria-expanded="true"] {
       @apply bg-info-light/25;
     }
 
@@ -1252,14 +1311,15 @@
     }
   }
 
-  .MuiButton-pastelWarning {
+  .MuiButton-pastel.MuiButton-colorWarning {
     @apply bg-warning-light/10 text-warning-dark;
     &:hover {
       @apply bg-warning-light/20;
     }
 
     &:active,
-    &.active {
+    &.active,
+    &[aria-expanded="true"] {
       @apply bg-warning-light/25;
     }
 
@@ -1272,14 +1332,15 @@
     }
   }
 
-  .MuiButton-pastelSuccess {
+  .MuiButton-pastel.MuiButton-colorSuccess {
     @apply bg-success-light/10 text-success-dark;
     &:hover {
       @apply bg-success-light/20;
     }
 
     &:active,
-    &.active {
+    &.active,
+    &[aria-expanded="true"] {
       @apply bg-success-light/25;
     }
 
@@ -1292,14 +1353,15 @@
     }
   }
 
-  .MuiButton-pastelText-primary {
+  .MuiButton-pastel.MuiButton-colorText-primary {
     @apply bg-grey-500/10 text-text-primary;
     &:hover {
       @apply bg-grey-500/20;
     }
 
     &:active,
-    &.active {
+    &.active,
+    &[aria-expanded="true"] {
       @apply bg-grey-500/25;
     }
 
@@ -1312,14 +1374,15 @@
     }
   }
 
-  .MuiButton-pastelText-secondary {
+  .MuiButton-pastel.MuiButton-colorText-secondary {
     @apply bg-grey-500/10 text-text-secondary;
     &:hover {
       @apply bg-grey-500/20;
     }
 
     &:active,
-    &.active {
+    &.active,
+    &[aria-expanded="true"] {
       @apply bg-grey-500/25;
     }
 
@@ -1332,14 +1395,15 @@
     }
   }
 
-  .MuiButton-pastelText-disabled {
+  .MuiButton-pastel.MuiButton-colorText-disabled {
     @apply bg-grey-500/10 text-text-disabled;
     &:hover {
       @apply bg-grey-500/20;
     }
 
     &:active,
-    &.active {
+    &.active,
+    &[aria-expanded="true"] {
       @apply bg-grey-500/25;
     }
 
@@ -1352,15 +1416,16 @@
     }
   }
 
-  .MuiButton-pastelGrey {
+  .MuiButton-pastel.MuiButton-colorGrey {
     @apply bg-grey-25 text-text-primary;
     &:hover {
       @apply bg-grey-50;
     }
 
     &:active,
-    &.active {
-      @apply bg-grey-100;
+    &.active,
+    &[aria-expanded="true"] {
+      @apply bg-grey-50;
     }
 
     &.Mui-disabled {
@@ -1379,7 +1444,8 @@
     }
 
     &:active,
-    &.active {
+    &.active,
+    &[aria-expanded="true"] {
       @apply bg-background-paper shadow-darker-sm outline-line outline -outline-offset-1 backdrop-blur-xs;
     }
 
@@ -1388,14 +1454,14 @@
     }
 
     &.surface-standard {
-      @apply bg-background-paper shadow-xs outline-line outline -outline-offset-1 backdrop-blur-xs;
+      @apply bg-background-paper shadow-darker-xs outline-line outline -outline-offset-1 backdrop-blur-xs;
       &:hover {
         @apply text-primary;
       }
     }
   }
 
-  .MuiButton-surfacePrimary {
+  .MuiButton-surface.MuiButton-colorPrimary {
     @apply text-primary;
 
     &.Mui-disabled {
@@ -1407,7 +1473,7 @@
     }
   }
 
-  .MuiButton-surfaceSecondary {
+  .MuiButton-surface.MuiButton-colorSecondary {
     @apply text-secondary;
     &.Mui-disabled {
       @apply text-secondary opacity-disabled;
@@ -1418,7 +1484,7 @@
     }
   }
 
-  .MuiButton-surfaceAccent-1 {
+  .MuiButton-surface.MuiButton-colorAccent-1 {
     @apply text-accent-1;
     &.Mui-disabled {
       @apply text-accent-1 opacity-disabled;
@@ -1429,7 +1495,7 @@
     }
   }
 
-  .MuiButton-surfaceAccent-2 {
+  .MuiButton-surface.MuiButton-colorAccent-2 {
     @apply text-accent-2;
     &.Mui-disabled {
       @apply text-accent-2 opacity-disabled;
@@ -1440,7 +1506,7 @@
     }
   }
 
-  .MuiButton-surfaceAccent-3 {
+  .MuiButton-surface.MuiButton-colorAccent-3 {
     @apply text-accent-3;
     &.Mui-disabled {
       @apply text-accent-3 opacity-disabled;
@@ -1451,7 +1517,7 @@
     }
   }
 
-  .MuiButton-surfaceAccent-4 {
+  .MuiButton-surface.MuiButton-colorAccent-4 {
     @apply text-accent-4;
     &.Mui-disabled {
       @apply text-accent-4 opacity-disabled;
@@ -1462,7 +1528,7 @@
     }
   }
 
-  .MuiButton-surfaceAccent-5 {
+  .MuiButton-surface.MuiButton-colorAccent-5 {
     @apply text-accent-5;
     &.Mui-disabled {
       @apply text-accent-5 opacity-disabled;
@@ -1473,7 +1539,7 @@
     }
   }
 
-  .MuiButton-surfaceAccent-6 {
+  .MuiButton-surface.MuiButton-colorAccent-6 {
     @apply text-accent-6;
     &.Mui-disabled {
       @apply text-accent-6 opacity-disabled;
@@ -1484,7 +1550,7 @@
     }
   }
 
-  .MuiButton-surfaceText-primary {
+  .MuiButton-surface.MuiButton-colorText-primary {
     @apply text-text-primary;
     &.Mui-disabled {
       @apply text-text-primary opacity-disabled;
@@ -1495,7 +1561,7 @@
     }
   }
 
-  .MuiButton-surfaceText-secondary {
+  .MuiButton-surface.MuiButton-colorText-secondary {
     @apply text-text-secondary;
     &.Mui-disabled {
       @apply text-text-secondary opacity-disabled;
@@ -1506,7 +1572,7 @@
     }
   }
 
-  .MuiButton-surfaceText-disabled {
+  .MuiButton-surface.MuiButton-colorText-disabled {
     @apply text-text-disabled;
     &.Mui-disabled {
       @apply text-text-disabled opacity-disabled;
@@ -1517,7 +1583,7 @@
     }
   }
 
-  .MuiButton-surfaceSuccess {
+  .MuiButton-surface.MuiButton-colorSuccess {
     @apply text-success;
     &.Mui-disabled {
       @apply text-success opacity-disabled;
@@ -1528,7 +1594,7 @@
     }
   }
 
-  .MuiButton-surfaceError {
+  .MuiButton-surface.MuiButton-colorError {
     @apply text-error;
     &.Mui-disabled {
       @apply text-error opacity-disabled;
@@ -1539,7 +1605,7 @@
     }
   }
 
-  .MuiButton-surfaceWarning {
+  .MuiButton-surface.MuiButton-colorWarning {
     @apply text-warning;
     &.Mui-disabled {
       @apply text-warning opacity-disabled;
@@ -1550,7 +1616,7 @@
     }
   }
 
-  .MuiButton-surfaceInfo {
+  .MuiButton-surface.MuiButton-colorInfo {
     @apply text-info;
     &.Mui-disabled {
       @apply text-info opacity-disabled;
@@ -1561,7 +1627,7 @@
     }
   }
 
-  .MuiButton-surfaceGrey {
+  .MuiButton-surface.MuiButton-colorGrey {
     @apply text-text-primary;
     &.Mui-disabled {
       @apply text-text-primary opacity-disabled;

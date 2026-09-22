@@ -13,7 +13,7 @@ export interface UploadedImage {
 }
 
 export interface SpecimenRecord {
-  id?: number;
+  id: string;
   name: string;
   customData: Record<string, DynamicDataValue>;
   createdAt: number;
@@ -21,17 +21,17 @@ export interface SpecimenRecord {
 }
 
 export interface TestRecord {
-  id?: number;
+  id: string;
   name: string;
-  specimenId?: number | null;
-  presetId?: number | null;
+  specimenId?: string | null;
+  presetId?: string | null;
   customData: Record<string, DynamicDataValue>;
   createdAt: number;
   updatedAt: number;
 }
 
 export interface PresetRecord {
-  id?: number;
+  id: string;
   name: string;
   type: PresetType;
   preload: number;
@@ -42,7 +42,7 @@ export interface PresetRecord {
 }
 
 export interface DataFieldDefinition {
-  id?: number;
+  id: string;
   type: DataFieldType;
   name: string;
   description: string;
@@ -57,21 +57,25 @@ export interface DataFieldDefinition {
 }
 
 class AkdiMakineDatabase extends Dexie {
-  specimens!: Table<SpecimenRecord, number>;
-  tests!: Table<TestRecord, number>;
-  presets!: Table<PresetRecord, number>;
-  dataFields!: Table<DataFieldDefinition, number>;
+  specimens!: Table<SpecimenRecord, string>;
+  tests!: Table<TestRecord, string>;
+  presets!: Table<PresetRecord, string>;
+  dataFields!: Table<DataFieldDefinition, string>;
 
   constructor() {
     super("akdi-makine-db");
 
-    this.version(1).stores({
-      specimens: "++id, &name, createdAt, updatedAt",
-      tests: "++id, &name, specimenId, presetId, createdAt, updatedAt",
-      presets: "++id, &name, type, createdAt, updatedAt",
-      dataFields: "++id, container, type, &name, mandatory, createdAt, updatedAt",
+    this.version(2).stores({
+      specimens: "&id, name, createdAt, updatedAt",
+      tests: "&id, name, specimenId, presetId, createdAt, updatedAt",
+      presets: "&id, name, type, createdAt, updatedAt",
+      dataFields: "&id, container, type, name, mandatory, createdAt, updatedAt",
     });
   }
+}
+
+function createId() {
+  return crypto.randomUUID();
 }
 
 export const db = new AkdiMakineDatabase();
@@ -80,6 +84,7 @@ export async function createSpecimen(input: Omit<SpecimenRecord, "id" | "created
   const now = Date.now();
 
   return db.specimens.add({
+    id: createId(),
     ...input,
     customData: input.customData ?? {},
     createdAt: now,
@@ -91,10 +96,22 @@ export async function getSpecimens() {
   return db.specimens.orderBy("createdAt").reverse().toArray();
 }
 
-export async function updateSpecimen(id: number, changes: Partial<Omit<SpecimenRecord, "id" | "createdAt">>) {
+export async function updateSpecimen(id: string, changes: Partial<Omit<SpecimenRecord, "id" | "createdAt">>) {
   return db.specimens.update(id, {
     ...changes,
     updatedAt: Date.now(),
+  });
+}
+
+export async function deleteSpecimen(id: string) {
+  await db.specimens.delete(id);
+}
+
+export async function deleteSpecimens(ids: string[]) {
+  if (ids.length === 0) return;
+
+  await db.transaction("rw", db.specimens, async () => {
+    await db.specimens.bulkDelete(ids);
   });
 }
 
@@ -102,6 +119,7 @@ export async function createTest(input: Omit<TestRecord, "id" | "createdAt" | "u
   const now = Date.now();
 
   return db.tests.add({
+    id: createId(),
     ...input,
     customData: input.customData ?? {},
     createdAt: now,
@@ -113,10 +131,22 @@ export async function getTests() {
   return db.tests.orderBy("createdAt").reverse().toArray();
 }
 
-export async function updateTest(id: number, changes: Partial<Omit<TestRecord, "id" | "createdAt">>) {
+export async function updateTest(id: string, changes: Partial<Omit<TestRecord, "id" | "createdAt">>) {
   return db.tests.update(id, {
     ...changes,
     updatedAt: Date.now(),
+  });
+}
+
+export async function deleteTest(id: string) {
+  await db.tests.delete(id);
+}
+
+export async function deleteTests(ids: string[]) {
+  if (ids.length === 0) return;
+
+  await db.transaction("rw", db.tests, async () => {
+    await db.tests.bulkDelete(ids);
   });
 }
 
@@ -124,6 +154,7 @@ export async function createPreset(input: Omit<PresetRecord, "id" | "createdAt" 
   const now = Date.now();
 
   return db.presets.add({
+    id: createId(),
     ...input,
     createdAt: now,
     updatedAt: now,
@@ -134,10 +165,22 @@ export async function getPresets() {
   return db.presets.orderBy("createdAt").reverse().toArray();
 }
 
-export async function updatePreset(id: number, changes: Partial<Omit<PresetRecord, "id" | "createdAt">>) {
+export async function updatePreset(id: string, changes: Partial<Omit<PresetRecord, "id" | "createdAt">>) {
   return db.presets.update(id, {
     ...changes,
     updatedAt: Date.now(),
+  });
+}
+
+export async function deletePreset(id: string) {
+  await db.presets.delete(id);
+}
+
+export async function deletePresets(ids: string[]) {
+  if (ids.length === 0) return;
+
+  await db.transaction("rw", db.presets, async () => {
+    await db.presets.bulkDelete(ids);
   });
 }
 
@@ -145,6 +188,7 @@ export async function createDataField(input: Omit<DataFieldDefinition, "id" | "c
   const now = Date.now();
 
   return db.dataFields.add({
+    id: createId(),
     ...input,
     createdAt: now,
     updatedAt: now,
@@ -159,9 +203,21 @@ export async function getDataFields(container?: DataFieldContainer) {
   return db.dataFields.orderBy("createdAt").reverse().toArray();
 }
 
-export async function updateDataField(id: number, changes: Partial<Omit<DataFieldDefinition, "id" | "createdAt">>) {
+export async function updateDataField(id: string, changes: Partial<Omit<DataFieldDefinition, "id" | "createdAt">>) {
   return db.dataFields.update(id, {
     ...changes,
     updatedAt: Date.now(),
+  });
+}
+
+export async function deleteDataField(id: string) {
+  await db.dataFields.delete(id);
+}
+
+export async function deleteDataFields(ids: string[]) {
+  if (ids.length === 0) return;
+
+  await db.transaction("rw", db.dataFields, async () => {
+    await db.dataFields.bulkDelete(ids);
   });
 }

@@ -24,7 +24,7 @@ const App = () => {
       <StyledEngineProvider enableCssLayer>
         <Box lang={i18n.language} dir={direction} className='font-mulish font-nunito relative antialiased h-dvh'>
           <OverlayScrollbarsComponent defer className='h-full os-scrollbar-body'>
-            <LucideProvider size={20} strokeWidth={1.5} nonScalingStroke>
+            <LucideProvider size={20} strokeWidth={1.25} nonScalingStroke>
               <DbProvider>
                 <PlcProvider>
                   <ThemeProvider>

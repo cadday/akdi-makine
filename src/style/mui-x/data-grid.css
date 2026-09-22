@@ -497,4 +497,12 @@
   .MuiDataGrid-scrollShadow {
     @apply shadow-none;
   }
+
+  .MuiDataGrid-overlayWrapper {
+    @apply ms-2.5;
+
+    .MuiLinearProgress-root {
+      @apply -top-1.25;
+    }
+  }
 }

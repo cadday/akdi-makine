@@ -3,7 +3,10 @@ import { GridRowSelectionModel } from "@mui/x-data-grid";
 
 declare module "@mui/x-data-grid" {
   interface ToolbarPropsOverrides {
-    rowSelectionModel: GridRowSelectionModel;
+    rowSelectionModel?: GridRowSelectionModel;
+    deleteRows?: (ids: string[]) => Promise<void>;
+    onAddItem?: () => void;
+    addLabel?: string;
   }
 }
 

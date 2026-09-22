@@ -7,9 +7,47 @@ import TitleWrapper from "@/components/layout/containers/title-wrapper";
 import { LINKS } from "@/constants";
 import { useTranslation } from "react-i18next";
 import { Ellipsis } from "lucide-react";
+import { useDb } from "@/context/db-context";
 
 export default function Page() {
   const { t } = useTranslation();
+
+  const { createSpecimen, createDataField } = useDb();
+
+  const addDemo = async () => {
+    await createSpecimen({
+      name: "Specimen C",
+      customData: {
+        diameter: 12.5,
+        length: 200,
+      },
+    });
+
+    await createSpecimen({
+      name: "Specimen B",
+      customData: {
+        diameter: 12.5,
+        length: 200,
+      },
+    });
+
+    await createSpecimen({
+      name: "Specimen A",
+      customData: {
+        diameter: 12.5,
+        length: 200,
+      },
+    });
+
+    await createDataField({
+      type: "number",
+      name: "Diameter",
+      description: "Specimen diameter in mm",
+      mandatory: true,
+      icon: "ruler",
+      container: "specimen",
+    });
+  };
 
   return (
     <>
@@ -36,65 +74,7 @@ export default function Page() {
 
       <ContentWrapper>
         <Grid size={12} container spacing={5} className='w-full'></Grid>
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
+        <Button onClick={addDemo}>Add demo data</Button>
       </ContentWrapper>
     </>
   );
