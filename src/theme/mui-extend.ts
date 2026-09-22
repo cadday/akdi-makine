@@ -1,4 +1,11 @@
 import { PaletteColor, PaletteColorOptions } from "@mui/material";
+import { GridRowSelectionModel } from "@mui/x-data-grid";
+
+declare module "@mui/x-data-grid" {
+  interface ToolbarPropsOverrides {
+    rowSelectionModel: GridRowSelectionModel;
+  }
+}
 
 declare module "@mui/material/styles" {
   interface Color {

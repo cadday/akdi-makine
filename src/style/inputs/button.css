@@ -29,7 +29,7 @@
     @apply min-w-10 rounded-lg px-6 py-2 text-base leading-6;
 
     &.icon-only {
-      @apply px-2;
+      @apply px-2 w-10 h-10;
     }
 
     &.hover-icon-shrink {

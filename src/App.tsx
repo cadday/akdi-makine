@@ -22,7 +22,7 @@ const App = () => {
   return (
     <HashRouter>
       <StyledEngineProvider enableCssLayer>
-        <Box lang={i18n.language} dir={direction} className='font-mulish font-urbanist relative antialiased h-dvh'>
+        <Box lang={i18n.language} dir={direction} className='font-mulish font-nunito relative antialiased h-dvh'>
           <OverlayScrollbarsComponent defer className='h-full os-scrollbar-body'>
             <LucideProvider size={20} strokeWidth={1.5} nonScalingStroke>
               <DbProvider>
