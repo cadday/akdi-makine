@@ -6,6 +6,7 @@ import "@/style/global.css";
 import "@fontsource/mulish/latin.css";
 import "@fontsource/nunito/latin.css";
 
+
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <App />

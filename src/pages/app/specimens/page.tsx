@@ -28,7 +28,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Box, Breadcrumbs, Button, FormControl, Grid, InputLabel, Select, Typography } from "@mui/material";
 import { DataGrid, GridActionsCellItem, GridColDef, GridRenderCellParams, GridRowSelectionModel, GridRowSpacingParams } from "@mui/x-data-grid";
-import { SpecimenRecord, useDb } from "@/context/db-context";
+import { DataFieldDefinition, SpecimenRecord, useDb } from "@/context/db-context";
 import { Filter } from "lucide-react";
 import Search from "@/components/layout/search/search";
 
@@ -37,8 +37,9 @@ type SpecimenGridRow = SpecimenRecord;
 export default function Page() {
   const { t } = useTranslation();
 
-  const { getSpecimens, deleteSpecimen, deleteSpecimens, duplicateSpecimens, duplicateSpecimen } = useDb();
+  const { getSpecimens, getDataFields, deleteSpecimen, deleteSpecimens, duplicateSpecimens, duplicateSpecimen } = useDb();
   const [specimens, setSpecimens] = useState<SpecimenRecord[]>([]);
+  const [dataFields, setDataFields] = useState<DataFieldDefinition[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -47,14 +48,15 @@ export default function Page() {
     setError(null);
 
     try {
-      const data = await getSpecimens();
-      setSpecimens(data);
+      const [specimenData, fieldData] = await Promise.all([getSpecimens(), getDataFields("specimen")]);
+      setSpecimens(specimenData);
+      setDataFields(fieldData);
     } catch (_err) {
-      setError("Failed to load specimens: " + _err);
+      setError("Failed to load specimens and data fields: " + _err);
     } finally {
       setIsLoading(false);
     }
-  }, [getSpecimens]);
+  }, [getSpecimens, getDataFields]);
 
   useEffect(() => {
     let cancelled = false;
@@ -64,13 +66,14 @@ export default function Page() {
       setError(null);
 
       try {
-        const data = await getSpecimens();
+        const [specimenData, fieldData] = await Promise.all([getSpecimens(), getDataFields("specimen")]);
         if (!cancelled) {
-          setSpecimens(data);
+          setSpecimens(specimenData);
+          setDataFields(fieldData);
         }
       } catch (_err) {
         if (!cancelled) {
-          setError("Failed to load specimens: " + _err);
+          setError("Failed to load specimens and data fields: " + _err);
         }
       } finally {
         if (!cancelled) {
@@ -84,7 +87,7 @@ export default function Page() {
     return () => {
       cancelled = true;
     };
-  }, [getSpecimens]);
+  }, [getSpecimens, getDataFields]);
 
   const duplicateRows = useCallback(
     async (ids: string[]) => {
@@ -157,51 +160,66 @@ export default function Page() {
     return specimens.map((specimen) => ({ ...specimen }));
   }, [specimens]);
 
-  const columns: GridColDef<SpecimenGridRow>[] = [
-    { field: "id", headerName: "ID", width: 90, filterable: false },
-    {
-      field: "name",
-      headerName: "Name",
-      flex: 1,
-      minWidth: 260,
-      renderCell: (params: GridRenderCellParams<any, string>) => (
-        <Link to='#' className='text-text-primary link-primary link-underline hover:text-primary py-2 font-semibold transition-colors'>
-          {params.value}
-        </Link>
-      ),
-    },
-    {
-      field: "customData",
-      headerName: "Data Fields",
-      minWidth: 180,
-      valueGetter: (_value, row) => Object.keys(row.customData ?? {}).length,
-    },
-    {
-      field: "createdAt",
-      headerName: "Created",
-      minWidth: 180,
-      valueFormatter: (value) => new Date(Number(value)).toLocaleString(),
-    },
-    {
-      field: "updatedAt",
-      headerName: "Updated",
-      minWidth: 180,
-      valueFormatter: (value) => new Date(Number(value)).toLocaleString(),
-    },
-    {
-      field: "actions",
-      headerName: "Actions",
-      type: "actions",
-      minWidth: 80,
-      flex: 1,
-      align: "right",
-      headerAlign: "right",
-      getActions: (params) => [
-        <GridActionsCellItem key={0} icon={<Copy size={16} />} label='Duplicate' onClick={duplicateRow(params.id as string)} showInMenu />,
-        <GridActionsCellItem className="hover:bg-error-light/10 hover:text-error" key={1} icon={<XSquare size={16} />} label='Delete' onClick={deleteRow(params.id as string)} showInMenu />,
-      ],
-    },
-  ];
+  const columns = useMemo<GridColDef<SpecimenGridRow>[]>(
+    () => [
+      { field: "id", headerName: "ID", width: 90, filterable: false },
+      {
+        field: "name",
+        headerName: "Name",
+        flex: 1,
+        minWidth: 260,
+        renderCell: (params: GridRenderCellParams<any, string>) => (
+          <Link to='#' className='text-text-primary link-primary link-underline hover:text-primary py-2 font-semibold transition-colors'>
+            {params.value}
+          </Link>
+        ),
+      },
+      ...dataFields.map((dataField): GridColDef<SpecimenGridRow> => ({
+        field: dataField.id,
+        headerName: dataField.name,
+        minWidth: 160,
+        type: dataField.type === "number" ? "number" : dataField.type === "boolean" ? "boolean" : "string",
+        valueGetter: (_value: unknown, row: SpecimenGridRow) => row.customData?.[dataField.id] ?? row.customData?.[dataField.name],
+        renderCell: (params: GridRenderCellParams<SpecimenGridRow>) => {
+          const value = params.value;
+          if (value == null) return "-";
+          if (typeof value === "boolean") return value ? "Yes" : "No";
+          if (Array.isArray(value)) {
+            return value
+              .map((item) => (typeof item === "string" ? item : item && typeof item === "object" && "name" in item ? item.name : String(item)))
+              .join(", ");
+          }
+          return String(value);
+        },
+      })),
+      {
+        field: "createdAt",
+        headerName: "Created",
+        minWidth: 180,
+        valueFormatter: (value) => new Date(Number(value)).toLocaleString(),
+      },
+      {
+        field: "updatedAt",
+        headerName: "Updated",
+        minWidth: 180,
+        valueFormatter: (value) => new Date(Number(value)).toLocaleString(),
+      },
+      {
+        field: "actions",
+        headerName: "Actions",
+        type: "actions",
+        minWidth: 80,
+        flex: 1,
+        align: "right",
+        headerAlign: "right",
+        getActions: (params) => [
+          <GridActionsCellItem key={0} icon={<Copy size={16} />} label='Duplicate' onClick={duplicateRow(params.id as string)} showInMenu />,
+          <GridActionsCellItem className="hover:bg-error-light/10 hover:text-error" key={1} icon={<XSquare size={16} />} label='Delete' onClick={deleteRow(params.id as string)} showInMenu />,
+        ],
+      },
+    ],
+    [dataFields, deleteRow, duplicateRow],
+  );
 
   return (
     <>

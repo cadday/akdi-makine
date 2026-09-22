@@ -15,37 +15,45 @@ export default function Page() {
   const { createSpecimen, createDataField } = useDb();
 
   const addDemo = async () => {
-    await createSpecimen({
-      name: "Specimen C",
-      customData: {
-        diameter: 12.5,
-        length: 200,
-      },
-    });
-
-    await createSpecimen({
-      name: "Specimen B",
-      customData: {
-        diameter: 12.5,
-        length: 200,
-      },
-    });
-
-    await createSpecimen({
-      name: "Specimen A",
-      customData: {
-        diameter: 12.5,
-        length: 200,
-      },
-    });
-
-    await createDataField({
+    const diameterId = await createDataField({
       type: "number",
       name: "Diameter",
       description: "Specimen diameter in mm",
       mandatory: true,
       icon: "ruler",
       container: "specimen",
+    });
+
+    const lengthId = await createDataField({
+      type: "number",
+      name: "Length",
+      description: "Specimen length in mm",
+      mandatory: true,
+      icon: "ruler",
+      container: "specimen",
+    });
+
+    await createSpecimen({
+      name: "Specimen C",
+      customData: {
+        [diameterId]: 12.5,
+        [lengthId]: 0.125,
+      },
+    });
+    await createSpecimen({
+      name: "Specimen B",
+      customData: {
+        [diameterId]: 10.5,
+        [lengthId]: 0.105,
+      },
+    });
+
+    await createSpecimen({
+      name: "Specimen A",
+      customData: {
+        [diameterId]: 5.5,
+        [lengthId]: 0.055,
+      },
     });
   };
 

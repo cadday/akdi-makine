@@ -100,7 +100,7 @@
 
     .MuiInputBase-root.MuiInput-root.MuiInputBase-sizeSmall,
     .MuiPickersInputBase-inputSizeSmall {
-      @apply px-3.75! py-[calc(.375rem-1px)]!;
+      @apply px-3.75! py-1.25!;
     }
   }
 
@@ -115,7 +115,7 @@
     @apply border-none bg-transparent p-0 outline-hidden;
     .MuiOutlinedInput-input,
     .MuiPickersSectionList-root {
-      @apply font-body text-text-primary placeholder:opacity-disabled h-auto min-h-0 rounded-lg px-4 py-3 text-base leading-5;
+      @apply font-body text-text-primary placeholder:opacity-disabled h-auto min-h-0 rounded-lg px-4 py-2.5 text-base leading-5;
     }
 
     .MuiOutlinedInput-notchedOutline,
