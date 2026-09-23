@@ -136,7 +136,7 @@
         }
 
         &.MuiInputBase-sizeSmall {
-          @apply rounded-md py-0.5!;
+          @apply rounded-md py-1.25!;
         }
       }
     }

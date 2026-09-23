@@ -1,9 +1,12 @@
 import Dexie, { type Table } from "dexie";
 import type { IconName } from "lucide-react/dynamic";
 
-export type DataFieldType = "Text" | "Number" | "Select" | "Multi-Select" | "Image" | "Boolean";
-export type DataFieldContainer = "Specimen" | "Test";
-export type PresetType = "tensile" | "compression";
+export const DATA_FIELD_TYPES = ["Text", "Number", "Select", "Multi-Select", "Image", "Boolean"] as const;
+export type DataFieldType = (typeof DATA_FIELD_TYPES)[number];
+export const DATA_FIELD_CONTAINERS = ["Specimen", "Test"] as const;
+export type DataFieldContainer = (typeof DATA_FIELD_CONTAINERS)[number];
+export const PRESET_TYPES = ["Tensile", "Compression"] as const;
+export type PresetType = (typeof PRESET_TYPES)[number];
 export type DynamicDataValue = string | number | boolean | string[] | UploadedImage[] | null;
 
 export interface UploadedImage {
@@ -45,9 +48,9 @@ export interface DataFieldDefinition {
   id: string;
   type: DataFieldType;
   name: string;
-  description: string;
-  mandatory: boolean;
-  icon: IconName;
+  description?: string;
+  mandatory?: boolean;
+  icon?: IconName;
   container: DataFieldContainer;
   options?: string[];
   accept?: string;
