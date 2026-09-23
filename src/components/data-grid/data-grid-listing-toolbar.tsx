@@ -25,7 +25,7 @@ import {
   Toolbar,
   GridRowSelectionModel,
 } from "@mui/x-data-grid";
-import { ChevronRight, Columns, Copy, Download, FileText, Filter, Printer, Search, X } from "lucide-react";
+import { ChevronRight, Columns, Copy, Download, FileText, Filter, Plus, Printer, Search, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -216,7 +216,7 @@ export const DataGridListingToolbar = ({ rowSelectionModel, deleteRows, duplicat
           </Menu>
 
           {onAddItem && (
-            <Button size='large' className='surface-standard' color='text-primary' variant='surface' onClick={onAddItem}>
+            <Button size='large' className='surface-standard' color='text-primary' variant='surface' onClick={onAddItem} startIcon={<Plus />}>
               {addLabel}
             </Button>
           )}

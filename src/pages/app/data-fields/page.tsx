@@ -29,6 +29,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Box, Breadcrumbs, Button, FormControl, Grid, InputLabel, Select, Typography } from "@mui/material";
 import { DataGrid, GridActionsCellItem, GridColDef, GridRenderCellParams, GridRowSelectionModel, GridRowSpacingParams } from "@mui/x-data-grid";
 import { DataFieldDefinition, useDb } from "@/context/db-context";
+import type { DataFieldContainer } from "@/context/db-context";
 import { Filter } from "lucide-react";
 import Search from "@/components/layout/search/search";
 
@@ -174,6 +175,8 @@ export default function Page() {
       field: "container",
       headerName: "Container",
       minWidth: 140,
+      type: "singleSelect",
+      valueOptions: ["Specimen", "Test"] satisfies DataFieldContainer[],
     },
     {
       field: "type",

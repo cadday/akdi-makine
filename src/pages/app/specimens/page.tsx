@@ -1,4 +1,4 @@
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 
 import { DataGridPaginationFullPage } from "@/components/data-grid/data-grid-pagination";
 import { DataGridListingToolbar } from "@/components/data-grid/data-grid-listing-toolbar";
@@ -36,6 +36,7 @@ type SpecimenGridRow = SpecimenRecord;
 
 export default function Page() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
   const { getSpecimens, getDataFields, deleteSpecimen, deleteSpecimens, duplicateSpecimens, duplicateSpecimen } = useDb();
   const [specimens, setSpecimens] = useState<SpecimenRecord[]>([]);
@@ -48,7 +49,7 @@ export default function Page() {
     setError(null);
 
     try {
-      const [specimenData, fieldData] = await Promise.all([getSpecimens(), getDataFields("specimen")]);
+      const [specimenData, fieldData] = await Promise.all([getSpecimens(), getDataFields("Specimen")]);
       setSpecimens(specimenData);
       setDataFields(fieldData);
     } catch (_err) {
@@ -66,7 +67,7 @@ export default function Page() {
       setError(null);
 
       try {
-        const [specimenData, fieldData] = await Promise.all([getSpecimens(), getDataFields("specimen")]);
+        const [specimenData, fieldData] = await Promise.all([getSpecimens(), getDataFields("Specimen")]);
         if (!cancelled) {
           setSpecimens(specimenData);
           setDataFields(fieldData);
@@ -141,8 +142,8 @@ export default function Page() {
   );
 
   const handleAddItem = useCallback(() => {
-    return;
-  }, []);
+    navigate("/specimens/add");
+  }, [navigate]);
 
   const [rowSelectionModel, setRowSelectionModel] = useState<GridRowSelectionModel>({
     type: "include",
@@ -168,30 +169,32 @@ export default function Page() {
         headerName: "Name",
         flex: 1,
         minWidth: 260,
-        renderCell: (params: GridRenderCellParams<any, string>) => (
-          <Link to='#' className='text-text-primary link-primary link-underline hover:text-primary py-2 font-semibold transition-colors'>
+        renderCell: (params: GridRenderCellParams<SpecimenGridRow, string>) => (
+          <Link to={`/specimens/${params.row.id}`} className='text-text-primary link-primary link-underline hover:text-primary py-2 font-semibold transition-colors'>
             {params.value}
           </Link>
         ),
       },
-      ...dataFields.map((dataField): GridColDef<SpecimenGridRow> => ({
-        field: dataField.id,
-        headerName: dataField.name,
-        minWidth: 160,
-        type: dataField.type === "number" ? "number" : dataField.type === "boolean" ? "boolean" : "string",
-        valueGetter: (_value: unknown, row: SpecimenGridRow) => row.customData?.[dataField.id] ?? row.customData?.[dataField.name],
-        renderCell: (params: GridRenderCellParams<SpecimenGridRow>) => {
-          const value = params.value;
-          if (value == null) return "-";
-          if (typeof value === "boolean") return value ? "Yes" : "No";
-          if (Array.isArray(value)) {
-            return value
-              .map((item) => (typeof item === "string" ? item : item && typeof item === "object" && "name" in item ? item.name : String(item)))
-              .join(", ");
-          }
-          return String(value);
-        },
-      })),
+      ...dataFields.map(
+        (dataField): GridColDef<SpecimenGridRow> => ({
+          field: dataField.id,
+          headerName: dataField.name,
+          minWidth: 160,
+          type: dataField.type === "Number" ? "number" : dataField.type === "Boolean" ? "boolean" : dataField.type === "Select" ? "singleSelect" : "string",
+          valueGetter: (_value: unknown, row: SpecimenGridRow) => row.customData?.[dataField.id] ?? row.customData?.[dataField.name],
+          renderCell: (params: GridRenderCellParams<SpecimenGridRow>) => {
+            const value = params.value;
+            if (value == null) return "-";
+            if (typeof value === "boolean") return value ? "Yes" : "No";
+            if (Array.isArray(value)) {
+              return value
+                .map((item) => (typeof item === "string" ? item : item && typeof item === "object" && "name" in item ? item.name : String(item)))
+                .join(", ");
+            }
+            return String(value);
+          },
+        }),
+      ),
       {
         field: "createdAt",
         headerName: "Created",
@@ -214,7 +217,14 @@ export default function Page() {
         headerAlign: "right",
         getActions: (params) => [
           <GridActionsCellItem key={0} icon={<Copy size={16} />} label='Duplicate' onClick={duplicateRow(params.id as string)} showInMenu />,
-          <GridActionsCellItem className="hover:bg-error-light/10 hover:text-error" key={1} icon={<XSquare size={16} />} label='Delete' onClick={deleteRow(params.id as string)} showInMenu />,
+          <GridActionsCellItem
+            className='hover:bg-error-light/10 hover:text-error'
+            key={1}
+            icon={<XSquare size={16} />}
+            label='Delete'
+            onClick={deleteRow(params.id as string)}
+            showInMenu
+          />,
         ],
       },
     ],
@@ -269,7 +279,7 @@ export default function Page() {
                   </Box>
                   <Typography>Nothing found to display!</Typography>
                 </Box>
-                <Button size='large' variant='outlined' color='grey' startIcon={<Plus />}>
+                <Button size='large' variant='outlined' color='grey' startIcon={<Plus />} onClick={handleAddItem}>
                   Add
                 </Button>
               </Box>

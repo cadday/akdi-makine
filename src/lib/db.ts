@@ -1,8 +1,8 @@
 import Dexie, { type Table } from "dexie";
 import type { IconName } from "lucide-react/dynamic";
 
-export type DataFieldType = "text" | "number" | "select" | "multi-select" | "image" | "boolean";
-export type DataFieldContainer = "specimen" | "test";
+export type DataFieldType = "Text" | "Number" | "Select" | "Multi-Select" | "Image" | "Boolean";
+export type DataFieldContainer = "Specimen" | "Test";
 export type PresetType = "tensile" | "compression";
 export type DynamicDataValue = string | number | boolean | string[] | UploadedImage[] | null;
 

@@ -182,7 +182,7 @@
     }
 
     &.MuiInputLabel-sizeSmall {
-      transform: translate(1rem, 0.5rem) scale(1);
+      transform: translate(1rem, 0.65rem) scale(1);
       &.MuiInputLabel-shrink {
         transform: translate(1rem, calc(-0.5rem - 2px)) scale(0.85);
       }

@@ -73,6 +73,8 @@ const AppRoutes = () => {
         {/* Routes generated from menu items */}
         {mainRoutes}
         {bottomRoutes}
+        <Route path='/specimens/add' element={lazyLoad("/specimens/add")} />
+        <Route path='/specimens/:id' element={lazyLoad("/specimens/view")} />
       </Route>
 
       {/* 404 route */}

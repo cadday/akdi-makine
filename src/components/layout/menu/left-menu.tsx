@@ -90,10 +90,7 @@ export default function LeftMenu() {
     const resetCallback = () => {
       if (selectedPrimary.current) {
         setActiveItem(selectedPrimary.current);
-        if (
-          !selectedPrimary.current.children ||
-          !selectedPrimary.current.children.filter((x) => !x.hideInMenu).length
-        ) {
+        if (!selectedPrimary.current.children || !selectedPrimary.current.children.filter((x) => !x.hideInMenu).length) {
           hideLeftSecondary();
         }
         updateSelectedSecondaryItem();
@@ -128,6 +125,10 @@ export default function LeftMenu() {
         hideLeftSecondary();
         resetLeftMenu();
         setActiveItem(item);
+        // Navigate to the item's href if the current path doesn't match.
+        if (pathname !== item.href) {
+          navigate(item.href ?? "");
+        }
       } else {
         // Primary item is link without children or a content. Navigate to the route.
         setOpenedAccordions((prev) => prev.filter((a) => a.indent !== 0));
@@ -159,15 +160,11 @@ export default function LeftMenu() {
   }, [updateSelectedSecondaryItem]);
 
   return (
-    <nav className="bg-background-paper shadow-darker-xs fixed z-10 flex h-full flex-row rounded-e-4xl">
+    <nav className='bg-background-paper shadow-darker-xs fixed z-10 flex h-full flex-row rounded-e-4xl'>
       <Box
-        className={cn(
-          "flex h-full shrink-0 grow-0 flex-col items-center overflow-x-hidden py-2.5! pt-4! transition-all duration-(--layout-duration)",
-        )}
+        className={cn("flex h-full shrink-0 grow-0 flex-col items-center overflow-x-hidden py-2.5! pt-4! transition-all duration-(--layout-duration)")}
         style={{
-          ...(leftPrimaryCurrent !== MenuShowState.Hide && leftMenuWidth.primary > 0
-            ? { width: `${leftMenuWidth.primary}px` }
-            : { width: "0px" }),
+          ...(leftPrimaryCurrent !== MenuShowState.Hide && leftMenuWidth.primary > 0 ? { width: `${leftMenuWidth.primary}px` } : { width: "0px" }),
         }}
       >
         <Box
@@ -177,37 +174,24 @@ export default function LeftMenu() {
               leftMenuWidth.primary > 0 &&
               "overflow-y-scroll px-4 pt-2 pb-6",
             "absolute flex h-full min-h-full shrink-0 grow-0 flex-col items-center gap-0.5 overflow-y-auto",
-            leftMenuType === MenuType.Minimal &&
-              leftPrimaryCurrent !== MenuShowState.Hide &&
-              leftMenuWidth.primary > 0 &&
-              "overflow-y-scroll ps-3",
-            leftMenuType === MenuType.Comfort &&
-              leftPrimaryCurrent !== MenuShowState.Hide &&
-              leftMenuWidth.primary > 0 &&
-              "overflow-y-scroll ps-2.5 pb-2",
+            leftMenuType === MenuType.Minimal && leftPrimaryCurrent !== MenuShowState.Hide && leftMenuWidth.primary > 0 && "overflow-y-scroll ps-3",
+            leftMenuType === MenuType.Comfort && leftPrimaryCurrent !== MenuShowState.Hide && leftMenuWidth.primary > 0 && "overflow-y-scroll ps-2.5 pb-2",
           )}
           style={{
-            ...(leftPrimaryCurrent !== MenuShowState.Hide && leftMenuWidth.primary > 0
-              ? { width: `${leftMenuWidth.primary}px` }
-              : { width: "0px" }),
+            ...(leftPrimaryCurrent !== MenuShowState.Hide && leftMenuWidth.primary > 0 ? { width: `${leftMenuWidth.primary}px` } : { width: "0px" }),
           }}
         >
-          {!temporaryShowPrimaryMenu &&
-          leftMenuType === MenuType.SingleLayer &&
-          (activeItem?.content || menuSelectedSecondaryItem?.content) ? (
-            <Box className="flex w-full flex-1 flex-col">
-              {(activeItem?.content || menuSelectedSecondaryItem?.content) &&
-                (activeItem?.content || menuSelectedSecondaryItem?.content)}
+          {!temporaryShowPrimaryMenu && leftMenuType === MenuType.SingleLayer && (activeItem?.content || menuSelectedSecondaryItem?.content) ? (
+            <Box className='flex w-full flex-1 flex-col'>
+              {(activeItem?.content || menuSelectedSecondaryItem?.content) && (activeItem?.content || menuSelectedSecondaryItem?.content)}
             </Box>
           ) : (
             <>
-              <Link to={LINKS.home} className="mb-4 flex w-full justify-center">
-                <Logo classNameFull="hidden" />
+              <Link to={LINKS.home} className='mb-4 flex w-full justify-center'>
+                <Logo classNameFull='hidden' />
               </Link>
 
-              <Box
-                className={cn("flex w-full flex-1 flex-col gap-0.5", leftMenuType === MenuType.SingleLayer && "gap-1")}
-              >
+              <Box className={cn("flex w-full flex-1 flex-col gap-0.5", leftMenuType === MenuType.SingleLayer && "gap-1")}>
                 {leftMenuItems
                   .filter((x) => !x.hideInMenu)
                   .map((item) =>
@@ -277,17 +261,16 @@ export default function LeftMenu() {
           )}
           style={{
             width:
-              ((activeItem?.children && activeItem?.children.filter((x) => !x.hideInMenu).length > 0) ||
-                activeItem?.content) &&
+              ((activeItem?.children && activeItem?.children.filter((x) => !x.hideInMenu).length > 0) || activeItem?.content) &&
               leftSecondaryCurrent !== MenuShowState.Hide &&
               leftMenuWidth.secondary > 0
                 ? `calc(${leftMenuWidth.secondary}px`
                 : 0,
           }}
         >
-          <Box className="h-full w-full">
-            <Paper elevation={0} className="h-full w-full rounded-4xl py-4.5">
-              <Box className="relative h-full w-full overflow-x-hidden">
+          <Box className='h-full w-full'>
+            <Paper elevation={0} className='h-full w-full rounded-4xl py-4.5'>
+              <Box className='relative h-full w-full overflow-x-hidden'>
                 <Box
                   style={{ width: leftSecondaryDefaultWidth }}
                   className={cn("absolute flex h-full min-h-full flex-col gap-2 overflow-y-scroll ps-5.5 pe-4 pt-2")}
@@ -295,13 +278,13 @@ export default function LeftMenu() {
                   {!activeItem?.content && !menuSelectedSecondaryItem?.content && (
                     <>
                       {activeItem?.label && (
-                        <Typography variant="h6" className={"text-primary mb-5 px-2.5"}>
+                        <Typography variant='h6' className={"text-primary mb-5 px-2.5"}>
                           {t(activeItem?.label)}
                         </Typography>
                       )}
-                      <Box className="flex h-full w-full flex-1 flex-col justify-between gap-2">
+                      <Box className='flex h-full w-full flex-1 flex-col justify-between gap-2'>
                         <>
-                          <Box className="flex w-full flex-1 flex-col gap-1">
+                          <Box className='flex w-full flex-1 flex-col gap-1'>
                             {activeItem?.children &&
                               activeItem?.children?.filter((x) => !x.hideInMenu).length > 0 &&
                               activeItem?.children
@@ -320,16 +303,12 @@ export default function LeftMenu() {
                                 ))}
                           </Box>
 
-                          <Box
-                            component="a"
-                            href="#"
-                            className="group flex w-full cursor-pointer flex-col items-center justify-center gap-2"
-                          >
-                            <IllustrationLaunch className="text-primary h-45 w-45 bg-cover bg-center" />
-                            <Typography variant="body1" className="px-4 text-center">
+                          <Box component='a' href='#' className='group flex w-full cursor-pointer flex-col items-center justify-center gap-2'>
+                            <IllustrationLaunch className='text-primary h-45 w-45 bg-cover bg-center' />
+                            <Typography variant='body1' className='px-4 text-center'>
                               {t("menu-cta-copy")}
                             </Typography>
-                            <Box className="group-hover:bg-primary/10 text-primary rounded-md px-5 py-2 font-medium transition-colors">
+                            <Box className='group-hover:bg-primary/10 text-primary rounded-md px-5 py-2 font-medium transition-colors'>
                               {t("menu-cta-button")}
                             </Box>
                           </Box>
@@ -337,8 +316,7 @@ export default function LeftMenu() {
                       </Box>
                     </>
                   )}
-                  {(activeItem?.content || menuSelectedSecondaryItem?.content) &&
-                    (activeItem?.content || menuSelectedSecondaryItem?.content)}
+                  {(activeItem?.content || menuSelectedSecondaryItem?.content) && (activeItem?.content || menuSelectedSecondaryItem?.content)}
                 </Box>
               </Box>
             </Paper>

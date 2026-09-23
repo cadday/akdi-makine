@@ -16,21 +16,21 @@ export default function Page() {
 
   const addDemo = async () => {
     const diameterId = await createDataField({
-      type: "number",
+      type: "Number",
       name: "Diameter",
       description: "Specimen diameter in mm",
       mandatory: true,
       icon: "ruler",
-      container: "specimen",
+      container: "Specimen",
     });
 
     const lengthId = await createDataField({
-      type: "number",
+      type: "Number",
       name: "Length",
       description: "Specimen length in mm",
       mandatory: true,
       icon: "ruler",
-      container: "specimen",
+      container: "Specimen",
     });
 
     await createSpecimen({

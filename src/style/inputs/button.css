@@ -1440,13 +1440,13 @@
   .MuiButton-surface {
     @apply outline -outline-offset-1 outline-transparent;
     &:hover {
-      @apply bg-background-paper shadow-darker-sm outline-line outline -outline-offset-1 backdrop-blur-xs;
+      @apply bg-background-paper shadow-xs outline-line outline -outline-offset-1 backdrop-blur-xs;
     }
 
     &:active,
     &.active,
     &[aria-expanded="true"] {
-      @apply bg-background-paper shadow-darker-sm outline-line outline -outline-offset-1 backdrop-blur-xs;
+      @apply bg-background-paper shadow-xs outline-line outline -outline-offset-1 backdrop-blur-xs;
     }
 
     .MuiButton-loadingIndicator {
@@ -1454,7 +1454,7 @@
     }
 
     &.surface-standard {
-      @apply bg-background-paper shadow-darker-xs outline-line outline -outline-offset-1 backdrop-blur-xs;
+      @apply bg-background-paper shadow-xs outline-line outline -outline-offset-1 backdrop-blur-xs;
       &:hover {
         @apply text-primary;
       }
