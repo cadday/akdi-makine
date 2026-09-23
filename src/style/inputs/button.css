@@ -446,7 +446,7 @@
   }
 
   .MuiButton-sizeTiny.MuiButton-outlined {
-    @apply px-[calc(0.875-1px)] py-[calc(.375rem-1px)];
+    @apply px-[calc(0.875-1px)] py-1.25;
 
     &.icon-only {
       @apply px-[calc(.375rem-1px)];

@@ -197,6 +197,11 @@ export default function Page() {
       minWidth: 140,
     },
     {
+      field: "unit",
+      headerName: "Unit",
+      minWidth: 120,
+    },
+    {
       field: "mandatory",
       headerName: "Mandatory",
       minWidth: 120,

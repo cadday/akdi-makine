@@ -3,7 +3,8 @@ import { Link, useNavigate } from "react-router";
 import ContentWrapper from "@/components/layout/containers/content-wrapper";
 import TitleWrapper from "@/components/layout/containers/title-wrapper";
 import { LINKS } from "@/constants";
-import type { DataFieldContainer, DataFieldDefinition, DataFieldType } from "@/context/db-context";
+import DataFieldInput from "@/components/data-fields/data-field-input";
+import type { DataFieldContainer, DataFieldDefinition, DataFieldType, DynamicDataValue } from "@/context/db-context";
 import { DATA_FIELD_CONTAINERS, DATA_FIELD_TYPES } from "@/lib/db";
 import {
   Alert,
@@ -28,21 +29,33 @@ import {
   Typography,
 } from "@mui/material";
 import { useTranslation } from "react-i18next";
-import { ChevronDown, ListTree, Save, Scroll, Signpost, SquaresSubtract, Tag, TriangleAlert, X, XSquare } from "lucide-react";
+import { ChevronDown, File, ListTree, Package2, Ruler, Save, Scroll, Signpost, SquaresSubtract, Tag, TriangleAlert, X, XSquare } from "lucide-react";
 import { DynamicIcon, iconNames } from "lucide-react/dynamic";
 import { useState } from "react";
 import * as yup from "yup";
 import { useFormik } from "formik";
 import { useDb } from "@/context/db-context";
+import { cn } from "@/lib/utils";
 
 type DataFieldFormValues = Pick<DataFieldDefinition, "name"> &
-  Required<Pick<DataFieldDefinition, "description">> & {
+  Required<Pick<DataFieldDefinition, "description" | "unit">> & {
+    options: string;
     type: DataFieldDefinition["type"] | "";
     mandatory: NonNullable<DataFieldDefinition["mandatory"]> | null;
     icon: NonNullable<DataFieldDefinition["icon"]> | null;
     container: DataFieldDefinition["container"] | "";
   };
 type DataFieldIcon = NonNullable<DataFieldDefinition["icon"]>;
+function formikOptionLines(value: string) {
+  return [
+    ...new Set(
+      value
+        .split(/\r?\n/)
+        .map((option) => option.trim())
+        .filter(Boolean),
+    ),
+  ];
+}
 
 export default function Page() {
   const { t } = useTranslation();
@@ -50,6 +63,7 @@ export default function Page() {
   const { createDataField } = useDb();
   const [submitted, setSubmitted] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [previewValue, setPreviewValue] = useState<DynamicDataValue>(null);
 
   const handleSave = async (values: DataFieldFormValues) => {
     if (!values.type || !values.name.trim() || !values.container) {
@@ -63,6 +77,8 @@ export default function Page() {
         name: values.name.trim(),
         description: values.description.trim(),
         container: values.container,
+        ...(values.unit.trim() && { unit: values.unit.trim() }),
+        ...((values.type === "Select" || values.type === "Multi-Select") && { options: formikOptionLines(values.options) }),
         ...(values.mandatory !== null && { mandatory: values.mandatory }),
         ...(values.icon && { icon: values.icon }),
       });
@@ -76,7 +92,9 @@ export default function Page() {
     initialValues: {
       type: "",
       name: "",
+      unit: "",
       description: "",
+      options: "",
       mandatory: null,
       icon: null,
       container: "",
@@ -88,11 +106,16 @@ export default function Page() {
       mandatory: yup.boolean().nullable(),
       icon: yup.string().nullable(),
       container: yup.string().required("Container is required"),
+      options: yup.string().when("type", {
+        is: (type: DataFieldType | "") => type === "Select" || type === "Multi-Select",
+        then: (schema) => schema.test("has-options", "Add at least one option", (value) => formikOptionLines(value ?? "").length > 0),
+      }),
     }),
     onSubmit: handleSave,
     validateOnBlur: false,
     validateOnMount: false,
   });
+  const hasFieldError = (field: keyof DataFieldFormValues) => Boolean(formik.errors[field]);
 
   return (
     <>
@@ -122,6 +145,7 @@ export default function Page() {
             size={{ lg: 8, xs: 12 }}
             spacing={5}
             component='form'
+            noValidate
             onSubmit={(event) => {
               setSubmitted(true);
               formik.handleSubmit(event);
@@ -134,12 +158,17 @@ export default function Page() {
               <Card>
                 <CardContent>
                   <Box className='flex flex-row gap-2'>
-                    <Signpost />
-                    <FormControl fullWidth size='small' variant='standard' className='outlined'>
-                      <FormLabel component='label'>Type *</FormLabel>
+                    <Signpost className={cn(hasFieldError("type") && "text-error!")} />
+                    <FormControl fullWidth size='small' variant='standard' className='outlined' required>
+                      <FormLabel component='label' className={cn(hasFieldError("type") && "text-error!")}>
+                        Type
+                      </FormLabel>
                       <Select<DataFieldType | "">
                         value={formik.values.type}
-                        onChange={(event) => void formik.setFieldValue("type", event.target.value)}
+                        onChange={(event) => {
+                          void formik.setFieldValue("type", event.target.value);
+                          setPreviewValue(null);
+                        }}
                         IconComponent={ChevronDown}
                         MenuProps={{ className: "outlined" }}
                       >
@@ -153,12 +182,34 @@ export default function Page() {
                   </Box>
 
                   <Box className='flex flex-row gap-2'>
-                    <Tag />
-                    <FormControl className='outlined' variant='standard' size='small' fullWidth>
-                      <FormLabel component='label'>Name *</FormLabel>
+                    <Tag className={cn(hasFieldError("name") && "text-error!")} />
+                    <FormControl className='outlined' variant='standard' size='small' fullWidth required>
+                      <FormLabel component='label' className={cn(hasFieldError("name") && "text-error!")}>
+                        Name
+                      </FormLabel>
                       <Input name='name' value={formik.values.name} onChange={formik.handleChange} />
                     </FormControl>
                   </Box>
+
+                  {(formik.values.type === "Select" || formik.values.type === "Multi-Select") && (
+                    <Box className='flex flex-row gap-2'>
+                      <ListTree className={cn(hasFieldError("options") && "text-error!")} />
+                      <FormControl className='MuiTextField-root outlined' fullWidth required>
+                        <FormLabel component='label' className={cn(hasFieldError("options") && "text-error!")}>
+                          Options
+                        </FormLabel>
+                        <TextareaAutosize
+                          name='options'
+                          value={formik.values.options}
+                          onChange={formik.handleChange}
+                          minRows={3}
+                          maxRows={6}
+                          placeholder={"One option per line"}
+                          className='MuiInputBase-root MuiInput-root MuiInputBase-formControl outlined autosize w-full'
+                        />
+                      </FormControl>
+                    </Box>
+                  )}
 
                   <Box className='flex flex-row gap-2'>
                     <Scroll />
@@ -172,6 +223,14 @@ export default function Page() {
                         maxRows={2}
                         className='MuiInputBase-root MuiInput-root MuiInputBase-formControl outlined autosize w-full'
                       />
+                    </FormControl>
+                  </Box>
+
+                  <Box className='flex flex-row gap-2'>
+                    <Ruler />
+                    <FormControl className='outlined' variant='standard' size='small' fullWidth>
+                      <FormLabel component='label'>Unit</FormLabel>
+                      <Input name='unit' value={formik.values.unit} onChange={formik.handleChange} />
                     </FormControl>
                   </Box>
 
@@ -255,14 +314,16 @@ export default function Page() {
             </Grid>
             <Grid size={12}>
               <Typography variant='h6' component='h6' className='mb-3'>
-                Configuration
+                Relation
               </Typography>
               <Card>
                 <CardContent>
                   <Box className='flex flex-row gap-2'>
-                    <ListTree />
-                    <FormControl fullWidth size='small' variant='standard' className='outlined mb-0'>
-                      <FormLabel component='label'>Container *</FormLabel>
+                    <Package2 className={cn(hasFieldError("container") && "text-error!")} />
+                    <FormControl fullWidth size='small' variant='standard' className='outlined mb-0' required>
+                      <FormLabel component='label' className={cn(hasFieldError("container") && "text-error!")}>
+                        Container
+                      </FormLabel>
                       <Select<DataFieldContainer | "">
                         value={formik.values.container}
                         onChange={(event) => void formik.setFieldValue("container", event.target.value)}
@@ -281,7 +342,11 @@ export default function Page() {
               </Card>
             </Grid>
             <Grid size={12}>
-              {saveError && <Alert severity='error' className='mb-2'>{saveError}</Alert>}
+              {saveError && (
+                <Alert severity='error' className='mb-2'>
+                  {saveError}
+                </Alert>
+              )}
               {/* All Form Errors */}
               {submitted && !formik.isValid && (
                 <Alert severity='error' icon={<XSquare />} className='neutral rounded-3xl! bg-transparent! mb-2 mt-2 p-5'>
@@ -298,7 +363,16 @@ export default function Page() {
                   })}
                 </Alert>
               )}
-              <Button loading={formik.isSubmitting} loadingPosition="start" size='large' className='surface-standard' color='text-primary' variant='surface' type='submit' startIcon={<Save />}>
+              <Button
+                loading={formik.isSubmitting}
+                loadingPosition='start'
+                size='large'
+                className='surface-standard'
+                color='text-primary'
+                variant='surface'
+                type='submit'
+                startIcon={<Save />}
+              >
                 Save
               </Button>
             </Grid>
@@ -309,7 +383,31 @@ export default function Page() {
                 Preview
               </Typography>
               <Card>
-                <CardContent className='flex flex-col gap-5'></CardContent>
+                <CardContent className='flex flex-col gap-5'>
+                  {formik.values.type && formik.values.name.trim() ? (
+                    <DataFieldInput
+                      field={{
+                        type: formik.values.type,
+                        name: formik.values.name.trim(),
+                        unit: formik.values.unit.trim() || undefined,
+                        mandatory: formik.values.mandatory ?? undefined,
+                        icon: formik.values.icon ?? undefined,
+                        options: formikOptionLines(formik.values.options),
+                      }}
+                      value={previewValue}
+                      onChange={setPreviewValue}
+                    />
+                  ) : (
+                    <Box className='flex flex-col items-center gap-4'>
+                      <Box className='flex flex-col gap-2 items-center'>
+                        <Box className='w-10 h-10 border border-dashed border-text-secondary flex items-center justify-center rounded-lg'>
+                          <File className='text-text-secondary' />
+                        </Box>
+                        <Typography>Fill the required fields(*) to see the preview!</Typography>
+                      </Box>
+                    </Box>
+                  )}
+                </CardContent>
               </Card>
             </Grid>
           </Grid>

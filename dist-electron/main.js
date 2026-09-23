@@ -4050,13 +4050,15 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     icon: path.join(process.env.VITE_PUBLIC, "favicon.ico"),
     webPreferences: {
-      preload: path.join(__dirname$1, "preload.mjs")
+      preload: path.join(__dirname$1, "preload.mjs"),
+      devTools: !app.isPackaged
     },
     autoHideMenuBar: true,
     show: false,
     frame: false,
     titleBarStyle: "hidden"
   });
+  mainWindow.removeMenu();
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     if (url.startsWith("http:") || url.startsWith("https:")) {
       shell.openExternal(url);

@@ -232,8 +232,7 @@
   }
 
   /* Filled input surface  */
-  .MuiFormControl-root.surface
-    .MuiInputBase-root.MuiFilledInput-root.MuiFilledInput-underline.MuiInputBase-formControl {
+  .MuiFormControl-root.surface .MuiInputBase-root.MuiFilledInput-root.MuiFilledInput-underline.MuiInputBase-formControl {
     @apply bg-background-paper shadow-xs;
 
     &.Mui-focused {
@@ -305,7 +304,7 @@
 
   /* Form helper text */
   .MuiFormHelperText-root {
-    @apply font-body text-sm leading-4 font-normal tracking-normal;
+    @apply font-body text-sm leading-4 font-normal tracking-normal opacity-100! text-text-secondary;
   }
 
   .MuiInputBase-root + .MuiFormHelperText-root {
@@ -521,5 +520,17 @@
         transform: translate(-1rem, calc(-0.5rem - 2px)) scale(0.85);
       }
     }
+  }
+
+  /* Chrome, Safari, Edge, Opera */
+  input::-webkit-outer-spin-button,
+  input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  /* Firefox */
+  input[type="number"] {
+    -moz-appearance: textfield;
   }
 }

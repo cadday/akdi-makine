@@ -48,6 +48,7 @@ export interface DataFieldDefinition {
   id: string;
   type: DataFieldType;
   name: string;
+  unit?: string;
   description?: string;
   mandatory?: boolean;
   icon?: IconName;

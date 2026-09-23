@@ -42,6 +42,7 @@ function createWindow() {
     icon: path.join(process.env.VITE_PUBLIC, "favicon.ico"),
     webPreferences: {
       preload: path.join(__dirname, "preload.mjs"),
+      devTools: !app.isPackaged,
     },
     autoHideMenuBar: true,
     show: false,
@@ -49,12 +50,14 @@ function createWindow() {
     titleBarStyle: "hidden",
   });
 
+  mainWindow.removeMenu();
+
   // External link handling
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     // Optionally check if the URL is external
     if (url.startsWith("http:") || url.startsWith("https:")) {
       shell.openExternal(url);
-      return { action: "deny" }; 
+      return { action: "deny" };
     }
     return { action: "allow" };
   });
