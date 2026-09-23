@@ -5,56 +5,81 @@ import TitleWrapper from "@/components/layout/containers/title-wrapper";
 import DataFieldInput from "@/components/data-fields/data-field-input";
 import { LINKS } from "@/constants";
 import { useDb, type DataFieldDefinition, type DynamicDataValue } from "@/context/db-context";
-import { Alert, Breadcrumbs, Button, Card, CardContent, Grid, Input, Typography } from "@mui/material";
+import { Alert, AlertTitle, Box, Breadcrumbs, Button, capitalize, Card, CardContent, FormControl, FormLabel, Grid, Input, Typography } from "@mui/material";
 import { useTranslation } from "react-i18next";
-import { Save } from "lucide-react";
-import { useEffect, useState } from "react";
-import { useFormik, type FormikErrors } from "formik";
+import { Save, Tag, XSquare } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { useFormik } from "formik";
+import { cn } from "@/lib/utils";
+import * as yup from "yup";
 
 interface SpecimenFormValues {
   name: string;
   customData: Record<string, DynamicDataValue>;
 }
 
-function validateSpecimen(values: SpecimenFormValues, fields: DataFieldDefinition[]) {
-  const errors: FormikErrors<SpecimenFormValues> = {};
-  if (!values.name.trim()) {
-    errors.name = "Specimen name is required";
-  }
-
-  const customDataErrors: Record<string, string> = {};
+function buildSpecimenValidationSchema(fields: DataFieldDefinition[]) {
+  const customDataShape: Record<string, yup.AnySchema> = {};
   for (const field of fields) {
-    if (field.type === "Image") {
-      if (field.mandatory) customDataErrors[field.id] = "Required image fields are not supported yet";
-      continue;
-    }
-
-    const value = values.customData[field.id];
-    if (!field.mandatory) continue;
-
     switch (field.type) {
-      case "Text":
-        if (typeof value !== "string" || !value.trim()) customDataErrors[field.id] = `${field.name} is required`;
+      case "Text": {
+        let schema = yup.string().nullable();
+        if (field.mandatory) schema = schema.required(`${field.name} is required`).trim();
+        customDataShape[field.id] = schema;
         break;
-      case "Number":
-        if (typeof value !== "number" || !Number.isFinite(value)) customDataErrors[field.id] = `${field.name} is required`;
+      }
+      case "Number": {
+        let schema = yup.number().nullable().typeError(`${field.name} must be a number`);
+        if (field.mandatory) schema = schema.required(`${field.name} is required`);
+        customDataShape[field.id] = schema;
         break;
-      case "Select":
-        if (typeof value !== "string" || !field.options?.includes(value)) customDataErrors[field.id] = `${field.name} is required`;
+      }
+      case "Select": {
+        let schema = yup
+          .string()
+          .nullable()
+          .oneOf(field.options ?? [], `${field.name} must be one of its configured options`);
+        if (field.mandatory) schema = schema.required(`${field.name} is required`);
+        customDataShape[field.id] = schema;
         break;
-      case "Multi-Select":
-        if (!Array.isArray(value) || value.length === 0) customDataErrors[field.id] = `${field.name} is required`;
+      }
+      case "Multi-Select": {
+        let schema = yup
+          .array()
+          .of(yup.string().oneOf(field.options ?? []))
+          .nullable();
+        if (field.mandatory) schema = schema.required(`${field.name} is required`).min(1, `${field.name} is required`);
+        customDataShape[field.id] = schema;
         break;
-      case "Boolean":
-        if (typeof value !== "boolean") customDataErrors[field.id] = `${field.name} is required`;
+      }
+      case "Boolean": {
+        let schema = yup.boolean().nullable();
+        if (field.mandatory) schema = schema.required(`${field.name} is required`);
+        customDataShape[field.id] = schema;
         break;
+      }
+      case "Image": {
+        let schema = yup.mixed().nullable();
+        if (field.mandatory) {
+          schema = schema.test("unsupported-required-image", `${field.name}: required image fields are not supported yet`, () => false);
+        }
+        customDataShape[field.id] = schema;
+        break;
+      }
     }
   }
 
-  if (Object.keys(customDataErrors).length) {
-    errors.customData = customDataErrors as FormikErrors<Record<string, DynamicDataValue>>;
-  }
-  return errors;
+  return yup.object({
+    name: yup.string().trim().required("Specimen name is required"),
+    customData: yup.object().shape(customDataShape),
+  });
+}
+
+function collectErrorMessages(errors: unknown, prefix = ""): Array<[string, string]> {
+  if (typeof errors === "string") return [[prefix, errors]];
+  if (!errors || typeof errors !== "object") return [];
+
+  return Object.entries(errors).flatMap(([key, value]) => collectErrorMessages(value, prefix ? `${prefix}.${key}` : key));
 }
 
 export default function Page() {
@@ -65,6 +90,7 @@ export default function Page() {
   const [isLoadingFields, setIsLoadingFields] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -88,9 +114,10 @@ export default function Page() {
     };
   }, [getDataFields]);
 
+  const validationSchema = useMemo(() => buildSpecimenValidationSchema(fields), [fields]);
   const formik = useFormik<SpecimenFormValues>({
     initialValues: { name: "", customData: {} },
-    validate: (values) => validateSpecimen(values, fields),
+    validationSchema,
     onSubmit: async (values) => {
       setSaveError(null);
       const customData = Object.fromEntries(
@@ -104,8 +131,8 @@ export default function Page() {
         setSaveError(`Failed to save specimen: ${String(error)}`);
       }
     },
-    validateOnBlur: true,
-    validateOnChange: false,
+    validateOnBlur: false,
+    validateOnChange: true,
   });
 
   return (
@@ -136,33 +163,37 @@ export default function Page() {
           spacing={5}
           className='w-full'
           component='form'
+          noValidate
           onSubmit={(event) => {
             event.preventDefault();
+            setSubmitted(true);
             void formik.submitForm();
           }}
         >
           <Grid size={{ lg: 8, xs: 12 }} container spacing={5}>
             <Grid size={12}>
-              <Typography variant='h6' component='h2' className='mb-3'>Specimen Info</Typography>
+              <Typography variant='h6' component='h2' className='mb-3'>
+                Specimen Info
+              </Typography>
               <Card>
                 <CardContent>
-                  <Input
-                    fullWidth
-                    name='name'
-                    value={formik.values.name}
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                    error={Boolean(formik.touched.name && formik.errors.name)}
-                    placeholder='Specimen name'
-                    aria-label='Specimen name'
-                  />
-                  {formik.touched.name && formik.errors.name && <Alert severity='error' className='mt-2'>{formik.errors.name}</Alert>}
+                  <Box className='flex flex-row gap-2'>
+                    <Tag className={cn(formik.touched.name && formik.errors.name && submitted && "text-error!")} />
+                    <FormControl className='outlined' variant='standard' size='small' fullWidth required>
+                      <FormLabel component='label' className={cn(formik.touched.name && formik.errors.name && submitted && "text-error!")}>
+                        Name
+                      </FormLabel>
+                      <Input name='name' value={formik.values.name} onChange={formik.handleChange} onBlur={formik.handleBlur} />
+                    </FormControl>
+                  </Box>
                 </CardContent>
               </Card>
             </Grid>
 
             <Grid size={12}>
-              <Typography variant='h6' component='h2' className='mb-3'>Custom Fields</Typography>
+              <Typography variant='h6' component='h2' className='mb-3'>
+                Custom Fields
+              </Typography>
               <Card>
                 <CardContent className='flex flex-col gap-5'>
                   {loadError ? (
@@ -180,7 +211,7 @@ export default function Page() {
                           field={field}
                           value={formik.values.customData[field.id] ?? null}
                           onChange={(value) => void formik.setFieldValue(`customData.${field.id}`, value)}
-                          error={typeof error === "string" ? error : undefined}
+                          error={typeof error === "string" && submitted ? error : undefined}
                         />
                       );
                     })
@@ -189,8 +220,25 @@ export default function Page() {
               </Card>
             </Grid>
 
-            {saveError && <Grid size={12}><Alert severity='error'>{saveError}</Alert></Grid>}
             <Grid size={12}>
+              {saveError && <Alert severity='error'>{saveError}</Alert>}
+              {submitted && !formik.isValid && (
+                <Alert severity='error' icon={<XSquare />} className='neutral rounded-3xl! bg-transparent! mb-2 mt-2 p-5'>
+                  <AlertTitle variant='subtitle2' className='pt-0.5'>
+                    The following inputs have errors!
+                  </AlertTitle>
+                  {collectErrorMessages(formik.errors).map(([key, message]) => {
+                    const fieldId = key.startsWith("customData.") ? key.slice("customData.".length) : null;
+                    const label = fieldId ? (fields.find((field) => field.id === fieldId)?.name ?? fieldId) : capitalize(key);
+                    return (
+                      <Box className='flex flex-row gap-0.5' key={key}>
+                        <Typography className='text-error'>{label}:</Typography>
+                        <Typography className='text-text-primary'>{message}</Typography>
+                      </Box>
+                    );
+                  })}
+                </Alert>
+              )}
               <Button
                 disabled={isLoadingFields || Boolean(loadError)}
                 loading={formik.isSubmitting}

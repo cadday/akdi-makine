@@ -198,12 +198,13 @@ export default function Page() {
             const value = params.value;
             if (value == null) return "-";
             if (typeof value === "boolean") return value ? "Yes" : "No";
-            if (Array.isArray(value)) {
-              return value
+            const displayValue = Array.isArray(value)
+              ? value
                 .map((item) => (typeof item === "string" ? item : item && typeof item === "object" && "name" in item ? item.name : String(item)))
-                .join(", ");
-            }
-            return String(value);
+                .join(", ")
+              : String(value);
+
+            return dataField.unit ? `${displayValue} ${dataField.unit}` : displayValue;
           },
         }),
       ),
@@ -212,7 +213,7 @@ export default function Page() {
         headerName: "Created",
         minWidth: 160,
         valueFormatter: (value) =>
-          new Date(Number(value)).toLocaleString("en-GB", {
+          new Date(Number(value)).toLocaleString("tr-TR", {
             dateStyle: "short",
             timeStyle: "short",
           }),
@@ -226,7 +227,7 @@ export default function Page() {
         headerName: "Updated",
         minWidth: 160,
         valueFormatter: (value) =>
-          new Date(Number(value)).toLocaleString("en-GB", {
+          new Date(Number(value)).toLocaleString("tr-TR", {
             dateStyle: "short",
             timeStyle: "short",
           }),

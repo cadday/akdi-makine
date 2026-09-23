@@ -2,6 +2,7 @@ import type { DataFieldDefinition, DynamicDataValue } from "@/context/db-context
 import { Alert, Box, Checkbox, FormControl, FormHelperText, FormLabel, Input, InputAdornment, MenuItem, Select } from "@mui/material";
 import { ChevronDown, Hexagon } from "lucide-react";
 import { DynamicIcon } from "lucide-react/dynamic";
+import { cn } from "@/lib/utils";
 
 interface DataFieldInputProps {
   field: Pick<DataFieldDefinition, "type" | "name" | "unit" | "mandatory" | "icon" | "options" | "accept" | "multiple">;
@@ -11,22 +12,22 @@ interface DataFieldInputProps {
 }
 
 export default function DataFieldInput({ field, value, onChange, error }: DataFieldInputProps) {
-  const fieldIcon = field.icon ? <DynamicIcon name={field.icon} /> : <Hexagon />;
+  const fieldIcon = field.icon ? <DynamicIcon name={field.icon} className={cn(error && "text-error!")} /> : <Hexagon className={cn(error && "text-error!")} />;
   const label = field.name;
+  const labelClassName = cn(error && "text-error!");
 
   switch (field.type) {
     case "Text":
       return (
         <Box className='flex flex-row gap-2'>
           {fieldIcon}
-          <FormControl className='outlined' variant='standard' size='small' fullWidth required={field.mandatory} error={Boolean(error)}>
-            <FormLabel component='label'>{label}</FormLabel>
+          <FormControl className='outlined' variant='standard' size='small' fullWidth required={field.mandatory}>
+            <FormLabel component='label' className={labelClassName}>{label}</FormLabel>
             <Input
               value={typeof value === "string" ? value : ""}
               onChange={(event) => onChange(event.target.value)}
               endAdornment={field.unit ? <InputAdornment position='end'>{field.unit}</InputAdornment> : undefined}
             />
-            {error && <FormHelperText>{error}</FormHelperText>}
           </FormControl>
         </Box>
       );
@@ -34,15 +35,14 @@ export default function DataFieldInput({ field, value, onChange, error }: DataFi
       return (
         <Box className='flex flex-row gap-2'>
           {fieldIcon}
-          <FormControl className='outlined' variant='standard' size='small' fullWidth required={field.mandatory} error={Boolean(error)}>
-            <FormLabel component='label'>{label}</FormLabel>
+          <FormControl className='outlined' variant='standard' size='small' fullWidth required={field.mandatory}>
+            <FormLabel component='label' className={labelClassName}>{label}</FormLabel>
             <Input
               type='number'
               value={typeof value === "number" ? value : ""}
               onChange={(event) => onChange(event.target.value === "" ? null : Number(event.target.value))}
               endAdornment={field.unit ? <InputAdornment position='end'>{field.unit}</InputAdornment> : undefined}
             />
-            {error && <FormHelperText>{error}</FormHelperText>}
           </FormControl>
         </Box>
       );
@@ -57,10 +57,9 @@ export default function DataFieldInput({ field, value, onChange, error }: DataFi
             size='small'
             fullWidth
             required={field.mandatory}
-            error={Boolean(error)}
             disabled={options.length === 0}
           >
-            <FormLabel component='label'>{label}</FormLabel>
+            <FormLabel component='label' className={labelClassName}>{label}</FormLabel>
             <Select<string>
               value={typeof value === "string" ? value : ""}
               displayEmpty
@@ -73,7 +72,7 @@ export default function DataFieldInput({ field, value, onChange, error }: DataFi
                 </MenuItem>
               ))}
             </Select>
-            {error ? <FormHelperText>{error}</FormHelperText> : options.length === 0 ? <FormHelperText>No options are configured.</FormHelperText> : null}
+            {options.length === 0 && <FormHelperText>No options are configured.</FormHelperText>}
           </FormControl>
         </Box>
       );
@@ -90,10 +89,9 @@ export default function DataFieldInput({ field, value, onChange, error }: DataFi
             size='small'
             fullWidth
             required={field.mandatory}
-            error={Boolean(error)}
             disabled={options.length === 0}
           >
-            <FormLabel component='label'>{label}</FormLabel>
+            <FormLabel component='label' className={labelClassName}>{label}</FormLabel>
             <Select<string[]>
               multiple
               value={selected}
@@ -107,7 +105,7 @@ export default function DataFieldInput({ field, value, onChange, error }: DataFi
                 </MenuItem>
               ))}
             </Select>
-            {error ? <FormHelperText>{error}</FormHelperText> : options.length === 0 ? <FormHelperText>No options are configured.</FormHelperText> : null}
+            {options.length === 0 && <FormHelperText>No options are configured.</FormHelperText>}
           </FormControl>
         </Box>
       );
@@ -116,10 +114,9 @@ export default function DataFieldInput({ field, value, onChange, error }: DataFi
       return (
         <Box className='flex flex-row gap-2'>
           {fieldIcon}
-          <FormControl className='outlined' variant='standard' size='small' fullWidth required={field.mandatory} error={Boolean(error)}>
-            <FormLabel component='label'>{label}</FormLabel>
+          <FormControl className='outlined' variant='standard' size='small' fullWidth required={field.mandatory}>
+            <FormLabel component='label' className={labelClassName}>{label}</FormLabel>
             <Checkbox className='self-start' checked={value === true} onChange={(event) => onChange(event.target.checked)} />
-            {error && <FormHelperText>{error}</FormHelperText>}
           </FormControl>
         </Box>
       );
@@ -128,7 +125,7 @@ export default function DataFieldInput({ field, value, onChange, error }: DataFi
         <Box className='flex flex-row gap-2'>
           {fieldIcon}
           <FormControl className='outlined' variant='standard' size='small' fullWidth>
-            <FormLabel component='label'>{label}</FormLabel>
+            <FormLabel component='label' className={labelClassName}>{label}</FormLabel>
             <Alert severity='info'>Image fields are not supported in this form yet.</Alert>
           </FormControl>
         </Box>

@@ -50,7 +50,7 @@ function createWindow() {
     titleBarStyle: "hidden",
   });
 
-  mainWindow.removeMenu();
+  // mainWindow.removeMenu();
 
   // External link handling
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {

@@ -182,9 +182,9 @@ export default function Page() {
                   </Box>
 
                   <Box className='flex flex-row gap-2'>
-                    <Tag className={cn(hasFieldError("name") && "text-error!")} />
+                    <Tag className={cn(hasFieldError("name") && submitted && "text-error!")} />
                     <FormControl className='outlined' variant='standard' size='small' fullWidth required>
-                      <FormLabel component='label' className={cn(hasFieldError("name") && "text-error!")}>
+                      <FormLabel component='label' className={cn(hasFieldError("name") && submitted && "text-error!")}>
                         Name
                       </FormLabel>
                       <Input name='name' value={formik.values.name} onChange={formik.handleChange} />
@@ -193,9 +193,9 @@ export default function Page() {
 
                   {(formik.values.type === "Select" || formik.values.type === "Multi-Select") && (
                     <Box className='flex flex-row gap-2'>
-                      <ListTree className={cn(hasFieldError("options") && "text-error!")} />
+                      <ListTree className={cn(hasFieldError("options") && submitted && "text-error!")} />
                       <FormControl className='MuiTextField-root outlined' fullWidth required>
-                        <FormLabel component='label' className={cn(hasFieldError("options") && "text-error!")}>
+                        <FormLabel component='label' className={cn(hasFieldError("options") && submitted && "text-error!")}>
                           Options
                         </FormLabel>
                         <TextareaAutosize
@@ -319,9 +319,9 @@ export default function Page() {
               <Card>
                 <CardContent>
                   <Box className='flex flex-row gap-2'>
-                    <Package2 className={cn(hasFieldError("container") && "text-error!")} />
+                    <Package2 className={cn(hasFieldError("container") && submitted && "text-error!")} />
                     <FormControl fullWidth size='small' variant='standard' className='outlined mb-0' required>
-                      <FormLabel component='label' className={cn(hasFieldError("container") && "text-error!")}>
+                      <FormLabel component='label' className={cn(hasFieldError("container") && submitted && "text-error!")}>
                         Container
                       </FormLabel>
                       <Select<DataFieldContainer | "">

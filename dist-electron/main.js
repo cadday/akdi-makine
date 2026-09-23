@@ -4058,7 +4058,6 @@ function createWindow() {
     frame: false,
     titleBarStyle: "hidden"
   });
-  mainWindow.removeMenu();
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     if (url.startsWith("http:") || url.startsWith("https:")) {
       shell.openExternal(url);
