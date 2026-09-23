@@ -1,17 +1,25 @@
-import type { DataFieldDefinition, DynamicDataValue } from "@/context/db-context";
-import { Alert, Box, Checkbox, FormControl, FormHelperText, FormLabel, Input, InputAdornment, MenuItem, Select } from "@mui/material";
+import type { DataFieldDefinition, DynamicDataValue, UploadedImage } from "@/context/db-context";
+import { Box, Checkbox, FormControl, FormHelperText, FormLabel, Input, InputAdornment, MenuItem, Select } from "@mui/material";
 import { ChevronDown, Hexagon } from "lucide-react";
 import { DynamicIcon } from "lucide-react/dynamic";
 import { cn } from "@/lib/utils";
+import ImageDataFieldInput from "@/components/data-fields/image-data-field-input";
 
 interface DataFieldInputProps {
   field: Pick<DataFieldDefinition, "type" | "name" | "unit" | "mandatory" | "icon" | "options" | "accept" | "multiple">;
   value: DynamicDataValue;
   onChange: (value: DynamicDataValue) => void;
   error?: string;
+  pendingFiles?: File[];
+  previewOnly?: boolean;
+  onPendingFilesChange?: (files: File[]) => void;
 }
 
-export default function DataFieldInput({ field, value, onChange, error }: DataFieldInputProps) {
+function isUploadedImage(value: unknown): value is UploadedImage {
+  return Boolean(value && typeof value === "object" && "id" in value && "name" in value && "type" in value && "size" in value);
+}
+
+export default function DataFieldInput({ field, value, onChange, error, pendingFiles, previewOnly, onPendingFilesChange }: DataFieldInputProps) {
   const fieldIcon = field.icon ? <DynamicIcon name={field.icon} className={cn(error && "text-error!")} /> : <Hexagon className={cn(error && "text-error!")} />;
   const label = field.name;
   const labelClassName = cn(error && "text-error!");
@@ -122,13 +130,18 @@ export default function DataFieldInput({ field, value, onChange, error }: DataFi
       );
     case "Image":
       return (
-        <Box className='flex flex-row gap-2'>
-          {fieldIcon}
-          <FormControl className='outlined' variant='standard' size='small' fullWidth>
-            <FormLabel component='label' className={labelClassName}>{label}</FormLabel>
-            <Alert severity='info'>Image fields are not supported in this form yet.</Alert>
-          </FormControl>
-        </Box>
+        <ImageDataFieldInput
+          name={label}
+          accept={field.accept}
+          multiple={field.multiple}
+          mandatory={field.mandatory}
+          error={error}
+          value={Array.isArray(value) && value.every(isUploadedImage) ? (value as UploadedImage[]) : null}
+          pendingFiles={pendingFiles}
+          previewOnly={previewOnly}
+          onChange={(images) => onChange(images)}
+          onPendingFilesChange={onPendingFilesChange}
+        />
       );
   }
 }

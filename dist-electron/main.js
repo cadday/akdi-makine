@@ -1,12 +1,74 @@
 import { ipcMain, app, BrowserWindow, session, shell } from "electron";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
+import { randomUUID } from "node:crypto";
+import { mkdir, writeFile, readFile, rm } from "node:fs/promises";
 import require$$1 from "tty";
 import require$$1$1 from "util";
 import require$$0 from "os";
 import require$$0$1 from "buffer";
 import require$$0$2 from "events";
 import "net";
+const IMAGE_MAX_BYTES = 10 * 1024 * 1024;
+const IMAGE_TYPES = /* @__PURE__ */ new Set(["image/jpeg", "image/png", "image/gif", "image/webp", "image/bmp"]);
+const IMAGE_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+function getImagesDirectory() {
+  return path.join(app.getPath("userData"), "images");
+}
+function getImagePath(id) {
+  if (typeof id !== "string" || !IMAGE_ID_PATTERN.test(id)) {
+    throw new Error("Invalid image ID");
+  }
+  return path.join(getImagesDirectory(), id);
+}
+function matchesImageSignature(type, bytes) {
+  if (type === "image/jpeg") return bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255;
+  if (type === "image/png") return bytes.subarray(0, 8).join(",") === "137,80,78,71,13,10,26,10";
+  if (type === "image/gif") return new TextDecoder().decode(bytes.subarray(0, 3)) === "GIF";
+  if (type === "image/webp") return new TextDecoder().decode(bytes.subarray(0, 4)) === "RIFF" && new TextDecoder().decode(bytes.subarray(8, 12)) === "WEBP";
+  if (type === "image/bmp") return new TextDecoder().decode(bytes.subarray(0, 2)) === "BM";
+  return false;
+}
+function registerImageStorage(getWindow) {
+  const assertTrustedImageRequest = (sender) => {
+    const window2 = getWindow();
+    if (!window2 || window2.isDestroyed() || sender !== window2.webContents) {
+      throw new Error("Unauthorized image request");
+    }
+  };
+  ipcMain.handle("images:save", async (event, input) => {
+    assertTrustedImageRequest(event.sender);
+    if (!input || typeof input !== "object") throw new Error("Invalid image upload");
+    const candidate = input;
+    if (typeof candidate.name !== "string" || typeof candidate.type !== "string" || !(candidate.bytes instanceof Uint8Array)) {
+      throw new Error("Invalid image upload");
+    }
+    const bytes = candidate.bytes;
+    const name = path.basename(candidate.name).slice(0, 255);
+    const type = candidate.type.toLowerCase();
+    if (!name || !IMAGE_TYPES.has(type) || bytes.byteLength === 0 || bytes.byteLength > IMAGE_MAX_BYTES || !matchesImageSignature(type, bytes)) {
+      throw new Error("Image must be a supported raster image no larger than 10 MB");
+    }
+    const id = randomUUID();
+    await mkdir(getImagesDirectory(), { recursive: true });
+    await writeFile(getImagePath(id), Buffer.from(bytes));
+    return { id, name, type, size: bytes.byteLength };
+  });
+  ipcMain.handle("images:read", async (event, id) => {
+    assertTrustedImageRequest(event.sender);
+    try {
+      const bytes = await readFile(getImagePath(id));
+      return { bytes: new Uint8Array(bytes) };
+    } catch (error) {
+      if (error.code === "ENOENT") return null;
+      throw error;
+    }
+  });
+  ipcMain.handle("images:delete", async (event, id) => {
+    assertTrustedImageRequest(event.sender);
+    await rm(getImagePath(id), { force: true });
+  });
+}
 var commonjsGlobal = typeof globalThis !== "undefined" ? globalThis : typeof window !== "undefined" ? window : typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : {};
 var modbus = {};
 var modbusTcpClient = {};
@@ -4028,6 +4090,7 @@ const MAIN_DIST = path.join(process.env.APP_ROOT, "dist-electron");
 const RENDERER_DIST = path.join(process.env.APP_ROOT, "dist");
 process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, "public") : RENDERER_DIST;
 let mainWindow;
+registerImageStorage(() => mainWindow);
 ipcMain.handle("window:minimize", () => {
   mainWindow == null ? void 0 : mainWindow.minimize();
 });

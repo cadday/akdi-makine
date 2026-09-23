@@ -16,8 +16,11 @@ import {
   capitalize,
   Card,
   CardContent,
+  Checkbox,
   createFilterOptions,
   FormControl,
+  FormControlLabel,
+  FormGroup,
   FormLabel,
   Grid,
   Input,
@@ -29,7 +32,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useTranslation } from "react-i18next";
-import { ChevronDown, File, ListTree, Package2, Ruler, Save, Scroll, Signpost, SquaresSubtract, Tag, TriangleAlert, X, XSquare } from "lucide-react";
+import { ChevronDown, File, ImagePlus, ListTree, Package2, Ruler, Save, Scroll, Signpost, SquaresSubtract, Tag, TriangleAlert, X, XSquare } from "lucide-react";
 import { DynamicIcon, iconNames } from "lucide-react/dynamic";
 import { useState } from "react";
 import * as yup from "yup";
@@ -38,7 +41,7 @@ import { useDb } from "@/context/db-context";
 import { cn } from "@/lib/utils";
 
 type DataFieldFormValues = Pick<DataFieldDefinition, "name"> &
-  Required<Pick<DataFieldDefinition, "description" | "unit">> & {
+  Required<Pick<DataFieldDefinition, "description" | "unit" | "accept" | "multiple">> & {
     options: string;
     type: DataFieldDefinition["type"] | "";
     mandatory: NonNullable<DataFieldDefinition["mandatory"]> | null;
@@ -46,6 +49,7 @@ type DataFieldFormValues = Pick<DataFieldDefinition, "name"> &
     container: DataFieldDefinition["container"] | "";
   };
 type DataFieldIcon = NonNullable<DataFieldDefinition["icon"]>;
+const IMAGE_ACCEPT_OPTIONS = ["image/jpeg", "image/png", "image/gif", "image/webp", "image/bmp"];
 function formikOptionLines(value: string) {
   return [
     ...new Set(
@@ -77,8 +81,9 @@ export default function Page() {
         name: values.name.trim(),
         description: values.description.trim(),
         container: values.container,
-        ...(values.unit.trim() && { unit: values.unit.trim() }),
+        ...((values.type === "Text" || values.type === "Number") && values.unit.trim() && { unit: values.unit.trim() }),
         ...((values.type === "Select" || values.type === "Multi-Select") && { options: formikOptionLines(values.options) }),
+        ...(values.type === "Image" && { accept: values.accept, multiple: values.multiple }),
         ...(values.mandatory !== null && { mandatory: values.mandatory }),
         ...(values.icon && { icon: values.icon }),
       });
@@ -95,6 +100,8 @@ export default function Page() {
       unit: "",
       description: "",
       options: "",
+      accept: IMAGE_ACCEPT_OPTIONS.join(","),
+      multiple: false,
       mandatory: null,
       icon: null,
       container: "",
@@ -110,6 +117,14 @@ export default function Page() {
         is: (type: DataFieldType | "") => type === "Select" || type === "Multi-Select",
         then: (schema) => schema.test("has-options", "Add at least one option", (value) => formikOptionLines(value ?? "").length > 0),
       }),
+      accept: yup.string().when("type", {
+        is: (type: DataFieldType | "") => type === "Image",
+        then: (schema) =>
+          schema
+            .required("Choose at least one image type")
+            .test("accepted-image-types", "Choose at least one image type", (value) => Boolean(value?.split(",").some((type) => type.trim()))),
+      }),
+      multiple: yup.boolean(),
     }),
     onSubmit: handleSave,
     validateOnBlur: false,
@@ -167,6 +182,9 @@ export default function Page() {
                         value={formik.values.type}
                         onChange={(event) => {
                           void formik.setFieldValue("type", event.target.value);
+                          if (event.target.value !== "Text" && event.target.value !== "Number") {
+                            void formik.setFieldValue("unit", "");
+                          }
                           setPreviewValue(null);
                         }}
                         IconComponent={ChevronDown}
@@ -211,6 +229,46 @@ export default function Page() {
                     </Box>
                   )}
 
+                  {formik.values.type === "Image" && (
+                    <>
+                      <Box className='flex flex-row gap-2'>
+                        <ImagePlus />
+                        <FormControl fullWidth size='small' variant='standard' className='outlined'>
+                          <FormLabel component='label'>Accepted image types</FormLabel>
+                          <Select<string[]>
+                            multiple
+                            value={formik.values.accept.split(",").filter(Boolean)}
+                            onChange={(event) => {
+                              const selected = typeof event.target.value === "string" ? event.target.value.split(",") : event.target.value;
+                              void formik.setFieldValue("accept", selected.join(","));
+                            }}
+                            IconComponent={ChevronDown}
+                            renderValue={(selected) => selected.map((type) => type.replace("image/", "").toUpperCase()).join(", ")}
+                            MenuProps={{ className: "outlined" }}
+                          >
+                            {IMAGE_ACCEPT_OPTIONS.map((type) => (
+                              <MenuItem key={type} value={type}>
+                                {type.replace("image/", "").toUpperCase()}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
+                      </Box>
+                      <Box className='flex flex-row gap-2'>
+                        <ImagePlus />
+                        <FormGroup className='flex flex-col gap-1'>
+                          <FormLabel component='label'>Multiple Images</FormLabel>
+                          <FormControlLabel
+                            label='Allow'
+                            control={
+                              <Checkbox checked={formik.values.multiple} onChange={(event) => void formik.setFieldValue("multiple", event.target.checked)} />
+                            }
+                          />
+                        </FormGroup>
+                      </Box>
+                    </>
+                  )}
+
                   <Box className='flex flex-row gap-2'>
                     <Scroll />
                     <FormControl className='MuiTextField-root outlined' fullWidth>
@@ -226,13 +284,15 @@ export default function Page() {
                     </FormControl>
                   </Box>
 
-                  <Box className='flex flex-row gap-2'>
-                    <Ruler />
-                    <FormControl className='outlined' variant='standard' size='small' fullWidth>
-                      <FormLabel component='label'>Unit</FormLabel>
-                      <Input name='unit' value={formik.values.unit} onChange={formik.handleChange} />
-                    </FormControl>
-                  </Box>
+                  {(formik.values.type === "Text" || formik.values.type === "Number") && (
+                    <Box className='flex flex-row gap-2'>
+                      <Ruler />
+                      <FormControl className='outlined' variant='standard' size='small' fullWidth>
+                        <FormLabel component='label'>Unit</FormLabel>
+                        <Input name='unit' value={formik.values.unit} onChange={formik.handleChange} />
+                      </FormControl>
+                    </Box>
+                  )}
 
                   <Box className='flex flex-row gap-2'>
                     <TriangleAlert />
@@ -389,13 +449,16 @@ export default function Page() {
                       field={{
                         type: formik.values.type,
                         name: formik.values.name.trim(),
-                        unit: formik.values.unit.trim() || undefined,
+                        unit: formik.values.type === "Text" || formik.values.type === "Number" ? formik.values.unit.trim() || undefined : undefined,
                         mandatory: formik.values.mandatory ?? undefined,
                         icon: formik.values.icon ?? undefined,
                         options: formikOptionLines(formik.values.options),
+                        accept: formik.values.accept,
+                        multiple: formik.values.multiple,
                       }}
                       value={previewValue}
                       onChange={setPreviewValue}
+                      previewOnly={formik.values.type === "Image"}
                     />
                   ) : (
                     <Box className='flex flex-col items-center gap-4'>

@@ -36,10 +36,11 @@ import {
   GridRowSelectionModel,
   GridRowSpacingParams,
 } from "@mui/x-data-grid";
-import { DataFieldDefinition, SpecimenRecord, useDb } from "@/context/db-context";
 import { Filter } from "lucide-react";
 import Search from "@/components/layout/search/search";
 import DataGridDateTimeFilter from "@/components/data-grid/data-grid-date-time-filter";
+import { StoredImagePreviews } from "@/components/data-fields/image-data-field-input";
+import { DataFieldDefinition, SpecimenRecord, useDb, UploadedImage } from "@/context/db-context";
 
 type SpecimenGridRow = SpecimenRecord;
 
@@ -197,6 +198,9 @@ export default function Page() {
           renderCell: (params: GridRenderCellParams<SpecimenGridRow>) => {
             const value = params.value;
             if (value == null) return "-";
+            if (dataField.type === "Image" && Array.isArray(value)) {
+              return <StoredImagePreviews images={value as UploadedImage[]} />;
+            }
             if (typeof value === "boolean") return value ? "Yes" : "No";
             const displayValue = Array.isArray(value)
               ? value

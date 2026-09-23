@@ -21,6 +21,9 @@ contextBridge.exposeInMainWorld("ipcRenderer", {
 });
 
 contextBridge.exposeInMainWorld("electronAPI", {
+  saveImage: (input: { name: string; type: string; bytes: Uint8Array }) => ipcRenderer.invoke("images:save", input),
+  readImage: (id: string) => ipcRenderer.invoke("images:read", id) as Promise<{ bytes: Uint8Array } | null>,
+  deleteImage: (id: string) => ipcRenderer.invoke("images:delete", id) as Promise<void>,
   isMaximized: () => ipcRenderer.invoke("window:is-maximized"),
   onMaximizedStateChange: (callback: (isMaximized: boolean) => void) => {
     const listener = (_event: any, value: boolean) => callback(value);

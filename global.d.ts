@@ -27,6 +27,9 @@ interface PlcAPI {
 }
 
 interface ElectronAPI {
+  saveImage: (input: { name: string; type: string; bytes: Uint8Array }) => Promise<{ id: string; name: string; type: string; size: number }>;
+  readImage: (id: string) => Promise<{ bytes: Uint8Array } | null>;
+  deleteImage: (id: string) => Promise<void>;
   minimize: () => Promise<void>;
   maximize: () => Promise<void>;
   close: () => Promise<void>;

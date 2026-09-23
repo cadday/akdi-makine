@@ -12,7 +12,8 @@ export type DynamicDataValue = string | number | boolean | string[] | UploadedIm
 export interface UploadedImage {
   id: string;
   name: string;
-  url: string;
+  type: string;
+  size: number;
 }
 
 export interface SpecimenRecord {
@@ -111,16 +112,45 @@ export async function updateSpecimen(id: string, changes: Partial<Omit<SpecimenR
   });
 }
 
+function getImageIds(records: Array<{ customData: Record<string, DynamicDataValue> }>) {
+  const imageIds = new Set<string>();
+  for (const record of records) {
+    for (const value of Object.values(record.customData ?? {})) {
+      if (!Array.isArray(value)) continue;
+      for (const item of value) {
+        if (item && typeof item === "object" && "id" in item && typeof item.id === "string") imageIds.add(item.id);
+      }
+    }
+  }
+  return imageIds;
+}
+
+async function deleteUnreferencedImages(records: Array<{ customData: Record<string, DynamicDataValue> }>) {
+  if (typeof window === "undefined" || !window.electronAPI || records.length === 0) return;
+
+  const candidateIds = getImageIds(records);
+  if (candidateIds.size === 0) return;
+
+  const [specimens, tests] = await Promise.all([db.specimens.toArray(), db.tests.toArray()]);
+  const referencedIds = getImageIds([...specimens, ...tests]);
+  const unreferencedIds = [...candidateIds].filter((imageId) => !referencedIds.has(imageId));
+  await Promise.allSettled(unreferencedIds.map((imageId) => window.electronAPI.deleteImage(imageId)));
+}
+
 export async function deleteSpecimen(id: string) {
+  const specimen = await db.specimens.get(id);
   await db.specimens.delete(id);
+  if (specimen) await deleteUnreferencedImages([specimen]);
 }
 
 export async function deleteSpecimens(ids: string[]) {
   if (ids.length === 0) return;
 
+  const specimens = (await db.specimens.bulkGet(ids)).filter((specimen): specimen is SpecimenRecord => Boolean(specimen));
   await db.transaction("rw", db.specimens, async () => {
     await db.specimens.bulkDelete(ids);
   });
+  await deleteUnreferencedImages(specimens);
 }
 
 export async function duplicateSpecimen(id: string) {

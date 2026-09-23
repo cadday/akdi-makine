@@ -16,10 +16,12 @@ import * as yup from "yup";
 interface SpecimenFormValues {
   name: string;
   customData: Record<string, DynamicDataValue>;
+  pendingImages: Record<string, File[]>;
 }
 
 function buildSpecimenValidationSchema(fields: DataFieldDefinition[]) {
   const customDataShape: Record<string, yup.AnySchema> = {};
+  const pendingImagesShape: Record<string, yup.AnySchema> = {};
   for (const field of fields) {
     switch (field.type) {
       case "Text": {
@@ -59,11 +61,10 @@ function buildSpecimenValidationSchema(fields: DataFieldDefinition[]) {
         break;
       }
       case "Image": {
-        let schema = yup.mixed().nullable();
-        if (field.mandatory) {
-          schema = schema.test("unsupported-required-image", `${field.name}: required image fields are not supported yet`, () => false);
-        }
-        customDataShape[field.id] = schema;
+        customDataShape[field.id] = yup.mixed().nullable();
+        let schema = yup.array().of(yup.mixed<File>().required()).nullable();
+        if (field.mandatory) schema = schema.test("required-image", `${field.name} is required`, (files) => Boolean(files?.length));
+        pendingImagesShape[field.id] = schema;
         break;
       }
     }
@@ -72,6 +73,7 @@ function buildSpecimenValidationSchema(fields: DataFieldDefinition[]) {
   return yup.object({
     name: yup.string().trim().required("Specimen name is required"),
     customData: yup.object().shape(customDataShape),
+    pendingImages: yup.object().shape(pendingImagesShape),
   });
 }
 
@@ -116,21 +118,38 @@ export default function Page() {
 
   const validationSchema = useMemo(() => buildSpecimenValidationSchema(fields), [fields]);
   const formik = useFormik<SpecimenFormValues>({
-    initialValues: { name: "", customData: {} },
     validationSchema,
     onSubmit: async (values) => {
       setSaveError(null);
       const customData = Object.fromEntries(
         Object.entries(values.customData).filter(([, value]) => value !== null && value !== "" && !(Array.isArray(value) && value.length === 0)),
       );
+      const savedImageIds: string[] = [];
 
       try {
+        for (const field of fields) {
+          if (field.type !== "Image") continue;
+          const images = Array.isArray(customData[field.id]) ? [...(customData[field.id] as import("@/context/db-context").UploadedImage[])] : [];
+          for (const file of values.pendingImages[field.id] ?? []) {
+            const savedImage = await window.electronAPI.saveImage({
+              name: file.name,
+              type: file.type,
+              bytes: new Uint8Array(await file.arrayBuffer()),
+            });
+            savedImageIds.push(savedImage.id);
+            images.push(savedImage);
+          }
+          if (images.length > 0) customData[field.id] = images;
+        }
+
         await createSpecimen({ name: values.name.trim(), customData });
         navigate("/specimens");
       } catch (error) {
+        await Promise.allSettled(savedImageIds.map((imageId) => window.electronAPI.deleteImage(imageId)));
         setSaveError(`Failed to save specimen: ${String(error)}`);
       }
     },
+    initialValues: { name: "", customData: {}, pendingImages: {} },
     validateOnBlur: false,
     validateOnChange: true,
   });
@@ -211,6 +230,8 @@ export default function Page() {
                           field={field}
                           value={formik.values.customData[field.id] ?? null}
                           onChange={(value) => void formik.setFieldValue(`customData.${field.id}`, value)}
+                          pendingFiles={formik.values.pendingImages[field.id] ?? []}
+                          onPendingFilesChange={field.type === "Image" ? (files) => void formik.setFieldValue(`pendingImages.${field.id}`, files) : undefined}
                           error={typeof error === "string" && submitted ? error : undefined}
                         />
                       );
@@ -228,7 +249,11 @@ export default function Page() {
                     The following inputs have errors!
                   </AlertTitle>
                   {collectErrorMessages(formik.errors).map(([key, message]) => {
-                    const fieldId = key.startsWith("customData.") ? key.slice("customData.".length) : null;
+                    const fieldId = key.startsWith("customData.")
+                      ? key.slice("customData.".length)
+                      : key.startsWith("pendingImages.")
+                        ? key.slice("pendingImages.".length)
+                        : null;
                     const label = fieldId ? (fields.find((field) => field.id === fieldId)?.name ?? fieldId) : capitalize(key);
                     return (
                       <Box className='flex flex-row gap-0.5' key={key}>

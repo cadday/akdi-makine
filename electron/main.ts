@@ -1,6 +1,7 @@
 import { app, BrowserWindow, ipcMain, session, shell } from "electron";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
+import { registerImageStorage } from "./image-storage";
 import { shutdownPlcService } from "./plc-service";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -13,6 +14,7 @@ export const RENDERER_DIST = path.join(process.env.APP_ROOT, "dist");
 
 process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, "public") : RENDERER_DIST;
 let mainWindow: BrowserWindow | null;
+registerImageStorage(() => mainWindow);
 
 ipcMain.handle("window:minimize", () => {
   mainWindow?.minimize();

@@ -3,16 +3,18 @@ import { Link, useParams } from "react-router";
 
 import ContentWrapper from "@/components/layout/containers/content-wrapper";
 import TitleWrapper from "@/components/layout/containers/title-wrapper";
+import { StoredImagePreviews } from "@/components/data-fields/image-data-field-input";
 import { LINKS } from "@/constants";
-import { useDb, type SpecimenRecord } from "@/context/db-context";
-import { Breadcrumbs, Grid, Typography } from "@mui/material";
+import { useDb, type DataFieldDefinition, type DynamicDataValue, type SpecimenRecord, type UploadedImage } from "@/context/db-context";
+import { Box, Breadcrumbs, Card, CardContent, Grid, Typography } from "@mui/material";
 import { useTranslation } from "react-i18next";
 
 export default function Page() {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
-  const { getSpecimen } = useDb();
+  const { getSpecimen, getDataFields } = useDb();
   const [specimen, setSpecimen] = useState<SpecimenRecord | null>(null);
+  const [fields, setFields] = useState<DataFieldDefinition[]>([]);
   const [title, setTitle] = useState("");
 
   useEffect(() => {
@@ -28,10 +30,11 @@ export default function Page() {
       setTitle("");
 
       try {
-        const record = await getSpecimen(id);
+        const [record, dataFields] = await Promise.all([getSpecimen(id), getDataFields("Specimen")]);
         if (cancelled) return;
 
         setSpecimen(record ?? null);
+        setFields(dataFields);
         setTitle(record?.name ?? "Specimen not found");
       } catch {
         if (!cancelled) setTitle("Failed to load specimen");
@@ -42,7 +45,17 @@ export default function Page() {
     return () => {
       cancelled = true;
     };
-  }, [getSpecimen, id]);
+  }, [getDataFields, getSpecimen, id]);
+
+  const renderValue = (field: DataFieldDefinition, value: DynamicDataValue) => {
+    if (value == null) return "-";
+    if (field.type === "Image" && Array.isArray(value)) {
+      return <StoredImagePreviews images={value as UploadedImage[]} />;
+    }
+    if (typeof value === "boolean") return value ? "Yes" : "No";
+    const displayValue = Array.isArray(value) ? value.join(", ") : String(value);
+    return field.unit ? `${displayValue} ${field.unit}` : displayValue;
+  };
 
   return (
     <>
@@ -66,7 +79,25 @@ export default function Page() {
       </TitleWrapper>
 
       <ContentWrapper>
-        <Grid size={12} container spacing={5} className='w-full'></Grid>
+        {specimen && (
+          <Grid size={12} container spacing={5} className='w-full'>
+            <Grid size={12}>
+              <Typography variant='h6' component='h2' className='mb-3'>Custom Fields</Typography>
+              <Card>
+                <CardContent className='flex flex-col gap-5'>
+                  {fields.length === 0 ? (
+                    <Typography color='textSecondary'>No custom fields configured.</Typography>
+                  ) : fields.map((field) => (
+                    <Box key={field.id} className='flex flex-col gap-1'>
+                      <Typography variant='subtitle2'>{field.name}</Typography>
+                      {renderValue(field, specimen.customData?.[field.id] ?? specimen.customData?.[field.name] ?? null)}
+                    </Box>
+                  ))}
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
+        )}
       </ContentWrapper>
     </>
   );

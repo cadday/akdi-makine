@@ -1,11 +1,10 @@
-import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router";
-
+import { useEffect, useState } from "react";
 import ContentWrapper from "@/components/layout/containers/content-wrapper";
 import TitleWrapper from "@/components/layout/containers/title-wrapper";
 import { LINKS } from "@/constants";
 import { useDb, type DataFieldDefinition } from "@/context/db-context";
-import { Breadcrumbs, Grid, Typography } from "@mui/material";
+import { Breadcrumbs, Card, CardContent, Grid, Typography } from "@mui/material";
 import { useTranslation } from "react-i18next";
 
 export default function Page() {
@@ -66,7 +65,27 @@ export default function Page() {
       </TitleWrapper>
 
       <ContentWrapper>
-        <Grid size={12} container spacing={5} className='w-full'></Grid>
+        <Grid size={12} container spacing={5} className='w-full'>
+          <Card className='w-full'>
+              <CardContent className='flex flex-col gap-3'>
+                {dataField ? (
+                  <>
+                    <Typography variant='h6' component='h2'>{dataField.type}</Typography>
+                    <Typography><strong>Container:</strong> {dataField.container}</Typography>
+                    {dataField.description && <Typography>{dataField.description}</Typography>}
+                    {dataField.unit && <Typography><strong>Unit:</strong> {dataField.unit}</Typography>}
+                    {dataField.type === "Image" && (
+                      <>
+                        <Typography><strong>Accepted types:</strong> {(dataField.accept ?? "image/*").split(",").join(", ")}</Typography>
+                        <Typography><strong>Multiple images:</strong> {dataField.multiple ? "Yes" : "No"}</Typography>
+                        <Typography color='textSecondary'>Images are uploaded when entered on a specimen.</Typography>
+                      </>
+                    )}
+                  </>
+                ) : <Typography>{title}</Typography>}
+              </CardContent>
+          </Card>
+        </Grid>
       </ContentWrapper>
     </>
   );
