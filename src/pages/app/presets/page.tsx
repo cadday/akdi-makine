@@ -149,7 +149,11 @@ export default function Page() {
       field: "createdAt",
       headerName: "Created",
       minWidth: 180,
-      valueFormatter: (value) => new Date(Number(value)).toLocaleString(),
+      valueFormatter: (value) =>
+        new Date(Number(value)).toLocaleString("en-GB", {
+          dateStyle: "short",
+          timeStyle: "short",
+        }),
     },
     {
       field: "updatedAt",
@@ -238,7 +242,7 @@ export default function Page() {
                 columns={columns}
                 loading={isLoading}
                 initialState={{
-                  columns: { columnVisibilityModel: { id: false } },
+                  columns: { columnVisibilityModel: { id: false, updatedAt: false } },
                   pagination: { paginationModel: { pageSize: 10 } },
                 }}
                 getRowSpacing={getRowSpacing}
