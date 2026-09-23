@@ -12,7 +12,6 @@ export const MAIN_DIST = path.join(process.env.APP_ROOT, "dist-electron");
 export const RENDERER_DIST = path.join(process.env.APP_ROOT, "dist");
 
 process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, "public") : RENDERER_DIST;
-app.commandLine.appendSwitch("enable-features", "OverlayScrollbar");
 let mainWindow: BrowserWindow | null;
 
 ipcMain.handle("window:minimize", () => {
@@ -50,11 +49,12 @@ function createWindow() {
     titleBarStyle: "hidden",
   });
 
+  // External link handling
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     // Optionally check if the URL is external
     if (url.startsWith("http:") || url.startsWith("https:")) {
       shell.openExternal(url);
-      return { action: "deny" }; // Prevents Electron from opening a new window
+      return { action: "deny" }; 
     }
     return { action: "allow" };
   });

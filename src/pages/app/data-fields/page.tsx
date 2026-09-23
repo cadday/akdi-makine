@@ -27,11 +27,20 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Box, Breadcrumbs, Button, FormControl, Grid, InputLabel, Select, Typography } from "@mui/material";
-import { DataGrid, GridActionsCellItem, GridColDef, GridRenderCellParams, GridRowSelectionModel, GridRowSpacingParams } from "@mui/x-data-grid";
+import {
+  DataGrid,
+  getGridDateOperators,
+  GridActionsCellItem,
+  GridColDef,
+  GridRenderCellParams,
+  GridRowSelectionModel,
+  GridRowSpacingParams,
+} from "@mui/x-data-grid";
 import { DataFieldDefinition, useDb } from "@/context/db-context";
 import type { DataFieldContainer } from "@/context/db-context";
 import { Filter } from "lucide-react";
 import Search from "@/components/layout/search/search";
+import DataGridDateTimeFilter from "@/components/data-grid/data-grid-date-time-filter";
 
 type DataFieldGridRow = DataFieldDefinition;
 
@@ -167,7 +176,10 @@ export default function Page() {
       flex: 1,
       minWidth: 260,
       renderCell: (params: GridRenderCellParams<DataFieldGridRow, string>) => (
-        <Link to={`/data-fields/${params.row.id}`} className='text-text-primary link-primary link-underline hover:text-primary py-2 font-semibold transition-colors'>
+        <Link
+          to={`/data-fields/${params.row.id}`}
+          className='text-text-primary link-primary link-underline hover:text-primary py-2 font-semibold transition-colors'
+        >
           {params.value}
         </Link>
       ),
@@ -194,13 +206,29 @@ export default function Page() {
       field: "createdAt",
       headerName: "Created",
       minWidth: 180,
-      valueFormatter: (value) => new Date(Number(value)).toLocaleString(),
+      valueFormatter: (value) =>
+        new Date(Number(value)).toLocaleString("en-GB", {
+          dateStyle: "short",
+          timeStyle: "short",
+        }),
+      filterOperators: getGridDateOperators(false).map((item) => ({
+        ...item,
+        InputComponent: DataGridDateTimeFilter,
+      })),
     },
     {
       field: "updatedAt",
       headerName: "Updated",
       minWidth: 180,
-      valueFormatter: (value) => new Date(Number(value)).toLocaleString(),
+      valueFormatter: (value) =>
+        new Date(Number(value)).toLocaleString("en-GB", {
+          dateStyle: "short",
+          timeStyle: "short",
+        }),
+      filterOperators: getGridDateOperators(false).map((item) => ({
+        ...item,
+        InputComponent: DataGridDateTimeFilter,
+      })),
     },
     {
       field: "actions",
@@ -283,7 +311,7 @@ export default function Page() {
                 columns={columns}
                 loading={isLoading}
                 initialState={{
-                  columns: { columnVisibilityModel: { id: false } },
+                  columns: { columnVisibilityModel: { id: false, createdAt: false } },
                   pagination: {
                     paginationModel: {
                       pageSize: 10,

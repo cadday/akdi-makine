@@ -73,10 +73,10 @@
   }
 
   .MuiList-root.MuiList-padding.MuiMultiSectionDigitalClockSection-root {
-    @apply w-20;
+    @apply w-20 overflow-x-auto;
 
     .MuiButtonBase-root.MuiMenuItem-root {
-      @apply px-8;
+      @apply px-7.5;
     }
   }
 
@@ -84,7 +84,7 @@
     @apply border-transparent;
 
     .MuiList-root {
-      @apply border-transparent;
+      @apply border-transparent max-h-76;
     }
   }
 

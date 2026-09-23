@@ -27,10 +27,19 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Box, Breadcrumbs, Button, FormControl, Grid, InputLabel, Select, Typography } from "@mui/material";
-import { DataGrid, GridActionsCellItem, GridColDef, GridRenderCellParams, GridRowSelectionModel, GridRowSpacingParams } from "@mui/x-data-grid";
+import {
+  DataGrid,
+  getGridDateOperators,
+  GridActionsCellItem,
+  GridColDef,
+  GridRenderCellParams,
+  GridRowSelectionModel,
+  GridRowSpacingParams,
+} from "@mui/x-data-grid";
 import { DataFieldDefinition, SpecimenRecord, useDb } from "@/context/db-context";
 import { Filter } from "lucide-react";
 import Search from "@/components/layout/search/search";
+import DataGridDateTimeFilter from "@/components/data-grid/data-grid-date-time-filter";
 
 type SpecimenGridRow = SpecimenRecord;
 
@@ -207,12 +216,24 @@ export default function Page() {
             dateStyle: "short",
             timeStyle: "short",
           }),
+        filterOperators: getGridDateOperators(false).map((item) => ({
+          ...item,
+          InputComponent: DataGridDateTimeFilter,
+        })),
       },
       {
         field: "updatedAt",
         headerName: "Updated",
         minWidth: 180,
-        valueFormatter: (value) => new Date(Number(value)).toLocaleString(),
+        valueFormatter: (value) =>
+          new Date(Number(value)).toLocaleString("en-GB", {
+            dateStyle: "short",
+            timeStyle: "short",
+          }),
+        filterOperators: getGridDateOperators(false).map((item) => ({
+          ...item,
+          InputComponent: DataGridDateTimeFilter,
+        })),
       },
       {
         field: "actions",
@@ -297,7 +318,7 @@ export default function Page() {
                 columns={columns}
                 loading={isLoading}
                 initialState={{
-                  columns: { columnVisibilityModel: { id: false, updatedAt: false } },
+                  columns: { columnVisibilityModel: { id: false, createdAt: false } },
                   pagination: {
                     paginationModel: {
                       pageSize: 10,

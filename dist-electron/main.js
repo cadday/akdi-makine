@@ -1,4 +1,4 @@
-import { app, ipcMain, BrowserWindow, session, shell } from "electron";
+import { ipcMain, app, BrowserWindow, session, shell } from "electron";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import require$$1 from "tty";
@@ -4027,7 +4027,6 @@ const VITE_DEV_SERVER_URL = process.env["VITE_DEV_SERVER_URL"];
 const MAIN_DIST = path.join(process.env.APP_ROOT, "dist-electron");
 const RENDERER_DIST = path.join(process.env.APP_ROOT, "dist");
 process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, "public") : RENDERER_DIST;
-app.commandLine.appendSwitch("enable-features", "OverlayScrollbar");
 let mainWindow;
 ipcMain.handle("window:minimize", () => {
   mainWindow == null ? void 0 : mainWindow.minimize();

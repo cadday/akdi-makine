@@ -4,6 +4,8 @@ import { GridRenderEditCellParams, useGridApiContext } from "@mui/x-data-grid-pr
 import { DateTimePicker } from "@mui/x-date-pickers";
 import { DateTimePickerProps } from "@mui/x-date-pickers/DateTimePicker";
 import { Calendar, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { LocalizationProvider } from "@mui/x-date-pickers";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 
 import { cn } from "@/lib/utils";
 
@@ -19,31 +21,33 @@ export default function DataGridDateTime(props: DataGridDateTimeProps) {
   }
 
   return (
-    <DateTimePicker
-      defaultValue={value ? dayjs(value) : null}
-      onChange={handleChange}
-      className="outlined edit-date mb-0"
-      slots={{
-        openPickerIcon: (props) => {
-          return <Calendar {...props} className={cn(props.className, "text-text-secondary")} />;
-        },
-        switchViewIcon: (props) => {
-          return <ChevronDown size={16} {...props} className={cn(props.className, "text-text-secondary")} />;
-        },
-        leftArrowIcon: (props) => {
-          return <ChevronLeft size={16} {...props} className={cn(props.className, "text-text-secondary")} />;
-        },
-        rightArrowIcon: (props) => {
-          return <ChevronRight size={16} {...props} className={cn(props.className, "text-text-secondary")} />;
-        },
-        ...(props.editorProps?.slots || {}),
-      }}
-      slotProps={{
-        textField: { size: "small", variant: "standard" },
-        desktopPaper: { className: "outlined" },
-        ...(props.editorProps?.slotProps || {}),
-      }}
-      {...(props.editorProps || {})}
-    />
+    <LocalizationProvider dateAdapter={AdapterDayjs}>
+      <DateTimePicker
+        defaultValue={value ? dayjs(value) : null}
+        onChange={handleChange}
+        className='outlined edit-date mb-0'
+        slots={{
+          openPickerIcon: (props) => {
+            return <Calendar className={cn(props.className, "text-text-secondary")} />;
+          },
+          switchViewIcon: (props) => {
+            return <ChevronDown size={16} className={cn(props.className, "text-text-secondary")} />;
+          },
+          leftArrowIcon: (props) => {
+            return <ChevronLeft size={16} className={cn(props.className, "text-text-secondary")} />;
+          },
+          rightArrowIcon: (props) => {
+            return <ChevronRight size={16} className={cn(props.className, "text-text-secondary")} />;
+          },
+          ...(props.editorProps?.slots || {}),
+        }}
+        slotProps={{
+          textField: { size: "small", variant: "standard" },
+          desktopPaper: { className: "outlined" },
+          ...(props.editorProps?.slotProps || {}),
+        }}
+        {...(props.editorProps || {})}
+      />
+    </LocalizationProvider>
   );
 }
