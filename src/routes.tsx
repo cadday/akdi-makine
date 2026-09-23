@@ -75,6 +75,8 @@ const AppRoutes = () => {
         {bottomRoutes}
         <Route path='/specimens/add' element={lazyLoad("/specimens/add")} />
         <Route path='/specimens/:id' element={lazyLoad("/specimens/view")} />
+        <Route path='/data-fields/add' element={lazyLoad("/data-fields/add")} />
+        <Route path='/data-fields/:id' element={lazyLoad("/data-fields/view")} />
       </Route>
 
       {/* 404 route */}

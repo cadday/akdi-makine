@@ -1,4 +1,4 @@
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 
 import { DataGridPaginationFullPage } from "@/components/data-grid/data-grid-pagination";
 import { DataGridListingToolbar } from "@/components/data-grid/data-grid-listing-toolbar";
@@ -37,6 +37,7 @@ type DataFieldGridRow = DataFieldDefinition;
 
 export default function Page() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
   const { getDataFields, deleteDataField, deleteDataFields, duplicateDataFields, duplicateDataField } = useDb();
   const [dataFields, setDataFields] = useState<DataFieldDefinition[]>([]);
@@ -139,8 +140,8 @@ export default function Page() {
   );
 
   const handleAddItem = useCallback(() => {
-    return;
-  }, []);
+    navigate("/data-fields/add");
+  }, [navigate]);
 
   const [rowSelectionModel, setRowSelectionModel] = useState<GridRowSelectionModel>({
     type: "include",
@@ -165,8 +166,8 @@ export default function Page() {
       headerName: "Name",
       flex: 1,
       minWidth: 260,
-      renderCell: (params: GridRenderCellParams<any, string>) => (
-        <Link to='#' className='text-text-primary link-primary link-underline hover:text-primary py-2 font-semibold transition-colors'>
+      renderCell: (params: GridRenderCellParams<DataFieldGridRow, string>) => (
+        <Link to={`/data-fields/${params.row.id}`} className='text-text-primary link-primary link-underline hover:text-primary py-2 font-semibold transition-colors'>
           {params.value}
         </Link>
       ),
@@ -271,7 +272,7 @@ export default function Page() {
                   </Box>
                   <Typography>Nothing found to display!</Typography>
                 </Box>
-                <Button size='large' variant='outlined' color='grey' startIcon={<Plus />}>
+                <Button size='large' variant='outlined' color='grey' startIcon={<Plus />} onClick={handleAddItem}>
                   Add
                 </Button>
               </Box>
