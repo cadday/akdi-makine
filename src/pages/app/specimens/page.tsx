@@ -177,7 +177,7 @@ export default function Page() {
         field: "name",
         headerName: "Name",
         flex: 1,
-        minWidth: 260,
+        minWidth: 200,
         renderCell: (params: GridRenderCellParams<SpecimenGridRow, string>) => (
           <Link
             to={`/specimens/${params.row.id}`}
@@ -191,7 +191,7 @@ export default function Page() {
         (dataField): GridColDef<SpecimenGridRow> => ({
           field: dataField.id,
           headerName: dataField.name,
-          minWidth: 160,
+          minWidth: 120,
           type: dataField.type === "Number" ? "number" : dataField.type === "Boolean" ? "boolean" : dataField.type === "Select" ? "singleSelect" : "string",
           valueGetter: (_value: unknown, row: SpecimenGridRow) => row.customData?.[dataField.id] ?? row.customData?.[dataField.name],
           renderCell: (params: GridRenderCellParams<SpecimenGridRow>) => {
@@ -210,7 +210,7 @@ export default function Page() {
       {
         field: "createdAt",
         headerName: "Created",
-        minWidth: 180,
+        minWidth: 160,
         valueFormatter: (value) =>
           new Date(Number(value)).toLocaleString("en-GB", {
             dateStyle: "short",
@@ -224,7 +224,7 @@ export default function Page() {
       {
         field: "updatedAt",
         headerName: "Updated",
-        minWidth: 180,
+        minWidth: 160,
         valueFormatter: (value) =>
           new Date(Number(value)).toLocaleString("en-GB", {
             dateStyle: "short",
