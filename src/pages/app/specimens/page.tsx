@@ -217,8 +217,8 @@ export default function Page() {
             if (typeof value === "boolean") return value ? "Yes" : "No";
             const displayValue = Array.isArray(value)
               ? value
-                .map((item) => (typeof item === "string" ? item : item && typeof item === "object" && "name" in item ? item.name : String(item)))
-                .join(", ")
+                  .map((item) => (typeof item === "string" ? item : item && typeof item === "object" && "name" in item ? item.name : String(item)))
+                  .join(", ")
               : String(value);
 
             return dataField.unit ? `${displayValue} ${dataField.unit}` : displayValue;
@@ -291,11 +291,6 @@ export default function Page() {
               </Link>
               <Typography variant='body2'>{t("menu-specimens")}</Typography>
             </Breadcrumbs>
-          </Grid>
-          <Grid size={{ xs: 12, md: "auto" }}>
-            <Button size='large' className='icon-only surface-standard' color='grey' variant='surface'>
-              <Ellipsis size={16} />
-            </Button>
           </Grid>
         </Grid>
       </TitleWrapper>

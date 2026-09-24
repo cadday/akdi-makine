@@ -1,4 +1,4 @@
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 
 import { DataGridPaginationFullPage } from "@/components/data-grid/data-grid-pagination";
 import { DataGridListingToolbar } from "@/components/data-grid/data-grid-listing-toolbar";
@@ -38,6 +38,7 @@ type PresetGridRow = PresetRecord;
 
 export default function Page() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { getPresets, deletePreset, deletePresets, duplicatePresets, duplicatePreset } = useDb();
   const { showError } = useAppNotifications();
   const [presets, setPresets] = useState<PresetRecord[]>([]);
@@ -125,8 +126,8 @@ export default function Page() {
   const deleteRow = useCallback((id: string) => async () => deleteRows([id]), [deleteRows]);
 
   const handleAddItem = useCallback(() => {
-    return;
-  }, []);
+    navigate("/presets/add");
+  }, [navigate]);
 
   const [rowSelectionModel, setRowSelectionModel] = useState<GridRowSelectionModel>({
     type: "include",
