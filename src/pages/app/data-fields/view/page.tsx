@@ -1,13 +1,14 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { useTranslation } from "react-i18next";
-import { Alert, Breadcrumbs, Grid, Typography } from "@mui/material";
+import { Breadcrumbs, Grid, Typography } from "@mui/material";
 import ContentWrapper from "@/components/layout/containers/content-wrapper";
 import TitleWrapper from "@/components/layout/containers/title-wrapper";
 import DataFieldForm from "@/pages/app/data-fields/components/data-field-form";
 import { LINKS } from "@/constants";
 import { useDb, type DataFieldDefinition } from "@/context/db-context";
 import LoadingFullScreen from "@/components/loading/loading-full-screen";
+import { useSnackbar } from "notistack";
 
 export default function Page() {
   const { t } = useTranslation();
@@ -17,6 +18,7 @@ export default function Page() {
   const [dataField, setDataField] = useState<DataFieldDefinition | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { enqueueSnackbar } = useSnackbar();
 
   useEffect(() => {
     let cancelled = false;
@@ -27,6 +29,7 @@ export default function Page() {
       if (!id) {
         setDataField(null);
         setLoadError("Data Field not found");
+
         setIsLoading(false);
         return;
       }
@@ -49,6 +52,22 @@ export default function Page() {
     };
   }, [getDataField, id]);
 
+  const snackbarError = useCallback(
+    (message: string) => {
+      enqueueSnackbar(message, {
+        variant: "error",
+        persist: false,
+        autoHideDuration: 6000,
+        anchorOrigin: { horizontal: "center", vertical: "bottom" },
+      });
+    },
+    [enqueueSnackbar],
+  );
+
+  useEffect(() => {
+    if (loadError) snackbarError(loadError);
+  }, [loadError, snackbarError]);
+
   return (
     <>
       {isLoading ? (
@@ -59,7 +78,7 @@ export default function Page() {
             <Grid size={12} container spacing={2.5}>
               <Grid size={{ xs: 12, md: "grow" }}>
                 <Typography variant='h1' component='h1' className='mb-0'>
-                  {dataField?.name ?? (isLoading ? "Loading Data Field" : "Data Field")}
+                  {dataField?.name ?? "Data Field"}
                 </Typography>
                 <Breadcrumbs>
                   <Link color='inherit' to={LINKS.home}>
@@ -75,11 +94,7 @@ export default function Page() {
           </TitleWrapper>
 
           <ContentWrapper>
-            {isLoading ? (
-              <Typography color='textSecondary'>Loading data field...</Typography>
-            ) : loadError ? (
-              <Alert severity='error'>{loadError}</Alert>
-            ) : dataField && id ? (
+            {!loadError && dataField && id ? (
               <DataFieldForm
                 key={dataField.id}
                 dataField={dataField}
