@@ -78,6 +78,7 @@ const AppRoutes = () => {
         <Route path='/data-fields/add' element={lazyLoad("/data-fields/add")} />
         <Route path='/data-fields/:id' element={lazyLoad("/data-fields/view")} />
         <Route path='/presets/add' element={lazyLoad("/presets/add")} />
+        <Route path='/presets/:id/edit' element={lazyLoad("/presets/edit")} />
         <Route path='/presets/:id' element={lazyLoad("/presets/view")} />
       </Route>
 

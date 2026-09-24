@@ -42,6 +42,7 @@ import { Filter } from "lucide-react";
 import Search from "@/components/layout/search/search";
 import DataGridDateTimeFilter from "@/components/data-grid/data-grid-date-time-filter";
 import useAppNotifications from "@/hooks/use-app-notifications";
+import useDeleteConfirmation from "@/hooks/use-delete-confirmation";
 
 type DataFieldGridRow = DataFieldDefinition;
 
@@ -51,6 +52,7 @@ export default function Page() {
 
   const { getDataFields, deleteDataField, deleteDataFields, duplicateDataFields, duplicateDataField } = useDb();
   const { showError } = useAppNotifications();
+  const { requestDelete, dialog } = useDeleteConfirmation();
   const [dataFields, setDataFields] = useState<DataFieldDefinition[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -128,10 +130,14 @@ export default function Page() {
   );
 
   const deleteRows = useCallback(
-    async (ids: string[]) => {
+    (ids: string[]) => {
       if (ids.length === 0) return;
 
-      try {
+      return requestDelete({
+        title: ids.length === 1 ? "Delete Data Field" : "Delete Data Fields",
+        message: ids.length === 1 ? "Delete this data field? This action cannot be undone." : `Delete ${ids.length} data fields? This action cannot be undone.`,
+        errorMessage: "Failed to delete data field(s):",
+        onConfirm: async () => {
         if (ids.length === 1) {
           await deleteDataField(ids[0]);
         } else {
@@ -140,11 +146,10 @@ export default function Page() {
 
         setDataFields((current) => current.filter((item) => !ids.includes(item.id)));
         setRowSelectionModel({ type: "include", ids: new Set() });
-      } catch (err) {
-        showError("Failed to delete data field(s): " + err);
-      }
+        },
+      });
     },
-    [deleteDataField, deleteDataFields, showError],
+    [deleteDataField, deleteDataFields, requestDelete],
   );
 
   const deleteRow = useCallback(
@@ -265,6 +270,7 @@ export default function Page() {
 
   return (
     <>
+      {dialog}
       <TitleWrapper>
         <Grid size={12} container spacing={2.5}>
           <Grid size={{ xs: 12, md: "grow" }}>

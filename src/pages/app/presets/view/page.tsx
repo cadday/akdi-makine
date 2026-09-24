@@ -1,7 +1,7 @@
 import { SyntheticEvent, useEffect, useState } from "react";
-import { Link, useParams } from "react-router";
-import { Box, Breadcrumbs, Card, CardContent, Grid, Tab, Typography } from "@mui/material";
-import { ChevronLeft, ChevronRight, Gauge, Tag, Weight, WeightTilde } from "lucide-react";
+import { Link, useNavigate, useParams } from "react-router";
+import { Box, Breadcrumbs, Button, Card, CardContent, Grid, ListItemIcon, ListItemText, Menu, MenuItem, Tab, Tooltip, Typography } from "@mui/material";
+import { ChevronLeft, ChevronRight, Ellipsis, Gauge, Pen, Tag, Weight, WeightTilde, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import TabContext from "@mui/lab/TabContext";
 import TabList from "@mui/lab/TabList";
@@ -12,12 +12,16 @@ import LoadingFullScreen from "@/components/loading/loading-full-screen";
 import { LINKS } from "@/constants";
 import { useDb, type PresetRecord } from "@/context/db-context";
 import useAppNotifications from "@/hooks/use-app-notifications";
+import useDeleteConfirmation from "@/hooks/use-delete-confirmation";
+import PopupState, { bindMenu, bindTrigger } from "material-ui-popup-state";
 
 export default function Page() {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
-  const { getPreset } = useDb();
+  const navigate = useNavigate();
+  const { getPreset, deletePreset } = useDb();
   const { showError } = useAppNotifications();
+  const { requestDelete, dialog } = useDeleteConfirmation();
   const [preset, setPreset] = useState<PresetRecord | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -87,6 +91,65 @@ export default function Page() {
                       </Link>
                       {preset && <Typography variant='body2'>{preset.name}</Typography>}
                     </Breadcrumbs>
+                  </Grid>
+                  <Grid size={{ xs: 12, md: "auto" }}>
+                    <PopupState variant='popover' popupId='demo-popup-menu'>
+                      {(popupState) => (
+                        <>
+                          <Tooltip title='Actions' placement='bottom'>
+                            <Button className='icon-only surface-standard' color='grey' variant='surface' {...bindTrigger(popupState)}>
+                              <Box className='w-6 h-6 flex items-center justify-center '>
+                                <Ellipsis size={16} />
+                              </Box>
+                            </Button>
+                          </Tooltip>
+                          <Menu
+                            {...bindMenu(popupState)}
+                            anchorOrigin={{
+                              vertical: "bottom",
+                              horizontal: "right",
+                            }}
+                            transformOrigin={{
+                              vertical: "top",
+                              horizontal: "right",
+                            }}
+                          >
+                            <MenuItem
+                              onClick={() => {
+                                popupState.close();
+                                if (id) navigate(`/presets/${id}/edit`);
+                              }}
+                            >
+                              <ListItemIcon>
+                                <Pen size={16} />
+                              </ListItemIcon>
+                              <ListItemText>Edit</ListItemText>
+                            </MenuItem>
+                            <MenuItem
+                              onClick={() => {
+                                popupState.close();
+                                if (!id) return;
+                                requestDelete({
+                                  title: "Delete Preset",
+                                  message: preset?.name ? `Delete “${preset.name}”? This action cannot be undone.` : "Delete this preset? This action cannot be undone.",
+                                  errorMessage: "Failed to delete preset:",
+                                  onConfirm: async () => {
+                                    await deletePreset(id);
+                                    navigate("/presets");
+                                  },
+                                });
+                              }}
+                              className='hover:bg-error-light/10 hover:text-error'
+                            >
+                              <ListItemIcon>
+                                <X size={16} />
+                              </ListItemIcon>
+                              <ListItemText>Delete</ListItemText>
+                            </MenuItem>
+                          </Menu>
+                        </>
+                      )}
+                    </PopupState>
                   </Grid>
                 </Grid>
 
@@ -172,6 +235,7 @@ export default function Page() {
           </Box>
         </>
       )}
+      {dialog}
     </>
   );
 }

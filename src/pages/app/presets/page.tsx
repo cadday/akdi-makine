@@ -41,6 +41,7 @@ import { Filter } from "lucide-react";
 import Search from "@/components/layout/search/search";
 import DataGridDateTimeFilter from "@/components/data-grid/data-grid-date-time-filter";
 import useAppNotifications from "@/hooks/use-app-notifications";
+import useDeleteConfirmation from "@/hooks/use-delete-confirmation";
 
 type PresetGridRow = PresetRecord;
 
@@ -49,6 +50,7 @@ export default function Page() {
   const navigate = useNavigate();
   const { getPresets, deletePreset, deletePresets, duplicatePresets, duplicatePreset } = useDb();
   const { showError } = useAppNotifications();
+  const { requestDelete, dialog } = useDeleteConfirmation();
   const [presets, setPresets] = useState<PresetRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -115,20 +117,23 @@ export default function Page() {
   const duplicateRow = useCallback((id: string) => async () => duplicateRows([id]), [duplicateRows]);
 
   const deleteRows = useCallback(
-    async (ids: string[]) => {
+    (ids: string[]) => {
       if (ids.length === 0) return;
 
-      try {
+      return requestDelete({
+        title: ids.length === 1 ? "Delete Preset" : "Delete Presets",
+        message: ids.length === 1 ? "Delete this preset? This action cannot be undone." : `Delete ${ids.length} presets? This action cannot be undone.`,
+        errorMessage: "Failed to delete preset(s):",
+        onConfirm: async () => {
         if (ids.length === 1) await deletePreset(ids[0]);
         else await deletePresets(ids);
 
         setPresets((current) => current.filter((preset) => !ids.includes(preset.id)));
         setRowSelectionModel({ type: "include", ids: new Set() });
-      } catch (err) {
-        showError("Failed to delete preset(s): " + err);
-      }
+        },
+      });
     },
-    [deletePreset, deletePresets, showError],
+    [deletePreset, deletePresets, requestDelete],
   );
 
   const deleteRow = useCallback((id: string) => async () => deleteRows([id]), [deleteRows]);
@@ -241,6 +246,7 @@ export default function Page() {
 
   return (
     <>
+      {dialog}
       <TitleWrapper>
         <Grid size={12} container spacing={2.5}>
           <Grid size={{ xs: 12, md: "grow" }}>

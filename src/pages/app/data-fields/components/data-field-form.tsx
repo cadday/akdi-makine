@@ -401,7 +401,7 @@ export default function DataFieldForm({ dataField, onSave, saveLabel = "Save" }:
                         >
                           {IMAGE_ACCEPT_OPTIONS.map((type) => (
                             <MenuItem key={type} value={type}>
-                              {capitalize(type.replace("image/", ""))}
+                              <FormControlLabel control={<Checkbox checked={formik.values.accept.split(",").includes(type)} />} label={capitalize(type.replace("image/", ""))} />
                             </MenuItem>
                           ))}
                         </Select>

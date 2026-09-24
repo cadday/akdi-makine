@@ -42,6 +42,7 @@ import DataGridDateTimeFilter from "@/components/data-grid/data-grid-date-time-f
 import { StoredImagePreviews } from "@/components/data-fields/image-data-field-input";
 import { DataFieldDefinition, SpecimenRecord, useDb, UploadedImage } from "@/context/db-context";
 import useAppNotifications from "@/hooks/use-app-notifications";
+import useDeleteConfirmation from "@/hooks/use-delete-confirmation";
 
 type SpecimenGridRow = SpecimenRecord;
 
@@ -51,6 +52,7 @@ export default function Page() {
 
   const { getSpecimens, getDataFields, deleteSpecimen, deleteSpecimens, duplicateSpecimens, duplicateSpecimen } = useDb();
   const { showError } = useAppNotifications();
+  const { requestDelete, dialog } = useDeleteConfirmation();
   const [specimens, setSpecimens] = useState<SpecimenRecord[]>([]);
   const [dataFields, setDataFields] = useState<DataFieldDefinition[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -131,10 +133,14 @@ export default function Page() {
   );
 
   const deleteRows = useCallback(
-    async (ids: string[]) => {
+    (ids: string[]) => {
       if (ids.length === 0) return;
 
-      try {
+      return requestDelete({
+        title: ids.length === 1 ? "Delete Specimen" : "Delete Specimens",
+        message: ids.length === 1 ? "Delete this specimen? This action cannot be undone." : `Delete ${ids.length} specimens? This action cannot be undone.`,
+        errorMessage: "Failed to delete specimen(s):",
+        onConfirm: async () => {
         if (ids.length === 1) {
           await deleteSpecimen(ids[0]);
         } else {
@@ -143,11 +149,10 @@ export default function Page() {
 
         setSpecimens((current) => current.filter((item) => !ids.includes(item.id)));
         setRowSelectionModel({ type: "include", ids: new Set() });
-      } catch (err) {
-        showError("Failed to delete specimen(s): " + err);
-      }
+        },
+      });
     },
-    [deleteSpecimen, deleteSpecimens, showError],
+    [deleteSpecimen, deleteSpecimens, requestDelete],
   );
 
   const deleteRow = useCallback(
@@ -279,6 +284,7 @@ export default function Page() {
 
   return (
     <>
+      {dialog}
       <TitleWrapper>
         <Grid size={12} container spacing={2.5}>
           <Grid size={{ xs: 12, md: "grow" }}>

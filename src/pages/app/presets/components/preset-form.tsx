@@ -32,6 +32,18 @@ type PresetFormValues = Omit<PresetSaveInput, "type" | "preload" | "load" | "spe
 
 interface PresetFormProps {
   onSave: (input: PresetSaveInput) => Promise<void>;
+  preset?: PresetRecord;
+  saveLabel?: string;
+}
+
+function getInitialValues(preset?: PresetRecord): PresetFormValues {
+  return {
+    name: preset?.name ?? "",
+    type: preset?.type ?? "",
+    preload: preset?.preload ?? "",
+    load: preset?.load ?? "",
+    speed: preset?.speed ?? "",
+  };
 }
 
 const validationSchema = yup.object({
@@ -42,11 +54,12 @@ const validationSchema = yup.object({
   speed: yup.number().typeError("Enter a number").min(0, "Must be zero or greater").required("Speed is required"),
 });
 
-export default function PresetForm({ onSave }: PresetFormProps) {
+export default function PresetForm({ onSave, preset, saveLabel = "Save" }: PresetFormProps) {
   const [submitted, setSubmitted] = useState(false);
   const { showError } = useAppNotifications();
   const formik = useFormik<PresetFormValues>({
-    initialValues: { name: "", type: "", preload: "", load: "", speed: "" },
+    initialValues: getInitialValues(preset),
+    enableReinitialize: true,
     validationSchema,
     validateOnBlur: false,
     validateOnMount: false,
@@ -206,7 +219,7 @@ export default function PresetForm({ onSave }: PresetFormProps) {
             type='submit'
             startIcon={<Save />}
           >
-            Save
+            {saveLabel}
           </Button>
         </Grid>
       </Grid>
