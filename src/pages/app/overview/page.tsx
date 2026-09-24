@@ -8,7 +8,6 @@ import { LINKS } from "@/constants";
 import { useTranslation } from "react-i18next";
 import { Ellipsis } from "lucide-react";
 import { useDb } from "@/context/db-context";
-import LightboxGallery from "./lightbox-gallery";
 
 export default function Page() {
   const { t } = useTranslation();
@@ -84,8 +83,6 @@ export default function Page() {
       <ContentWrapper>
         <Grid size={12} container spacing={5} className='w-full'></Grid>
         <Button onClick={addDemo}>Add demo data</Button>
-
-        <LightboxGallery />
       </ContentWrapper>
     </>
   );

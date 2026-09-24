@@ -27,6 +27,7 @@ import {
 } from "@mui/material";
 import {
   ChevronDown,
+  CopyCheck,
   File,
   Image,
   Images,
@@ -49,7 +50,7 @@ import { DATA_FIELD_CONTAINERS, DATA_FIELD_TYPES } from "@/lib/db";
 import { cn } from "@/lib/utils";
 
 type DataFieldFormValues = Pick<DataFieldDefinition, "name"> &
-  Required<Pick<DataFieldDefinition, "description" | "unit" | "accept" | "multiple">> & {
+  Required<Pick<DataFieldDefinition, "description" | "unit" | "accept" | "multiple" | "multipleSelection">> & {
     options: string;
     type: DataFieldType | "";
     mandatory: NonNullable<DataFieldDefinition["mandatory"]> | null;
@@ -87,6 +88,7 @@ function getInitialValues(dataField?: DataFieldDefinition): DataFieldFormValues 
     unit: dataField?.unit ?? "",
     description: dataField?.description ?? "",
     options: dataField?.options?.join("\n") ?? "",
+    multipleSelection: dataField?.multipleSelection ?? false,
     accept: dataField?.accept ?? IMAGE_ACCEPT_OPTIONS.join(","),
     multiple: dataField?.multiple ?? false,
     mandatory: dataField?.mandatory ?? null,
@@ -103,7 +105,7 @@ function toSaveInput(values: DataFieldFormValues): DataFieldSaveInput | null {
     description: values.description.trim(),
     container: values.container,
     ...((values.type === "Text" || values.type === "Number") && values.unit.trim() && { unit: values.unit.trim() }),
-    ...((values.type === "Select" || values.type === "Multi-Select") && { options: formikOptionLines(values.options) }),
+    ...(values.type === "Select" && { options: formikOptionLines(values.options), multipleSelection: values.multipleSelection }),
     ...(values.type === "Image" && { accept: values.accept, multiple: values.multiple }),
     ...(values.mandatory !== null && { mandatory: values.mandatory }),
     ...(values.icon && { icon: values.icon }),
@@ -126,7 +128,7 @@ export default function DataFieldForm({ dataField, onSave, saveLabel = "Save" }:
         mandatory: yup.boolean().nullable(),
         icon: yup.string().nullable(),
         options: yup.string().when("type", {
-          is: (type: DataFieldType | "") => type === "Select" || type === "Multi-Select",
+          is: (type: DataFieldType | "") => type === "Select",
           then: (schema) => schema.test("has-options", "Add at least one option", (value) => formikOptionLines(value ?? "").length > 0),
         }),
         accept: yup.string().when("type", {
@@ -137,6 +139,7 @@ export default function DataFieldForm({ dataField, onSave, saveLabel = "Save" }:
               .test("accepted-image-types", "Choose at least one image type", (value) => Boolean(value?.split(",").some((type) => type.trim()))),
         }),
         multiple: yup.boolean(),
+        multipleSelection: yup.boolean(),
       }),
     [],
   );
@@ -175,25 +178,38 @@ export default function DataFieldForm({ dataField, onSave, saveLabel = "Save" }:
         }}
       >
         <Grid size={12}>
-          <Typography variant='h6' component='h6' className='mb-3'>Schema</Typography>
+          <Typography variant='h6' component='h6' className='mb-3'>
+            Schema
+          </Typography>
           <Card>
-            <CardContent className='-mb-2'>
+            <CardContent className='-mb-4'>
               <Box className='flex flex-row gap-2'>
-                <Signpost className={cn(hasFieldError("type") && "text-error!")} />
+                <Signpost className={cn(hasFieldError("type") && submitted && "text-error!")} />
                 <FormControl fullWidth size='small' variant='standard' className='outlined' required>
-                  <FormLabel component='label' className={cn(hasFieldError("type") && "text-error!")}>Type</FormLabel>
+                  <FormLabel component='label' className={cn(hasFieldError("type") && submitted && "text-error!")}>
+                    Type
+                  </FormLabel>
                   <Select<DataFieldType | "">
                     value={formik.values.type}
                     disabled={isEditing}
                     onChange={(event) => {
-                      void formik.setFieldValue("type", event.target.value);
-                      if (event.target.value !== "Text" && event.target.value !== "Number") void formik.setFieldValue("unit", "");
+                      const type = event.target.value as DataFieldType | "";
+                      void formik.setValues((values) => ({
+                        ...values,
+                        type,
+                        unit: type === "Text" || type === "Number" ? values.unit : "",
+                        multipleSelection: type === "Select" ? values.multipleSelection : false,
+                      }));
                       setPreviewValue(null);
                     }}
                     IconComponent={ChevronDown}
                     MenuProps={{ className: "outlined" }}
                   >
-                    {DATA_FIELD_TYPES.map((fieldType) => <MenuItem key={fieldType} value={fieldType}>{fieldType}</MenuItem>)}
+                    {DATA_FIELD_TYPES.map((fieldType) => (
+                      <MenuItem key={fieldType} value={fieldType}>
+                        {fieldType}
+                      </MenuItem>
+                    ))}
                   </Select>
                 </FormControl>
               </Box>
@@ -201,7 +217,9 @@ export default function DataFieldForm({ dataField, onSave, saveLabel = "Save" }:
               <Box className='flex flex-row gap-2'>
                 <Package2 className={cn(hasFieldError("container") && submitted && "text-error!")} />
                 <FormControl fullWidth size='small' variant='standard' className='outlined' required>
-                  <FormLabel component='label' className={cn(hasFieldError("container") && submitted && "text-error!")}>Container</FormLabel>
+                  <FormLabel component='label' className={cn(hasFieldError("container") && submitted && "text-error!")}>
+                    Container
+                  </FormLabel>
                   <Select<DataFieldContainer | "">
                     value={formik.values.container}
                     disabled={isEditing}
@@ -209,7 +227,11 @@ export default function DataFieldForm({ dataField, onSave, saveLabel = "Save" }:
                     IconComponent={ChevronDown}
                     MenuProps={{ className: "outlined" }}
                   >
-                    {DATA_FIELD_CONTAINERS.map((fieldContainer) => <MenuItem key={fieldContainer} value={fieldContainer}>{fieldContainer}</MenuItem>)}
+                    {DATA_FIELD_CONTAINERS.map((fieldContainer) => (
+                      <MenuItem key={fieldContainer} value={fieldContainer}>
+                        {fieldContainer}
+                      </MenuItem>
+                    ))}
                   </Select>
                 </FormControl>
               </Box>
@@ -218,13 +240,17 @@ export default function DataFieldForm({ dataField, onSave, saveLabel = "Save" }:
         </Grid>
 
         <Grid size={12}>
-          <Typography variant='h6' component='h6' className='mb-3'>Definition</Typography>
+          <Typography variant='h6' component='h6' className='mb-3'>
+            Definition
+          </Typography>
           <Card>
-            <CardContent className='-mb-2'>
+            <CardContent className='-mb-4'>
               <Box className='flex flex-row gap-2'>
                 <Tag className={cn(hasFieldError("name") && submitted && "text-error!")} />
                 <FormControl className='outlined' variant='standard' size='small' fullWidth required>
-                  <FormLabel component='label' className={cn(hasFieldError("name") && submitted && "text-error!")}>Name</FormLabel>
+                  <FormLabel component='label' className={cn(hasFieldError("name") && submitted && "text-error!")}>
+                    Name
+                  </FormLabel>
                   <Input name='name' value={formik.values.name} onChange={formik.handleChange} />
                 </FormControl>
               </Box>
@@ -233,7 +259,14 @@ export default function DataFieldForm({ dataField, onSave, saveLabel = "Save" }:
                 <Scroll />
                 <FormControl className='MuiTextField-root outlined' fullWidth>
                   <FormLabel component='label'>Description</FormLabel>
-                  <TextareaAutosize name='description' value={formik.values.description} onChange={formik.handleChange} minRows={2} maxRows={2} className='MuiInputBase-root MuiInput-root MuiInputBase-formControl outlined autosize w-full' />
+                  <TextareaAutosize
+                    name='description'
+                    value={formik.values.description}
+                    onChange={formik.handleChange}
+                    minRows={2}
+                    maxRows={2}
+                    className='MuiInputBase-root MuiInput-root MuiInputBase-formControl outlined autosize w-full'
+                  />
                 </FormControl>
               </Box>
 
@@ -268,7 +301,12 @@ export default function DataFieldForm({ dataField, onSave, saveLabel = "Save" }:
                     filterOptions={createFilterOptions<DataFieldIcon>({ limit: 10 })}
                     getOptionLabel={(name) => name}
                     slotProps={{ popper: { className: "outlined" }, chip: { variant: "filled", size: "small" } }}
-                    renderOption={(props, name) => <li {...props} key={name}><DynamicIcon name={name} className='me-2' /><span>{name}</span></li>}
+                    renderOption={(props, name) => (
+                      <li {...props} key={name}>
+                        <DynamicIcon name={name} className='me-2' />
+                        <span>{name}</span>
+                      </li>
+                    )}
                     renderInput={(params) => (
                       <TextField
                         {...params}
@@ -279,7 +317,16 @@ export default function DataFieldForm({ dataField, onSave, saveLabel = "Save" }:
                           htmlInput: { ...params.slotProps.htmlInput, autoComplete: "new-password" },
                           input: {
                             ...params.slotProps.input,
-                            startAdornment: <>{formik.values.icon && <InputAdornment position='start'><DynamicIcon name={formik.values.icon} className='me-2' /></InputAdornment>}{params.slotProps.input.startAdornment}</>,
+                            startAdornment: (
+                              <>
+                                {formik.values.icon && (
+                                  <InputAdornment position='start'>
+                                    <DynamicIcon name={formik.values.icon} className='me-2' />
+                                  </InputAdornment>
+                                )}
+                                {params.slotProps.input.startAdornment}
+                              </>
+                            ),
                           },
                         }}
                       />
@@ -291,19 +338,48 @@ export default function DataFieldForm({ dataField, onSave, saveLabel = "Save" }:
           </Card>
         </Grid>
 
-        {(formik.values.type === "Select" || formik.values.type === "Multi-Select" || formik.values.type === "Image" || formik.values.type === "Text" || formik.values.type === "Number") && (
+        {(formik.values.type === "Select" || formik.values.type === "Image" || formik.values.type === "Text" || formik.values.type === "Number") && (
           <Grid size={12}>
-            <Typography variant='h6' component='h6' className='mb-3'>Type Related Options</Typography>
+            <Typography variant='h6' component='h6' className='mb-3'>
+              Type Related Options
+            </Typography>
             <Card>
-              <CardContent className='-mb-2'>
-                {(formik.values.type === "Select" || formik.values.type === "Multi-Select") && (
-                  <Box className='flex flex-row gap-2'>
-                    <ListTree className={cn(hasFieldError("options") && submitted && "text-error!")} />
-                    <FormControl className='MuiTextField-root outlined' fullWidth required>
-                      <FormLabel component='label' className={cn(hasFieldError("options") && submitted && "text-error!")}>Options</FormLabel>
-                      <TextareaAutosize name='options' value={formik.values.options} onChange={formik.handleChange} minRows={3} maxRows={6} placeholder='One option per line' className='MuiInputBase-root MuiInput-root MuiInputBase-formControl outlined autosize w-full' />
-                    </FormControl>
-                  </Box>
+              <CardContent className='-mb-4'>
+                {formik.values.type === "Select" && (
+                  <>
+                    <Box className='flex flex-row gap-2'>
+                      <ListTree className={cn(hasFieldError("options") && submitted && "text-error!")} />
+                      <FormControl className='MuiTextField-root outlined' fullWidth required>
+                        <FormLabel component='label' className={cn(hasFieldError("options") && submitted && "text-error!")}>
+                          Options
+                        </FormLabel>
+                        <TextareaAutosize
+                          name='options'
+                          value={formik.values.options}
+                          onChange={formik.handleChange}
+                          minRows={3}
+                          maxRows={6}
+                          placeholder='One option per line'
+                          className='MuiInputBase-root MuiInput-root MuiInputBase-formControl outlined autosize w-full'
+                        />
+                      </FormControl>
+                    </Box>
+                    <Box className='flex flex-row gap-2'>
+                      <CopyCheck />
+                      <FormGroup className='flex flex-col'>
+                        <FormLabel component='label'>Multiple Choices</FormLabel>
+                        <FormControlLabel
+                          label='Allow'
+                          control={
+                            <Checkbox
+                              checked={formik.values.multipleSelection}
+                              onChange={(event) => void formik.setFieldValue("multipleSelection", event.target.checked)}
+                            />
+                          }
+                        />
+                      </FormGroup>
+                    </Box>
+                  </>
                 )}
 
                 {formik.values.type === "Image" && (
@@ -323,7 +399,11 @@ export default function DataFieldForm({ dataField, onSave, saveLabel = "Save" }:
                           renderValue={(selected) => selected.map((type) => capitalize(type.replace("image/", ""))).join(", ")}
                           MenuProps={{ className: "outlined" }}
                         >
-                          {IMAGE_ACCEPT_OPTIONS.map((type) => <MenuItem key={type} value={type}>{capitalize(type.replace("image/", ""))}</MenuItem>)}
+                          {IMAGE_ACCEPT_OPTIONS.map((type) => (
+                            <MenuItem key={type} value={type}>
+                              {capitalize(type.replace("image/", ""))}
+                            </MenuItem>
+                          ))}
                         </Select>
                       </FormControl>
                     </Box>
@@ -331,7 +411,12 @@ export default function DataFieldForm({ dataField, onSave, saveLabel = "Save" }:
                       <Images />
                       <FormGroup className='flex flex-col'>
                         <FormLabel component='label'>Multiple Images</FormLabel>
-                        <FormControlLabel label='Allow' control={<Checkbox checked={formik.values.multiple} onChange={(event) => void formik.setFieldValue("multiple", event.target.checked)} />} />
+                        <FormControlLabel
+                          label='Allow'
+                          control={
+                            <Checkbox checked={formik.values.multiple} onChange={(event) => void formik.setFieldValue("multiple", event.target.checked)} />
+                          }
+                        />
                       </FormGroup>
                     </Box>
                   </>
@@ -352,11 +437,22 @@ export default function DataFieldForm({ dataField, onSave, saveLabel = "Save" }:
         )}
 
         <Grid size={12}>
-          {saveError && <Alert severity='error' className='mb-2'>{saveError}</Alert>}
+          {saveError && (
+            <Alert severity='error' className='mb-2'>
+              {saveError}
+            </Alert>
+          )}
           {submitted && !formik.isValid && (
             <Alert severity='error' icon={<XSquare />} className='neutral rounded-3xl! bg-transparent! mb-2 mt-2 p-5'>
-              <AlertTitle variant='subtitle2' className='pt-0.5'>The following inputs have errors!</AlertTitle>
-              {Object.entries(formik.errors).map(([key, value]) => <Box className='flex flex-row gap-0.5' key={key}><Typography className='text-error'>{capitalize(key)}:</Typography><Typography className='text-text-primary'>{typeof value === "string" ? value : JSON.stringify(value)}</Typography></Box>)}
+              <AlertTitle variant='subtitle2' className='pt-0.5'>
+                The following inputs have errors!
+              </AlertTitle>
+              {Object.entries(formik.errors).map(([key, value]) => (
+                <Box className='flex flex-row gap-0.5' key={key}>
+                  <Typography className='text-error'>{capitalize(key)}:</Typography>
+                  <Typography className='text-text-primary'>{typeof value === "string" ? value : JSON.stringify(value)}</Typography>
+                </Box>
+              ))}
             </Alert>
           )}
           <Button
@@ -376,9 +472,11 @@ export default function DataFieldForm({ dataField, onSave, saveLabel = "Save" }:
 
       <Grid size={{ lg: 4, xs: 12 }} container>
         <Grid size={12}>
-          <Typography variant='h6' component='h6' className='mb-3'>Preview</Typography>
+          <Typography variant='h6' component='h6' className='mb-3'>
+            Preview
+          </Typography>
           <Card>
-            <CardContent className='flex flex-col gap-5'>
+            <CardContent className='flex flex-col gap-5 -mb-4'>
               {formik.values.type && formik.values.name.trim() ? (
                 <DataFieldInput
                   field={{
@@ -388,6 +486,7 @@ export default function DataFieldForm({ dataField, onSave, saveLabel = "Save" }:
                     mandatory: formik.values.mandatory ?? undefined,
                     icon: formik.values.icon ?? undefined,
                     options: formikOptionLines(formik.values.options),
+                    multipleSelection: formik.values.multipleSelection,
                     accept: formik.values.accept,
                     multiple: formik.values.multiple,
                   }}
@@ -396,9 +495,11 @@ export default function DataFieldForm({ dataField, onSave, saveLabel = "Save" }:
                   previewOnly={formik.values.type === "Image"}
                 />
               ) : (
-                <Box className='flex flex-col items-center gap-4'>
+                <Box className='flex flex-col items-center gap-4 mb-4'>
                   <Box className='flex flex-col gap-2 items-center'>
-                    <Box className='w-10 h-10 border border-dashed border-text-secondary flex items-center justify-center rounded-lg'><File className='text-text-secondary' /></Box>
+                    <Box className='w-10 h-10 border border-dashed border-text-secondary flex items-center justify-center rounded-lg'>
+                      <File className='text-text-secondary' />
+                    </Box>
                     <Typography>Fill the required fields(*) to see the preview!</Typography>
                   </Box>
                 </Box>

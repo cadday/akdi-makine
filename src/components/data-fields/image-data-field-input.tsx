@@ -62,7 +62,7 @@ export function StoredImagePreviews({ images, imageClassName }: StoredImagePrevi
   if (previews.length === 0) return null;
 
   return (
-    <Box className='flex flex-wrap items-center gap-1 h-full'>
+    <Box className='flex items-center gap-1 h-full'>
       {previews.map((preview) =>
         preview.url ? <img key={preview.key} alt={preview.name} src={preview.url} className={cn("h-8 w-10 rounded-xs object-cover", imageClassName)} /> : null,
       )}

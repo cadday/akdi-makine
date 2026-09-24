@@ -1,12 +1,12 @@
 import type { DataFieldDefinition, DynamicDataValue, UploadedImage } from "@/context/db-context";
-import { Box, Checkbox, FormControl, FormHelperText, FormLabel, Input, InputAdornment, MenuItem, Select } from "@mui/material";
+import { Box, Checkbox, FormControl, FormControlLabel, FormHelperText, FormLabel, Input, InputAdornment, MenuItem, Select, TextareaAutosize } from "@mui/material";
 import { ChevronDown, Hexagon } from "lucide-react";
 import { DynamicIcon } from "lucide-react/dynamic";
 import { cn } from "@/lib/utils";
 import ImageDataFieldInput from "@/components/data-fields/image-data-field-input";
 
 interface DataFieldInputProps {
-  field: Pick<DataFieldDefinition, "type" | "name" | "unit" | "mandatory" | "icon" | "options" | "accept" | "multiple">;
+  field: Pick<DataFieldDefinition, "type" | "name" | "unit" | "mandatory" | "icon" | "options" | "multipleSelection" | "accept" | "multiple">;
   value: DynamicDataValue;
   onChange: (value: DynamicDataValue) => void;
   error?: string;
@@ -39,6 +39,22 @@ export default function DataFieldInput({ field, value, onChange, error, pendingF
           </FormControl>
         </Box>
       );
+    case "Textarea":
+      return (
+        <Box className='flex flex-row gap-2'>
+          {fieldIcon}
+          <FormControl className='MuiTextField-root outlined' fullWidth required={field.mandatory}>
+            <FormLabel component='label' className={labelClassName}>{label}</FormLabel>
+            <TextareaAutosize
+              value={typeof value === "string" ? value : ""}
+              onChange={(event) => onChange(event.target.value)}
+              minRows={3}
+              maxRows={6}
+              className='MuiInputBase-root MuiInput-root MuiInputBase-formControl outlined autosize w-full'
+            />
+          </FormControl>
+        </Box>
+      );
     case "Number":
       return (
         <Box className='flex flex-row gap-2'>
@@ -56,6 +72,39 @@ export default function DataFieldInput({ field, value, onChange, error, pendingF
       );
     case "Select": {
       const options = field.options ?? [];
+      const selected = Array.isArray(value) && value.every((item) => typeof item === "string") ? (value as string[]) : [];
+      if (field.multipleSelection) {
+        return (
+          <Box className='flex flex-row gap-2'>
+            {fieldIcon}
+            <FormControl
+              className='outlined'
+              variant='standard'
+              size='small'
+              fullWidth
+              required={field.mandatory}
+              disabled={options.length === 0}
+            >
+              <FormLabel component='label' className={labelClassName}>{label}</FormLabel>
+              <Select<string[]>
+                multiple
+                value={selected}
+                IconComponent={ChevronDown}
+                displayEmpty
+                onChange={(event) => onChange(typeof event.target.value === "string" ? event.target.value.split(",") : event.target.value)}
+                renderValue={(selectedOptions) => selectedOptions.join(", ")}
+              >
+                {options.map((option) => (
+                  <MenuItem key={option} value={option}>
+                    <FormControlLabel control={<Checkbox checked={selected.includes(option)} />} label={option} />
+                  </MenuItem>
+                ))}
+              </Select>
+              {options.length === 0 && <FormHelperText>No options are configured.</FormHelperText>}
+            </FormControl>
+          </Box>
+        );
+      }
       return (
         <Box className='flex flex-row gap-2'>
           {fieldIcon}
@@ -73,39 +122,6 @@ export default function DataFieldInput({ field, value, onChange, error, pendingF
               displayEmpty
               onChange={(event) => onChange(event.target.value)}
               IconComponent={ChevronDown}
-            >
-              {options.map((option) => (
-                <MenuItem key={option} value={option}>
-                  {option}
-                </MenuItem>
-              ))}
-            </Select>
-            {options.length === 0 && <FormHelperText>No options are configured.</FormHelperText>}
-          </FormControl>
-        </Box>
-      );
-    }
-    case "Multi-Select": {
-      const options = field.options ?? [];
-      const selected = Array.isArray(value) && value.every((item) => typeof item === "string") ? (value as string[]) : [];
-      return (
-        <Box className='flex flex-row gap-2'>
-          {fieldIcon}
-          <FormControl
-            className='outlined'
-            variant='standard'
-            size='small'
-            fullWidth
-            required={field.mandatory}
-            disabled={options.length === 0}
-          >
-            <FormLabel component='label' className={labelClassName}>{label}</FormLabel>
-            <Select<string[]>
-              multiple
-              value={selected}
-              IconComponent={ChevronDown}
-              displayEmpty
-              onChange={(event) => onChange(typeof event.target.value === "string" ? event.target.value.split(",") : event.target.value)}
             >
               {options.map((option) => (
                 <MenuItem key={option} value={option}>

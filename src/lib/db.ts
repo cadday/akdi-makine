@@ -1,7 +1,7 @@
 import Dexie, { type Table } from "dexie";
 import type { IconName } from "lucide-react/dynamic";
 
-export const DATA_FIELD_TYPES = ["Text", "Number", "Select", "Multi-Select", "Image", "Boolean"] as const;
+export const DATA_FIELD_TYPES = ["Text", "Textarea", "Number", "Select", "Image", "Boolean"] as const;
 export type DataFieldType = (typeof DATA_FIELD_TYPES)[number];
 export const DATA_FIELD_CONTAINERS = ["Specimen", "Test"] as const;
 export type DataFieldContainer = (typeof DATA_FIELD_CONTAINERS)[number];
@@ -55,6 +55,7 @@ export interface DataFieldDefinition {
   icon?: IconName;
   container: DataFieldContainer;
   options?: string[];
+  multipleSelection?: boolean;
   accept?: string;
   multiple?: boolean;
   createdAt: number;

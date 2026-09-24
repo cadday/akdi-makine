@@ -193,7 +193,14 @@ export default function Page() {
           field: dataField.id,
           headerName: dataField.name,
           minWidth: 120,
-          type: dataField.type === "Number" ? "number" : dataField.type === "Boolean" ? "boolean" : dataField.type === "Select" ? "singleSelect" : "string",
+          type:
+            dataField.type === "Number"
+              ? "number"
+              : dataField.type === "Boolean"
+                ? "boolean"
+                : dataField.type === "Select" && !dataField.multipleSelection
+                  ? "singleSelect"
+                  : "string",
           valueGetter: (_value: unknown, row: SpecimenGridRow) => row.customData?.[dataField.id] ?? row.customData?.[dataField.name],
           renderCell: (params: GridRenderCellParams<SpecimenGridRow>) => {
             const value = params.value;

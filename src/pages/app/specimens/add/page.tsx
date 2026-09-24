@@ -30,6 +30,12 @@ function buildSpecimenValidationSchema(fields: DataFieldDefinition[]) {
         customDataShape[field.id] = schema;
         break;
       }
+      case "Textarea": {
+        let schema = yup.string().nullable();
+        if (field.mandatory) schema = schema.required(`${field.name} is required`).trim();
+        customDataShape[field.id] = schema;
+        break;
+      }
       case "Number": {
         let schema = yup.number().nullable().typeError(`${field.name} must be a number`);
         if (field.mandatory) schema = schema.required(`${field.name} is required`);
@@ -37,20 +43,20 @@ function buildSpecimenValidationSchema(fields: DataFieldDefinition[]) {
         break;
       }
       case "Select": {
-        let schema = yup
-          .string()
-          .nullable()
-          .oneOf(field.options ?? [], `${field.name} must be one of its configured options`);
-        if (field.mandatory) schema = schema.required(`${field.name} is required`);
-        customDataShape[field.id] = schema;
-        break;
-      }
-      case "Multi-Select": {
-        let schema = yup
-          .array()
-          .of(yup.string().oneOf(field.options ?? []))
-          .nullable();
-        if (field.mandatory) schema = schema.required(`${field.name} is required`).min(1, `${field.name} is required`);
+        let schema = field.multipleSelection
+          ? yup
+              .array()
+              .of(yup.string().oneOf(field.options ?? []))
+              .nullable()
+          : yup
+              .string()
+              .nullable()
+              .oneOf(field.options ?? [], `${field.name} must be one of its configured options`);
+        if (field.mandatory) {
+          schema = field.multipleSelection
+            ? schema.required(`${field.name} is required`).min(1, `${field.name} is required`)
+            : schema.required(`${field.name} is required`);
+        }
         customDataShape[field.id] = schema;
         break;
       }
@@ -191,11 +197,11 @@ export default function Page() {
         >
           <Grid size={{ xs: 12 }} container spacing={5}>
             <Grid size={12}>
-              <Typography variant='h6' component='h2' className='mb-3'>
-                Specimen Info
+              <Typography variant='h6' component='h6' className='mb-3'>
+                Identity
               </Typography>
               <Card>
-                <CardContent>
+                <CardContent className='-mb-4'>
                   <Box className='flex flex-row gap-2'>
                     <Tag className={cn(formik.touched.name && formik.errors.name && submitted && "text-error!")} />
                     <FormControl className='outlined' variant='standard' size='small' fullWidth required>
@@ -209,20 +215,14 @@ export default function Page() {
               </Card>
             </Grid>
 
-            <Grid size={12}>
-              <Typography variant='h6' component='h2' className='mb-3'>
-                Custom Fields
-              </Typography>
-              <Card>
-                <CardContent className='flex flex-col gap-5'>
-                  {loadError ? (
-                    <Alert severity='error'>{loadError}</Alert>
-                  ) : isLoadingFields ? (
-                    <Typography color='textSecondary'>Loading fields...</Typography>
-                  ) : fields.length === 0 ? (
-                    <Typography color='textSecondary'>No fields configured for specimens.</Typography>
-                  ) : (
-                    fields.map((field) => {
+            {fields.length !== 0 && (
+              <Grid size={12}>
+                <Typography variant='h6' component='h6' className='mb-3'>
+                  Data Fields
+                </Typography>
+                <Card>
+                  <CardContent className='flex flex-col gap-5 -mb-4'>
+                    {fields.map((field) => {
                       const error = formik.errors.customData?.[field.id];
                       return (
                         <DataFieldInput
@@ -235,11 +235,11 @@ export default function Page() {
                           error={typeof error === "string" && submitted ? error : undefined}
                         />
                       );
-                    })
-                  )}
-                </CardContent>
-              </Card>
-            </Grid>
+                    })}
+                  </CardContent>
+                </Card>
+              </Grid>
+            )}
 
             <Grid size={12}>
               {saveError && <Alert severity='error'>{saveError}</Alert>}
