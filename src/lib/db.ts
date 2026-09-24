@@ -107,10 +107,17 @@ export async function getSpecimen(id: string) {
 }
 
 export async function updateSpecimen(id: string, changes: Partial<Omit<SpecimenRecord, "id" | "createdAt">>) {
-  return db.specimens.update(id, {
+  const previousSpecimen = await db.specimens.get(id);
+  const updatedCount = await db.specimens.update(id, {
     ...changes,
     updatedAt: Date.now(),
   });
+
+  if (updatedCount > 0 && previousSpecimen) {
+    await deleteUnreferencedImages([previousSpecimen]).catch(() => undefined);
+  }
+
+  return updatedCount;
 }
 
 function getImageIds(records: Array<{ customData: Record<string, DynamicDataValue> }>) {

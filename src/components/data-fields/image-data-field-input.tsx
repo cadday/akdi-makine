@@ -22,7 +22,7 @@ interface StoredImagePreviewsProps {
   imageClassName?: string;
 }
 
-export function StoredImagePreviews({ images, imageClassName }: StoredImagePreviewsProps) {
+export function StoredImagePreviews({ images, onRemove, imageClassName }: StoredImagePreviewsProps) {
   const [previews, setPreviews] = useState<ImagePreview[]>([]);
 
   useEffect(() => {
@@ -63,9 +63,34 @@ export function StoredImagePreviews({ images, imageClassName }: StoredImagePrevi
 
   return (
     <Box className='flex items-center gap-1 h-full'>
-      {previews.map((preview) =>
-        preview.url ? <img key={preview.key} alt={preview.name} src={preview.url} className={cn("h-8 w-10 rounded-xs object-cover", imageClassName)} /> : null,
-      )}
+      {previews.map((preview) => (
+        <Box key={preview.key} className='relative flex h-12 w-16 items-center justify-center overflow-hidden rounded-xs bg-grey-20'>
+          {preview.url ? (
+            <img alt={preview.name} src={preview.url} className={cn("h-full w-full object-cover", imageClassName)} />
+          ) : (
+            <Typography variant='caption' className='px-1 text-center'>
+              {preview.name}
+            </Typography>
+          )}
+          {onRemove && preview.image && (
+            <Button
+              type='button'
+              aria-label={`Remove ${preview.name}`}
+              className='icon-only absolute right-0.5 top-0.5 flex-none bg-white/90'
+              size='tiny'
+              color='grey'
+              variant='pastel'
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                onRemove(preview.image!);
+              }}
+            >
+              <Trash2 size={14} />
+            </Button>
+          )}
+        </Box>
+      ))}
     </Box>
   );
 }
@@ -153,7 +178,10 @@ export default function ImageDataFieldInput({
             className={`border-grey-200 hover:border-grey-500 flex min-h-22.5 flex-row flex-wrap items-center gap-2.5 rounded-md border p-4 transition-colors ${isDragActive ? "border-primary" : ""} ${!canSelectFiles ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
           >
             <input {...getInputProps()} />
-            <StoredImagePreviews images={images} onRemove={(image) => onChange(images.filter((item) => item.id !== image.id))} />
+            <StoredImagePreviews
+              images={!multiple && activePendingFiles.length > 0 ? EMPTY_IMAGES : images}
+              onRemove={onPendingFilesChange ? (image) => onChange(images.filter((item) => item.id !== image.id)) : undefined}
+            />
             {pendingPreviews.map(({ key, file, url }) => (
               <Box key={key} className='bg-grey-20 flex w-full items-center gap-2 rounded-sm p-1'>
                 <img alt={file.name} src={url} className='h-12 w-16 rounded-xs object-cover' />

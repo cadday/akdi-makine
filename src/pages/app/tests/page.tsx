@@ -1,12 +1,11 @@
 import { Link } from "react-router";
 
-import { Breadcrumbs, Button, Grid, Typography } from "@mui/material";
+import { Breadcrumbs, Grid, Typography } from "@mui/material";
 
 import ContentWrapper from "@/components/layout/containers/content-wrapper";
 import TitleWrapper from "@/components/layout/containers/title-wrapper";
 import { LINKS } from "@/constants";
 import { useTranslation } from "react-i18next";
-import { Ellipsis } from "lucide-react";
 
 export default function Page() {
   const { t } = useTranslation();
@@ -25,11 +24,6 @@ export default function Page() {
               </Link>
               <Typography variant='body2'> {t("menu-tests")}</Typography>
             </Breadcrumbs>
-          </Grid>
-          <Grid size={{ xs: 12, md: "auto" }}>
-            <Button className='icon-only surface-standard' color='grey' variant='surface'>
-              <Ellipsis size={16} />
-            </Button>
           </Grid>
         </Grid>
       </TitleWrapper>

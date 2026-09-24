@@ -286,11 +286,6 @@ export default function Page() {
               <Typography variant='body2'>{t("menu-data-fields")}</Typography>
             </Breadcrumbs>
           </Grid>
-          <Grid size={{ xs: 12, md: "auto" }}>
-            <Button size='large' className='icon-only surface-standard' color='grey' variant='surface'>
-              <Ellipsis size={16} />
-            </Button>
-          </Grid>
         </Grid>
       </TitleWrapper>
 

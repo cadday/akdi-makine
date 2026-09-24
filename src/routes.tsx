@@ -74,6 +74,7 @@ const AppRoutes = () => {
         {mainRoutes}
         {bottomRoutes}
         <Route path='/specimens/add' element={lazyLoad("/specimens/add")} />
+        <Route path='/specimens/:id/edit' element={lazyLoad("/specimens/edit")} />
         <Route path='/specimens/:id' element={lazyLoad("/specimens/view")} />
         <Route path='/data-fields/add' element={lazyLoad("/data-fields/add")} />
         <Route path='/data-fields/:id' element={lazyLoad("/data-fields/view")} />

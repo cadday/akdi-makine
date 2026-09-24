@@ -176,7 +176,7 @@ export default function Page() {
                       <Grid container spacing={5} size={{ lg: 8, xs: 12 }}>
                         <Grid size={12}>
                           <Typography variant='h6' component='h6' className='mb-3'>
-                            Specifications
+                            Definition
                           </Typography>
                           <Card>
                             <CardContent className='flex flex-col gap-5'>

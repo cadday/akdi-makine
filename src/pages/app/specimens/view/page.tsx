@@ -1,30 +1,34 @@
 import { SyntheticEvent, useEffect, useState } from "react";
-import { Link, useParams } from "react-router";
+import { Link, useNavigate, useParams } from "react-router";
 
 import ContentWrapper from "@/components/layout/containers/content-wrapper";
 import TitleWrapper from "@/components/layout/containers/title-wrapper";
 import ImageLightboxGallery from "@/components/data-fields/image-lightbox-gallery";
 import { LINKS } from "@/constants";
 import { useDb, type DataFieldDefinition, type DynamicDataValue, type SpecimenRecord, type UploadedImage } from "@/context/db-context";
-import { Box, Breadcrumbs, Card, CardContent, Grid, Tab, Typography } from "@mui/material";
+import { Box, Breadcrumbs, Button, Card, CardContent, Grid, ListItemIcon, ListItemText, Menu, MenuItem, Tab, Tooltip, Typography } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import LoadingFullScreen from "@/components/loading/loading-full-screen";
 import useAppNotifications from "@/hooks/use-app-notifications";
 import { DynamicIcon } from "lucide-react/dynamic";
-import { ChevronLeft, ChevronRight, Hexagon } from "lucide-react";
+import { ChevronLeft, ChevronRight, Ellipsis, Hexagon, Pen, X } from "lucide-react";
 import TabList from "@mui/lab/TabList";
 import TabPanel from "@mui/lab/TabPanel";
 import TabContext from "@mui/lab/TabContext";
+import PopupState, { bindMenu, bindTrigger } from "material-ui-popup-state";
+import useDeleteConfirmation from "@/hooks/use-delete-confirmation";
 
 export default function Page() {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
-  const { getSpecimen, getDataFields } = useDb();
+  const navigate = useNavigate();
+  const { getSpecimen, getDataFields, deleteSpecimen } = useDb();
   const [specimen, setSpecimen] = useState<SpecimenRecord | null>(null);
   const [fields, setFields] = useState<DataFieldDefinition[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { showError } = useAppNotifications();
+  const { requestDelete, dialog } = useDeleteConfirmation();
 
   useEffect(() => {
     let cancelled = false;
@@ -104,6 +108,59 @@ export default function Page() {
                       {specimen && <Typography variant='body2'>{specimen.name}</Typography>}
                     </Breadcrumbs>
                   </Grid>
+                  <Grid size={{ xs: 12, md: "auto" }}>
+                    <PopupState variant='popover' popupId='specimen-actions-menu'>
+                      {(popupState) => (
+                        <>
+                          <Tooltip title='Actions' placement='bottom'>
+                            <Button className='icon-only surface-standard' color='grey' variant='surface' {...bindTrigger(popupState)}>
+                              <Box className='w-6 h-6 flex items-center justify-center'>
+                                <Ellipsis size={16} />
+                              </Box>
+                            </Button>
+                          </Tooltip>
+                          <Menu
+                            {...bindMenu(popupState)}
+                            anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+                            transformOrigin={{ vertical: "top", horizontal: "right" }}
+                          >
+                            <MenuItem
+                              onClick={() => {
+                                popupState.close();
+                                if (id) navigate(`/specimens/${id}/edit`);
+                              }}
+                            >
+                              <ListItemIcon>
+                                <Pen size={16} />
+                              </ListItemIcon>
+                              <ListItemText>Edit</ListItemText>
+                            </MenuItem>
+                            <MenuItem
+                              onClick={() => {
+                                popupState.close();
+                                if (!id) return;
+                                requestDelete({
+                                  title: "Delete Specimen",
+                                  message: specimen?.name ? `Delete “${specimen.name}”? This action cannot be undone.` : "Delete this specimen? This action cannot be undone.",
+                                  errorMessage: "Failed to delete specimen:",
+                                  onConfirm: async () => {
+                                    await deleteSpecimen(id);
+                                    navigate("/specimens");
+                                  },
+                                });
+                              }}
+                              className='hover:bg-error-light/10 hover:text-error'
+                            >
+                              <ListItemIcon>
+                                <X size={16} />
+                              </ListItemIcon>
+                              <ListItemText>Delete</ListItemText>
+                            </MenuItem>
+                          </Menu>
+                        </>
+                      )}
+                    </PopupState>
+                  </Grid>
                 </Grid>
 
                 <Box>
@@ -133,7 +190,7 @@ export default function Page() {
                       <Grid container spacing={5} size={{ lg: 8, xs: 12 }}>
                         <Grid size={12}>
                           <Typography variant='h6' component='h6' className='mb-3'>
-                            Specifications
+                            Definition
                           </Typography>
                           <Card>
                             <CardContent className='flex flex-col gap-5'>
@@ -173,6 +230,7 @@ export default function Page() {
           </Box>
         </>
       )}
+      {dialog}
     </>
   );
 }

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { useTranslation } from "react-i18next";
-import { Breadcrumbs, Grid, Typography } from "@mui/material";
+import { Box, Breadcrumbs, Button, Grid, ListItemIcon, ListItemText, Menu, MenuItem, Tooltip, Typography } from "@mui/material";
 import ContentWrapper from "@/components/layout/containers/content-wrapper";
 import TitleWrapper from "@/components/layout/containers/title-wrapper";
 import DataFieldForm from "@/pages/app/data-fields/components/data-field-form";
@@ -9,16 +9,20 @@ import { LINKS } from "@/constants";
 import { useDb, type DataFieldDefinition } from "@/context/db-context";
 import LoadingFullScreen from "@/components/loading/loading-full-screen";
 import useAppNotifications from "@/hooks/use-app-notifications";
+import { Ellipsis, X } from "lucide-react";
+import PopupState, { bindMenu, bindTrigger } from "material-ui-popup-state";
+import useDeleteConfirmation from "@/hooks/use-delete-confirmation";
 
 export default function Page() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const { getDataField, updateDataField } = useDb();
+  const { getDataField, updateDataField, deleteDataField } = useDb();
   const [dataField, setDataField] = useState<DataFieldDefinition | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { showError } = useAppNotifications();
+  const { requestDelete, dialog } = useDeleteConfirmation();
 
   useEffect(() => {
     let cancelled = false;
@@ -78,6 +82,48 @@ export default function Page() {
                   {dataField && <Typography variant='body2'>{dataField.name}</Typography>}
                 </Breadcrumbs>
               </Grid>
+              <Grid size={{ xs: 12, md: "auto" }}>
+                <PopupState variant='popover' popupId='data-field-actions-menu'>
+                  {(popupState) => (
+                    <>
+                      <Tooltip title='Actions' placement='bottom'>
+                        <Button className='icon-only surface-standard' color='grey' variant='surface' {...bindTrigger(popupState)}>
+                          <Box className='w-6 h-6 flex items-center justify-center'>
+                            <Ellipsis size={16} />
+                          </Box>
+                        </Button>
+                      </Tooltip>
+                      <Menu
+                        {...bindMenu(popupState)}
+                        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+                        transformOrigin={{ vertical: "top", horizontal: "right" }}
+                      >
+                        <MenuItem
+                          onClick={() => {
+                            popupState.close();
+                            if (!id) return;
+                            requestDelete({
+                              title: "Delete Data Field",
+                              message: dataField?.name ? `Delete “${dataField.name}”? This action cannot be undone.` : "Delete this data field? This action cannot be undone.",
+                              errorMessage: "Failed to delete data field:",
+                              onConfirm: async () => {
+                                await deleteDataField(id);
+                                navigate("/data-fields");
+                              },
+                            });
+                          }}
+                          className='hover:bg-error-light/10 hover:text-error'
+                        >
+                          <ListItemIcon>
+                            <X size={16} />
+                          </ListItemIcon>
+                          <ListItemText>Delete</ListItemText>
+                        </MenuItem>
+                      </Menu>
+                    </>
+                  )}
+                </PopupState>
+              </Grid>
             </Grid>
           </TitleWrapper>
 
@@ -96,6 +142,7 @@ export default function Page() {
           </ContentWrapper>
         </>
       )}
+      {dialog}
     </>
   );
 }

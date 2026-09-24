@@ -6,7 +6,6 @@ import ContentWrapper from "@/components/layout/containers/content-wrapper";
 import TitleWrapper from "@/components/layout/containers/title-wrapper";
 import { LINKS } from "@/constants";
 import { useTranslation } from "react-i18next";
-import { Ellipsis } from "lucide-react";
 import { useDb } from "@/context/db-context";
 
 export default function Page() {
@@ -71,11 +70,6 @@ export default function Page() {
               </Link>
               <Typography variant='body2'>{t("menu-overview")}</Typography>
             </Breadcrumbs>
-          </Grid>
-          <Grid size={{ xs: 12, md: "auto" }}>
-            <Button className='icon-only surface-standard' color='grey' variant='surface'>
-              <Ellipsis />
-            </Button>
           </Grid>
         </Grid>
       </TitleWrapper>

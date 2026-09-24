@@ -127,11 +127,11 @@ export default function Page() {
         message: ids.length === 1 ? "Delete this preset? This action cannot be undone." : `Delete ${ids.length} presets? This action cannot be undone.`,
         errorMessage: "Failed to delete preset(s):",
         onConfirm: async () => {
-        if (ids.length === 1) await deletePreset(ids[0]);
-        else await deletePresets(ids);
+          if (ids.length === 1) await deletePreset(ids[0]);
+          else await deletePresets(ids);
 
-        setPresets((current) => current.filter((preset) => !ids.includes(preset.id)));
-        setRowSelectionModel({ type: "include", ids: new Set() });
+          setPresets((current) => current.filter((preset) => !ids.includes(preset.id)));
+          setRowSelectionModel({ type: "include", ids: new Set() });
         },
       });
     },
@@ -161,7 +161,10 @@ export default function Page() {
       flex: 1,
       minWidth: 240,
       renderCell: (params) => (
-        <Link to={`/presets/${params.row.id}`} className='text-text-primary link-primary link-underline hover:text-primary py-2 font-semibold transition-colors'>
+        <Link
+          to={`/presets/${params.row.id}`}
+          className='text-text-primary link-primary link-underline hover:text-primary py-2 font-semibold transition-colors'
+        >
           {params.value}
         </Link>
       ),
@@ -263,11 +266,6 @@ export default function Page() {
               </Link>
               <Typography variant='body2'>{t("menu-presets")}</Typography>
             </Breadcrumbs>
-          </Grid>
-          <Grid size={{ xs: 12, md: "auto" }}>
-            <Button size='large' className='icon-only surface-standard' color='grey' variant='surface'>
-              <Ellipsis size={16} />
-            </Button>
           </Grid>
         </Grid>
       </TitleWrapper>
