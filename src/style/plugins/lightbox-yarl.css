@@ -28,7 +28,7 @@
   }
 
   .yarl__button {
-    @apply bg-grey-25! text-text-primary! rounded-lg! px-2! py-2! text-base! leading-6! shadow-sm filter-none! transition-colors;
+    @apply bg-grey-25! text-text-primary! rounded-md! px-2! py-2! text-base! leading-6! shadow-sm filter-none! transition-colors;
     &:hover {
       @apply text-primary!;
     }

@@ -115,12 +115,10 @@ export default function LeftMenu() {
       // Accordion state is now managed by PrimaryItem component
       showLeftSecondary();
       setActiveItem(item);
-      console.log("first");
     } else if (item.children && item.children.filter((x) => !x.hideInMenu).length > 0) {
       // Primary item is a default menu item with children. Show the sub menu without navigating.
       showLeftSecondary();
       setActiveItem(item);
-      console.log("second");
     } else {
       if (isPathMatch(pathname, item.href || "")) {
         // Primary item is link without children or a content. The route is the same so don't do anything.
@@ -128,14 +126,12 @@ export default function LeftMenu() {
         resetLeftMenu();
         setActiveItem(item);
         // Navigate to the item's href if the current path doesn't match.
-        console.log("third");
         if (pathname !== item.href) {
           navigate(item.href ?? "");
         }
       } else {
         // Primary item is link without children or a content. Navigate to the route.
         setOpenedAccordions((prev) => prev.filter((a) => a.indent !== 0));
-        console.log("fourth");
         navigate(item.href ?? "");
       }
     }
