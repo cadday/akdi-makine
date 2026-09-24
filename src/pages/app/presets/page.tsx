@@ -18,8 +18,10 @@ import {
   EyeClosed,
   File,
   OctagonAlert,
+  Pen,
   Plus,
   Repeat2,
+  Send,
   Trash,
   X,
   XSquare,
@@ -231,10 +233,12 @@ export default function Page() {
       align: "right",
       headerAlign: "right",
       getActions: (params) => [
-        <GridActionsCellItem key={0} icon={<Copy size={16} />} label='Duplicate' onClick={duplicateRow(String(params.id))} showInMenu />,
+        <GridActionsCellItem key='view' icon={<Send size={16} />} label='View' onClick={() => navigate(`/presets/${params.id}`)} showInMenu />,
+        <GridActionsCellItem key='edit' icon={<Pen size={16} />} label='Edit' onClick={() => navigate(`/presets/${params.id}/edit`)} showInMenu />,
+        <GridActionsCellItem key='duplicate' icon={<Copy size={16} />} label='Duplicate' onClick={duplicateRow(String(params.id))} showInMenu />,
         <GridActionsCellItem
           className='hover:bg-error-light/10 hover:text-error'
-          key={1}
+          key='delete'
           icon={<XSquare size={16} />}
           label='Delete'
           onClick={deleteRow(String(params.id))}

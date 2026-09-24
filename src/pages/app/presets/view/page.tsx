@@ -93,7 +93,7 @@ export default function Page() {
                     </Breadcrumbs>
                   </Grid>
                   <Grid size={{ xs: 12, md: "auto" }}>
-                    <PopupState variant='popover' popupId='demo-popup-menu'>
+                    <PopupState variant='popover' popupId='popup-menu'>
                       {(popupState) => (
                         <>
                           <Tooltip title='Actions' placement='bottom'>

@@ -18,8 +18,10 @@ import {
   EyeClosed,
   File,
   OctagonAlert,
+  Pen,
   Plus,
   Repeat2,
+  Send,
   Trash,
   X,
   XSquare,
@@ -141,14 +143,14 @@ export default function Page() {
         message: ids.length === 1 ? "Delete this specimen? This action cannot be undone." : `Delete ${ids.length} specimens? This action cannot be undone.`,
         errorMessage: "Failed to delete specimen(s):",
         onConfirm: async () => {
-        if (ids.length === 1) {
-          await deleteSpecimen(ids[0]);
-        } else {
-          await deleteSpecimens(ids);
-        }
+          if (ids.length === 1) {
+            await deleteSpecimen(ids[0]);
+          } else {
+            await deleteSpecimens(ids);
+          }
 
-        setSpecimens((current) => current.filter((item) => !ids.includes(item.id)));
-        setRowSelectionModel({ type: "include", ids: new Set() });
+          setSpecimens((current) => current.filter((item) => !ids.includes(item.id)));
+          setRowSelectionModel({ type: "include", ids: new Set() });
         },
       });
     },
@@ -267,6 +269,8 @@ export default function Page() {
         align: "right",
         headerAlign: "right",
         getActions: (params) => [
+          <GridActionsCellItem key='view' icon={<Send size={16} />} label='View' onClick={() => navigate(`/specimens/${params.id}`)} showInMenu />,
+          <GridActionsCellItem key='edit' icon={<Pen size={16} />} label='Edit' onClick={() => navigate(`/specimens/${params.id}/edit`)} showInMenu />,
           <GridActionsCellItem key={0} icon={<Copy size={16} />} label='Duplicate' onClick={duplicateRow(params.id as string)} showInMenu />,
           <GridActionsCellItem
             className='hover:bg-error-light/10 hover:text-error'

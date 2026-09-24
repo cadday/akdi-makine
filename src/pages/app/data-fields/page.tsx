@@ -20,6 +20,7 @@ import {
   OctagonAlert,
   Plus,
   Repeat2,
+  Send,
   Trash,
   X,
   XSquare,
@@ -138,14 +139,14 @@ export default function Page() {
         message: ids.length === 1 ? "Delete this data field? This action cannot be undone." : `Delete ${ids.length} data fields? This action cannot be undone.`,
         errorMessage: "Failed to delete data field(s):",
         onConfirm: async () => {
-        if (ids.length === 1) {
-          await deleteDataField(ids[0]);
-        } else {
-          await deleteDataFields(ids);
-        }
+          if (ids.length === 1) {
+            await deleteDataField(ids[0]);
+          } else {
+            await deleteDataFields(ids);
+          }
 
-        setDataFields((current) => current.filter((item) => !ids.includes(item.id)));
-        setRowSelectionModel({ type: "include", ids: new Set() });
+          setDataFields((current) => current.filter((item) => !ids.includes(item.id)));
+          setRowSelectionModel({ type: "include", ids: new Set() });
         },
       });
     },
@@ -255,6 +256,7 @@ export default function Page() {
       align: "right",
       headerAlign: "right",
       getActions: (params) => [
+        <GridActionsCellItem key='view' icon={<Send size={16} />} label='View' onClick={() => navigate(`/data-fields/${params.id}`)} showInMenu />,
         <GridActionsCellItem key={0} icon={<Copy size={16} />} label='Duplicate' onClick={duplicateRow(params.id as string)} showInMenu />,
         <GridActionsCellItem
           className='hover:bg-error-light/10 hover:text-error'
