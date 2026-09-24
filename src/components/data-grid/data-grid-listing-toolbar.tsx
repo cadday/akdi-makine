@@ -1,4 +1,5 @@
 import { SyntheticEvent, useState } from "react";
+import type { ReactNode } from "react";
 
 import {
   Badge,
@@ -35,9 +36,10 @@ export type ListingToolbarProps = {
   duplicateRows?: (ids: string[]) => Promise<void>;
   onAddItem?: () => void;
   addLabel?: string;
+  addIcon?: ReactNode;
 };
 
-export const DataGridListingToolbar = ({ rowSelectionModel, deleteRows, duplicateRows, onAddItem, addLabel = "Add" }: ListingToolbarProps) => {
+export const DataGridListingToolbar = ({ rowSelectionModel, deleteRows, duplicateRows, onAddItem, addLabel = "Add", addIcon = <Plus /> }: ListingToolbarProps) => {
   const [anchorElExport, setAnchorElExport] = useState<EventTarget | Element | PopoverVirtualElement | null>(null);
   const openExport = Boolean(anchorElExport);
   const handleClickExport = (event: Event | SyntheticEvent) => {
@@ -216,7 +218,7 @@ export const DataGridListingToolbar = ({ rowSelectionModel, deleteRows, duplicat
           </Menu>
 
           {onAddItem && (
-            <Button size='large' className='surface-standard' color='text-primary' variant='surface' onClick={onAddItem} startIcon={<Plus />}>
+            <Button size='large' className='surface-standard' color='text-primary' variant='surface' onClick={onAddItem} startIcon={addIcon}>
               {addLabel}
             </Button>
           )}

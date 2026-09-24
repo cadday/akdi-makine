@@ -74,7 +74,7 @@ export default function Page() {
     if (field.type === "Image" && Array.isArray(value)) {
       return <ImageLightboxGallery images={value as UploadedImage[]} />;
     }
-    if (typeof value === "boolean") return value ? "Yes" : "No";
+    if (typeof value === "boolean") return value ? "True" : "False";
     const displayValue = Array.isArray(value) ? value.join(", ") : String(value);
     return field.unit ? `${displayValue} ${field.unit}` : displayValue;
   };

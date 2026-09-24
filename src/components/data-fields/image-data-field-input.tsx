@@ -64,9 +64,9 @@ export function StoredImagePreviews({ images, onRemove, imageClassName }: Stored
   return (
     <Box className='flex items-center gap-1 h-full'>
       {previews.map((preview) => (
-        <Box key={preview.key} className='relative flex h-12 w-16 items-center justify-center overflow-hidden rounded-xs bg-grey-20'>
+        <Box key={preview.key}>
           {preview.url ? (
-            <img alt={preview.name} src={preview.url} className={cn("h-full w-full object-cover", imageClassName)} />
+            <img alt={preview.name} src={preview.url} className={cn("h-full w-full object-cover rounded-xs", imageClassName)} />
           ) : (
             <Typography variant='caption' className='px-1 text-center'>
               {preview.name}

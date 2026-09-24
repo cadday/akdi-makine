@@ -219,9 +219,9 @@ export default function Page() {
             const value = params.value;
             if (value == null) return "-";
             if (dataField.type === "Image" && Array.isArray(value)) {
-              return <StoredImagePreviews images={value as UploadedImage[]} />;
+              return <StoredImagePreviews images={value as UploadedImage[]} imageClassName="h-8 w-10"/>;
             }
-            if (typeof value === "boolean") return value ? "Yes" : "No";
+            if (typeof value === "boolean") return value ? "True" : "False";
             const displayValue = Array.isArray(value)
               ? value
                   .map((item) => (typeof item === "string" ? item : item && typeof item === "object" && "name" in item ? item.name : String(item)))

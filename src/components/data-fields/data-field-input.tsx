@@ -140,7 +140,15 @@ export default function DataFieldInput({ field, value, onChange, error, pendingF
           {fieldIcon}
           <FormControl className='outlined' variant='standard' size='small' fullWidth required={field.mandatory}>
             <FormLabel component='label' className={labelClassName}>{label}</FormLabel>
-            <Checkbox className='self-start' checked={value === true} onChange={(event) => onChange(event.target.checked)} />
+            <Select<string>
+              value={typeof value === "boolean" ? String(value) : ""}
+              displayEmpty
+              IconComponent={ChevronDown}
+              onChange={(event) => onChange(event.target.value === "" ? null : event.target.value === "true")}
+            >
+              <MenuItem value='true'>True</MenuItem>
+              <MenuItem value='false'>False</MenuItem>
+            </Select>
           </FormControl>
         </Box>
       );

@@ -177,19 +177,19 @@ export default function Page() {
         const value = params.value;
         if (value === "Tensile") {
           return (
-            <Button className='pointer-events-none self-center' size='tiny' color='primary' variant='outlined'>
+            <Button className='pointer-events-none self-center py-1 rounded-2xs' size='tiny' color='primary' variant='outlined'>
               {value}
             </Button>
           );
         } else if (value === "Compression") {
           return (
-            <Button className='pointer-events-none self-center' size='tiny' color='secondary' variant='outlined'>
+            <Button className='pointer-events-none self-center py-1 rounded-2xs' size='tiny' color='secondary' variant='outlined'>
               {value}
             </Button>
           );
         } else {
           return (
-            <Button className='pointer-events-none self-center' size='tiny' color='accent-1' variant='outlined'>
+            <Button className='pointer-events-none self-center py-1 rounded-2xs' size='tiny' color='accent-1' variant='outlined'>
               {value}
             </Button>
           );

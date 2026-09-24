@@ -1,5 +1,6 @@
 import { PaletteColor, PaletteColorOptions } from "@mui/material";
 import { GridRowSelectionModel } from "@mui/x-data-grid";
+import type { ReactNode } from "react";
 
 declare module "@mui/x-data-grid" {
   interface ToolbarPropsOverrides {
@@ -8,6 +9,7 @@ declare module "@mui/x-data-grid" {
     duplicateRows?: (ids: string[]) => Promise<void>;
     onAddItem?: () => void;
     addLabel?: string;
+    addIcon?: ReactNode;
   }
 }
 
