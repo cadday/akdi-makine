@@ -1,39 +1,45 @@
-import { Link, useParams } from "react-router";
 import { useEffect, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router";
+import { useTranslation } from "react-i18next";
+import { Alert, Breadcrumbs, Grid, Typography } from "@mui/material";
 import ContentWrapper from "@/components/layout/containers/content-wrapper";
 import TitleWrapper from "@/components/layout/containers/title-wrapper";
+import DataFieldForm from "@/pages/app/data-fields/components/data-field-form";
 import { LINKS } from "@/constants";
 import { useDb, type DataFieldDefinition } from "@/context/db-context";
-import { Breadcrumbs, Card, CardContent, Grid, Typography } from "@mui/material";
-import { useTranslation } from "react-i18next";
+import LoadingFullScreen from "@/components/loading/loading-full-screen";
 
 export default function Page() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const { getDataField } = useDb();
+  const { getDataField, updateDataField } = useDb();
   const [dataField, setDataField] = useState<DataFieldDefinition | null>(null);
-  const [title, setTitle] = useState("");
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
 
     const loadDataField = async () => {
+      setIsLoading(true);
+      setLoadError(null);
       if (!id) {
-        setTitle("Data Field not found");
+        setDataField(null);
+        setLoadError("Data Field not found");
+        setIsLoading(false);
         return;
       }
-
-      setDataField(null);
-      setTitle("");
 
       try {
         const record = await getDataField(id);
         if (cancelled) return;
-
         setDataField(record ?? null);
-        setTitle(record?.name ?? "Data Field not found");
-      } catch {
-        if (!cancelled) setTitle("Failed to load Data Field");
+        if (!record) setLoadError("Data Field not found");
+      } catch (error) {
+        if (!cancelled) setLoadError(`Failed to load Data Field: ${String(error)}`);
+      } finally {
+        if (!cancelled) setIsLoading(false);
       }
     };
 
@@ -45,48 +51,48 @@ export default function Page() {
 
   return (
     <>
-      <TitleWrapper>
-        <Grid size={12} container spacing={2.5}>
-          <Grid size={{ xs: 12, md: "grow" }}>
-            <Typography variant='h1' component='h1' className='mb-0'>
-              {dataField?.name ?? title}
-            </Typography>
-            <Breadcrumbs>
-              <Link color='inherit' to={LINKS.home}>
-                {t("menu-home")}
-              </Link>
-              <Link color='inherit' to='/data-fields'>
-                {t("menu-data-fields")}
-              </Link>
-              {dataField && <Typography variant='body2'>{dataField.name}</Typography>}
-            </Breadcrumbs>
-          </Grid>
-        </Grid>
-      </TitleWrapper>
+      {isLoading ? (
+        <LoadingFullScreen />
+      ) : (
+        <>
+          <TitleWrapper>
+            <Grid size={12} container spacing={2.5}>
+              <Grid size={{ xs: 12, md: "grow" }}>
+                <Typography variant='h1' component='h1' className='mb-0'>
+                  {dataField?.name ?? (isLoading ? "Loading Data Field" : "Data Field")}
+                </Typography>
+                <Breadcrumbs>
+                  <Link color='inherit' to={LINKS.home}>
+                    {t("menu-home")}
+                  </Link>
+                  <Link color='inherit' to='/data-fields'>
+                    {t("menu-data-fields")}
+                  </Link>
+                  {dataField && <Typography variant='body2'>{dataField.name}</Typography>}
+                </Breadcrumbs>
+              </Grid>
+            </Grid>
+          </TitleWrapper>
 
-      <ContentWrapper>
-        <Grid size={12} container spacing={5} className='w-full'>
-          <Card className='w-full'>
-              <CardContent className='flex flex-col gap-3'>
-                {dataField ? (
-                  <>
-                    <Typography variant='h6' component='h2'>{dataField.type}</Typography>
-                    <Typography><strong>Container:</strong> {dataField.container}</Typography>
-                    {dataField.description && <Typography>{dataField.description}</Typography>}
-                    {dataField.unit && <Typography><strong>Unit:</strong> {dataField.unit}</Typography>}
-                    {dataField.type === "Image" && (
-                      <>
-                        <Typography><strong>Accepted types:</strong> {(dataField.accept ?? "image/*").split(",").join(", ")}</Typography>
-                        <Typography><strong>Multiple images:</strong> {dataField.multiple ? "Yes" : "No"}</Typography>
-                        <Typography color='textSecondary'>Images are uploaded when entered on a specimen.</Typography>
-                      </>
-                    )}
-                  </>
-                ) : <Typography>{title}</Typography>}
-              </CardContent>
-          </Card>
-        </Grid>
-      </ContentWrapper>
+          <ContentWrapper>
+            {isLoading ? (
+              <Typography color='textSecondary'>Loading data field...</Typography>
+            ) : loadError ? (
+              <Alert severity='error'>{loadError}</Alert>
+            ) : dataField && id ? (
+              <DataFieldForm
+                key={dataField.id}
+                dataField={dataField}
+                saveLabel='Update'
+                onSave={async (input) => {
+                  await updateDataField(id, input);
+                  navigate("/data-fields");
+                }}
+              />
+            ) : null}
+          </ContentWrapper>
+        </>
+      )}
     </>
   );
 }
