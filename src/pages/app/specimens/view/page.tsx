@@ -3,7 +3,7 @@ import { Link, useParams } from "react-router";
 
 import ContentWrapper from "@/components/layout/containers/content-wrapper";
 import TitleWrapper from "@/components/layout/containers/title-wrapper";
-import { StoredImagePreviews } from "@/components/data-fields/image-data-field-input";
+import ImageLightboxGallery from "@/components/data-fields/image-lightbox-gallery";
 import { LINKS } from "@/constants";
 import { useDb, type DataFieldDefinition, type DynamicDataValue, type SpecimenRecord, type UploadedImage } from "@/context/db-context";
 import { Box, Breadcrumbs, Card, CardContent, Grid, Tab, Typography } from "@mui/material";
@@ -80,7 +80,7 @@ export default function Page() {
   const renderValue = (field: DataFieldDefinition, value: DynamicDataValue) => {
     if (value == null) return "-";
     if (field.type === "Image" && Array.isArray(value)) {
-      return <StoredImagePreviews images={value as UploadedImage[]} imageClassName='w-32 h-24 rounded-lg' />;
+      return <ImageLightboxGallery images={value as UploadedImage[]} />;
     }
     if (typeof value === "boolean") return value ? "Yes" : "No";
     const displayValue = Array.isArray(value) ? value.join(", ") : String(value);
@@ -121,9 +121,8 @@ export default function Page() {
                 <Box>
                   <TabList
                     onChange={handleTabChange}
-                    scrollButtons='auto'
                     allowScrollButtonsMobile
-                    variant='scrollable'
+                    variant='standard'
                     slots={{
                       endScrollButtonIcon: () => {
                         return <ChevronRight size={12} />;
