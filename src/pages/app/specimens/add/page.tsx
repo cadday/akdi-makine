@@ -12,6 +12,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useFormik } from "formik";
 import { cn } from "@/lib/utils";
 import * as yup from "yup";
+import useAppNotifications from "@/hooks/use-app-notifications";
 
 interface SpecimenFormValues {
   name: string;
@@ -97,8 +98,8 @@ export default function Page() {
   const [fields, setFields] = useState<DataFieldDefinition[]>([]);
   const [isLoadingFields, setIsLoadingFields] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [saveError, setSaveError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const { showError } = useAppNotifications();
 
   useEffect(() => {
     let cancelled = false;
@@ -110,7 +111,11 @@ export default function Page() {
         const data = await getDataFields("Specimen");
         if (!cancelled) setFields(data);
       } catch (error) {
-        if (!cancelled) setLoadError(`Failed to load specimen fields: ${String(error)}`);
+        if (!cancelled) {
+          const message = `Failed to load specimen fields: ${String(error)}`;
+          setLoadError(message);
+          showError(message);
+        }
       } finally {
         if (!cancelled) setIsLoadingFields(false);
       }
@@ -120,13 +125,12 @@ export default function Page() {
     return () => {
       cancelled = true;
     };
-  }, [getDataFields]);
+  }, [getDataFields, showError]);
 
   const validationSchema = useMemo(() => buildSpecimenValidationSchema(fields), [fields]);
   const formik = useFormik<SpecimenFormValues>({
     validationSchema,
     onSubmit: async (values) => {
-      setSaveError(null);
       const customData = Object.fromEntries(
         Object.entries(values.customData).filter(([, value]) => value !== null && value !== "" && !(Array.isArray(value) && value.length === 0)),
       );
@@ -152,7 +156,7 @@ export default function Page() {
         navigate("/specimens");
       } catch (error) {
         await Promise.allSettled(savedImageIds.map((imageId) => window.electronAPI.deleteImage(imageId)));
-        setSaveError(`Failed to save specimen: ${String(error)}`);
+        showError(`Failed to save specimen: ${String(error)}`);
       }
     },
     initialValues: { name: "", customData: {}, pendingImages: {} },
@@ -198,7 +202,7 @@ export default function Page() {
           <Grid size={{ xs: 12 }} container spacing={5}>
             <Grid size={12}>
               <Typography variant='h6' component='h6' className='mb-3'>
-                Identity
+                Definition
               </Typography>
               <Card>
                 <CardContent className='-mb-4'>
@@ -242,7 +246,6 @@ export default function Page() {
             )}
 
             <Grid size={12}>
-              {saveError && <Alert severity='error'>{saveError}</Alert>}
               {submitted && !formik.isValid && (
                 <Alert severity='error' icon={<XSquare />} className='neutral rounded-3xl! bg-transparent! mb-2 mt-2 p-5'>
                   <AlertTitle variant='subtitle2' className='pt-0.5'>

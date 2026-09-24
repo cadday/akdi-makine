@@ -41,6 +41,7 @@ import Search from "@/components/layout/search/search";
 import DataGridDateTimeFilter from "@/components/data-grid/data-grid-date-time-filter";
 import { StoredImagePreviews } from "@/components/data-fields/image-data-field-input";
 import { DataFieldDefinition, SpecimenRecord, useDb, UploadedImage } from "@/context/db-context";
+import useAppNotifications from "@/hooks/use-app-notifications";
 
 type SpecimenGridRow = SpecimenRecord;
 
@@ -49,6 +50,7 @@ export default function Page() {
   const navigate = useNavigate();
 
   const { getSpecimens, getDataFields, deleteSpecimen, deleteSpecimens, duplicateSpecimens, duplicateSpecimen } = useDb();
+  const { showError } = useAppNotifications();
   const [specimens, setSpecimens] = useState<SpecimenRecord[]>([]);
   const [dataFields, setDataFields] = useState<DataFieldDefinition[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -63,11 +65,13 @@ export default function Page() {
       setSpecimens(specimenData);
       setDataFields(fieldData);
     } catch (_err) {
-      setError("Failed to load specimens and data fields: " + _err);
+      const message = "Failed to load specimens and data fields: " + _err;
+      setError(message);
+      showError(message);
     } finally {
       setIsLoading(false);
     }
-  }, [getSpecimens, getDataFields]);
+  }, [getSpecimens, getDataFields, showError]);
 
   useEffect(() => {
     let cancelled = false;
@@ -84,7 +88,9 @@ export default function Page() {
         }
       } catch (_err) {
         if (!cancelled) {
-          setError("Failed to load specimens and data fields: " + _err);
+          const message = "Failed to load specimens and data fields: " + _err;
+          setError(message);
+          showError(message);
         }
       } finally {
         if (!cancelled) {
@@ -98,7 +104,7 @@ export default function Page() {
     return () => {
       cancelled = true;
     };
-  }, [getSpecimens, getDataFields]);
+  }, [getSpecimens, getDataFields, showError]);
 
   const duplicateRows = useCallback(
     async (ids: string[]) => {
@@ -111,10 +117,10 @@ export default function Page() {
         setSpecimens((current) => [...newSpecimens, ...current]);
         setRowSelectionModel({ type: "include", ids: new Set() });
       } catch (err) {
-        setError("Failed to duplicate specimen(s): " + err);
+        showError("Failed to duplicate specimen(s): " + err);
       }
     },
-    [duplicateSpecimens, duplicateSpecimen],
+    [duplicateSpecimens, duplicateSpecimen, showError],
   );
 
   const duplicateRow = useCallback(
@@ -138,10 +144,10 @@ export default function Page() {
         setSpecimens((current) => current.filter((item) => !ids.includes(item.id)));
         setRowSelectionModel({ type: "include", ids: new Set() });
       } catch (err) {
-        setError("Failed to delete specimen(s): " + err);
+        showError("Failed to delete specimen(s): " + err);
       }
     },
-    [deleteSpecimen, deleteSpecimens],
+    [deleteSpecimen, deleteSpecimens, showError],
   );
 
   const deleteRow = useCallback(
@@ -303,7 +309,6 @@ export default function Page() {
                   <Box className='w-10 h-10 border border-dashed border-error flex items-center justify-center rounded-lg'>
                     <OctagonAlert className='text-error' />
                   </Box>
-                  <Typography>{error}</Typography>
                 </Box>
                 <Button size='large' variant='outlined' color='grey' startIcon={<Repeat2 />} onClick={() => void loadSpecimens()}>
                   Retry

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { useTranslation } from "react-i18next";
 import { Breadcrumbs, Grid, Typography } from "@mui/material";
@@ -8,7 +8,7 @@ import DataFieldForm from "@/pages/app/data-fields/components/data-field-form";
 import { LINKS } from "@/constants";
 import { useDb, type DataFieldDefinition } from "@/context/db-context";
 import LoadingFullScreen from "@/components/loading/loading-full-screen";
-import { useSnackbar } from "notistack";
+import useAppNotifications from "@/hooks/use-app-notifications";
 
 export default function Page() {
   const { t } = useTranslation();
@@ -18,7 +18,7 @@ export default function Page() {
   const [dataField, setDataField] = useState<DataFieldDefinition | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const { enqueueSnackbar } = useSnackbar();
+  const { showError } = useAppNotifications();
 
   useEffect(() => {
     let cancelled = false;
@@ -52,21 +52,9 @@ export default function Page() {
     };
   }, [getDataField, id]);
 
-  const snackbarError = useCallback(
-    (message: string) => {
-      enqueueSnackbar(message, {
-        variant: "error",
-        persist: false,
-        autoHideDuration: 6000,
-        anchorOrigin: { horizontal: "center", vertical: "bottom" },
-      });
-    },
-    [enqueueSnackbar],
-  );
-
   useEffect(() => {
-    if (loadError) snackbarError(loadError);
-  }, [loadError, snackbarError]);
+    if (loadError) showError(loadError);
+  }, [loadError, showError]);
 
   return (
     <>

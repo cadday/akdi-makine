@@ -32,12 +32,14 @@ import { PresetRecord, useDb } from "@/context/db-context";
 import { Filter } from "lucide-react";
 import Search from "@/components/layout/search/search";
 import DataGridDateTimeFilter from "@/components/data-grid/data-grid-date-time-filter";
+import useAppNotifications from "@/hooks/use-app-notifications";
 
 type PresetGridRow = PresetRecord;
 
 export default function Page() {
   const { t } = useTranslation();
   const { getPresets, deletePreset, deletePresets, duplicatePresets, duplicatePreset } = useDb();
+  const { showError } = useAppNotifications();
   const [presets, setPresets] = useState<PresetRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -50,11 +52,13 @@ export default function Page() {
       const data = await getPresets();
       setPresets(data);
     } catch (err) {
-      setError("Failed to load presets: " + err);
+      const message = "Failed to load presets: " + err;
+      setError(message);
+      showError(message);
     } finally {
       setIsLoading(false);
     }
-  }, [getPresets]);
+  }, [getPresets, showError]);
 
   useEffect(() => {
     let cancelled = false;
@@ -67,7 +71,11 @@ export default function Page() {
         const data = await getPresets();
         if (!cancelled) setPresets(data);
       } catch (err) {
-        if (!cancelled) setError("Failed to load presets: " + err);
+        if (!cancelled) {
+          const message = "Failed to load presets: " + err;
+          setError(message);
+          showError(message);
+        }
       } finally {
         if (!cancelled) setIsLoading(false);
       }
@@ -77,7 +85,7 @@ export default function Page() {
     return () => {
       cancelled = true;
     };
-  }, [getPresets]);
+  }, [getPresets, showError]);
 
   const duplicateRows = useCallback(
     async (ids: string[]) => {
@@ -89,10 +97,10 @@ export default function Page() {
         setPresets((current) => [...newPresets, ...current]);
         setRowSelectionModel({ type: "include", ids: new Set() });
       } catch (err) {
-        setError("Failed to duplicate preset(s): " + err);
+        showError("Failed to duplicate preset(s): " + err);
       }
     },
-    [duplicatePresets, duplicatePreset],
+    [duplicatePresets, duplicatePreset, showError],
   );
 
   const duplicateRow = useCallback((id: string) => async () => duplicateRows([id]), [duplicateRows]);
@@ -108,10 +116,10 @@ export default function Page() {
         setPresets((current) => current.filter((preset) => !ids.includes(preset.id)));
         setRowSelectionModel({ type: "include", ids: new Set() });
       } catch (err) {
-        setError("Failed to delete preset(s): " + err);
+        showError("Failed to delete preset(s): " + err);
       }
     },
-    [deletePreset, deletePresets],
+    [deletePreset, deletePresets, showError],
   );
 
   const deleteRow = useCallback((id: string) => async () => deleteRows([id]), [deleteRows]);
@@ -228,7 +236,6 @@ export default function Page() {
                   <Box className='w-10 h-10 border border-dashed border-error flex items-center justify-center rounded-lg'>
                     <OctagonAlert className='text-error' />
                   </Box>
-                  <Typography>{error}</Typography>
                 </Box>
                 <Button size='large' variant='outlined' color='grey' startIcon={<Repeat2 />} onClick={() => void loadPresets()}>
                   Retry

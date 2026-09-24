@@ -48,6 +48,7 @@ import DataFieldInput from "@/components/data-fields/data-field-input";
 import type { DataFieldContainer, DataFieldDefinition, DataFieldType, DynamicDataValue } from "@/context/db-context";
 import { DATA_FIELD_CONTAINERS, DATA_FIELD_TYPES } from "@/lib/db";
 import { cn } from "@/lib/utils";
+import useAppNotifications from "@/hooks/use-app-notifications";
 
 type DataFieldFormValues = Pick<DataFieldDefinition, "name"> &
   Required<Pick<DataFieldDefinition, "description" | "unit" | "accept" | "multiple" | "multipleSelection">> & {
@@ -114,9 +115,9 @@ function toSaveInput(values: DataFieldFormValues): DataFieldSaveInput | null {
 
 export default function DataFieldForm({ dataField, onSave, saveLabel = "Save" }: DataFieldFormProps) {
   const [submitted, setSubmitted] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
   const [previewValue, setPreviewValue] = useState<DynamicDataValue>(null);
   const isEditing = Boolean(dataField);
+  const { showError } = useAppNotifications();
 
   const validationSchema = useMemo(
     () =>
@@ -151,11 +152,10 @@ export default function DataFieldForm({ dataField, onSave, saveLabel = "Save" }:
     onSubmit: async (values) => {
       const input = toSaveInput(values);
       if (!input) return;
-      setSaveError(null);
       try {
         await onSave(input);
       } catch (error) {
-        setSaveError(`Failed to save data field: ${String(error)}`);
+        showError(`Failed to save data field: ${String(error)}`);
       }
     },
     validateOnBlur: false,
@@ -437,11 +437,6 @@ export default function DataFieldForm({ dataField, onSave, saveLabel = "Save" }:
         )}
 
         <Grid size={12}>
-          {saveError && (
-            <Alert severity='error' className='mb-2'>
-              {saveError}
-            </Alert>
-          )}
           {submitted && !formik.isValid && (
             <Alert severity='error' icon={<XSquare />} className='neutral rounded-3xl! bg-transparent! mb-2 mt-2 p-5'>
               <AlertTitle variant='subtitle2' className='pt-0.5'>

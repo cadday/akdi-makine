@@ -41,6 +41,7 @@ import type { DataFieldContainer } from "@/context/db-context";
 import { Filter } from "lucide-react";
 import Search from "@/components/layout/search/search";
 import DataGridDateTimeFilter from "@/components/data-grid/data-grid-date-time-filter";
+import useAppNotifications from "@/hooks/use-app-notifications";
 
 type DataFieldGridRow = DataFieldDefinition;
 
@@ -49,6 +50,7 @@ export default function Page() {
   const navigate = useNavigate();
 
   const { getDataFields, deleteDataField, deleteDataFields, duplicateDataFields, duplicateDataField } = useDb();
+  const { showError } = useAppNotifications();
   const [dataFields, setDataFields] = useState<DataFieldDefinition[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -61,11 +63,13 @@ export default function Page() {
       const data = await getDataFields();
       setDataFields(data);
     } catch (_err) {
-      setError("Failed to load data fields: " + _err);
+      const message = "Failed to load data fields: " + _err;
+      setError(message);
+      showError(message);
     } finally {
       setIsLoading(false);
     }
-  }, [getDataFields]);
+  }, [getDataFields, showError]);
 
   useEffect(() => {
     let cancelled = false;
@@ -81,7 +85,9 @@ export default function Page() {
         }
       } catch (_err) {
         if (!cancelled) {
-          setError("Failed to load data fields: " + _err);
+          const message = "Failed to load data fields: " + _err;
+          setError(message);
+          showError(message);
         }
       } finally {
         if (!cancelled) {
@@ -95,7 +101,7 @@ export default function Page() {
     return () => {
       cancelled = true;
     };
-  }, [getDataFields]);
+  }, [getDataFields, showError]);
 
   const duplicateRows = useCallback(
     async (ids: string[]) => {
@@ -108,10 +114,10 @@ export default function Page() {
         setDataFields((current) => [...newDataFields, ...current]);
         setRowSelectionModel({ type: "include", ids: new Set() });
       } catch (err) {
-        setError("Failed to duplicate data field(s): " + err);
+        showError("Failed to duplicate data field(s): " + err);
       }
     },
-    [duplicateDataFields, duplicateDataField],
+    [duplicateDataFields, duplicateDataField, showError],
   );
 
   const duplicateRow = useCallback(
@@ -135,10 +141,10 @@ export default function Page() {
         setDataFields((current) => current.filter((item) => !ids.includes(item.id)));
         setRowSelectionModel({ type: "include", ids: new Set() });
       } catch (err) {
-        setError("Failed to delete data field(s): " + err);
+        showError("Failed to delete data field(s): " + err);
       }
     },
-    [deleteDataField, deleteDataFields],
+    [deleteDataField, deleteDataFields, showError],
   );
 
   const deleteRow = useCallback(
@@ -289,7 +295,6 @@ export default function Page() {
                   <Box className='w-10 h-10 border border-dashed border-error flex items-center justify-center rounded-lg'>
                     <OctagonAlert className='text-error' />
                   </Box>
-                  <Typography>{error}</Typography>
                 </Box>
                 <Button size='large' variant='outlined' color='grey' startIcon={<Repeat2 />} onClick={() => void loadDataFields()}>
                   Retry

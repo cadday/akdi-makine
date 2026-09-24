@@ -1,4 +1,4 @@
-import { SyntheticEvent, useCallback, useEffect, useState } from "react";
+import { SyntheticEvent, useEffect, useState } from "react";
 import { Link, useParams } from "react-router";
 
 import ContentWrapper from "@/components/layout/containers/content-wrapper";
@@ -9,7 +9,7 @@ import { useDb, type DataFieldDefinition, type DynamicDataValue, type SpecimenRe
 import { Box, Breadcrumbs, Card, CardContent, Grid, Tab, Typography } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import LoadingFullScreen from "@/components/loading/loading-full-screen";
-import { useSnackbar } from "notistack";
+import useAppNotifications from "@/hooks/use-app-notifications";
 import { DynamicIcon } from "lucide-react/dynamic";
 import { ChevronLeft, ChevronRight, Hexagon } from "lucide-react";
 import TabList from "@mui/lab/TabList";
@@ -24,7 +24,7 @@ export default function Page() {
   const [fields, setFields] = useState<DataFieldDefinition[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const { enqueueSnackbar } = useSnackbar();
+  const { showError } = useAppNotifications();
 
   useEffect(() => {
     let cancelled = false;
@@ -61,21 +61,9 @@ export default function Page() {
     };
   }, [getDataFields, getSpecimen, id]);
 
-  const snackbarError = useCallback(
-    (message: string) => {
-      enqueueSnackbar(message, {
-        variant: "error",
-        persist: false,
-        autoHideDuration: 6000,
-        anchorOrigin: { horizontal: "center", vertical: "bottom" },
-      });
-    },
-    [enqueueSnackbar],
-  );
-
   useEffect(() => {
-    if (loadError) snackbarError(loadError);
-  }, [loadError, snackbarError]);
+    if (loadError) showError(loadError);
+  }, [loadError, showError]);
 
   const renderValue = (field: DataFieldDefinition, value: DynamicDataValue) => {
     if (value == null) return "-";
