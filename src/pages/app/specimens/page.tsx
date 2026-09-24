@@ -283,7 +283,7 @@ export default function Page() {
         ],
       },
     ],
-    [dataFields, deleteRow, duplicateRow],
+    [dataFields, deleteRow, duplicateRow, navigate],
   );
 
   return (
