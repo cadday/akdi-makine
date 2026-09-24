@@ -1,16 +1,18 @@
-import { Link, useNavigate } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
 import { Breadcrumbs, Grid, Typography } from "@mui/material";
 import ContentWrapper from "@/components/layout/containers/content-wrapper";
 import TitleWrapper from "@/components/layout/containers/title-wrapper";
 import { LINKS } from "@/constants";
-import { useDb } from "@/context/db-context";
+import { useDb, type PresetRecord } from "@/context/db-context";
 import PresetForm from "@/pages/app/presets/components/preset-form";
 
 export default function Page() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
   const { createPreset } = useDb();
+  const initialPreset = (location.state as { initialPreset?: PresetRecord } | null)?.initialPreset;
 
   return (
     <>
@@ -35,6 +37,7 @@ export default function Page() {
 
       <ContentWrapper>
         <PresetForm
+          initialPreset={initialPreset}
           onSave={async (input) => {
             await createPreset(input);
             navigate("/presets");

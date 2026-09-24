@@ -34,8 +34,8 @@ export const PrimaryItem = memo(function PrimaryItem({ item, onSelect, isActive,
       {menuType === MenuType.Comfort && (
         <Box
           className={cn(
-            "hover:bg-grey-25 flex h-18 w-24 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-lg no-underline transition-all select-none",
-            selected && "bg-grey-25",
+            "hover:bg-grey-20 flex h-18 w-24 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-lg no-underline transition-all select-none",
+            selected && "bg-grey-20",
             className,
           )}
           component={item.isExternalLink ? "a" : "div"}
@@ -85,8 +85,8 @@ export const PrimaryItem = memo(function PrimaryItem({ item, onSelect, isActive,
               size='large'
               color={item.color || "text-primary"}
               className={cn(
-                "icon-only hover:bg-grey-25 text-text-primary h-10 w-10",
-                selected && `bg-grey-25 active ${item.color ? `text-${item.color.replace("text-", "")}!` : "text-primary!"}`,
+                "icon-only hover:bg-grey-20 text-text-primary h-10 w-10",
+                selected && `bg-grey-20 active ${item.color ? `text-${item.color.replace("text-", "")}!` : "text-primary!"}`,
                 isActive && "active",
               )}
               startIcon={item.icon && <DynamicIcon name={item.icon} className={cn((selected || isActive) && "text-primary")} />}

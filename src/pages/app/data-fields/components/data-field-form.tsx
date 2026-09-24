@@ -66,6 +66,7 @@ const IMAGE_ACCEPT_OPTIONS = ["image/jpeg", "image/png", "image/gif", "image/web
 
 interface DataFieldFormProps {
   dataField?: DataFieldDefinition;
+  initialDataField?: DataFieldDefinition;
   onSave: (input: DataFieldSaveInput) => Promise<void>;
   saveLabel?: string;
 }
@@ -113,7 +114,7 @@ function toSaveInput(values: DataFieldFormValues): DataFieldSaveInput | null {
   };
 }
 
-export default function DataFieldForm({ dataField, onSave, saveLabel = "Save" }: DataFieldFormProps) {
+export default function DataFieldForm({ dataField, initialDataField, onSave, saveLabel = "Save" }: DataFieldFormProps) {
   const [submitted, setSubmitted] = useState(false);
   const [previewValue, setPreviewValue] = useState<DynamicDataValue>(null);
   const isEditing = Boolean(dataField);
@@ -146,7 +147,7 @@ export default function DataFieldForm({ dataField, onSave, saveLabel = "Save" }:
   );
 
   const formik = useFormik<DataFieldFormValues>({
-    initialValues: getInitialValues(dataField),
+    initialValues: getInitialValues(dataField ?? initialDataField),
     enableReinitialize: true,
     validationSchema,
     onSubmit: async (values) => {

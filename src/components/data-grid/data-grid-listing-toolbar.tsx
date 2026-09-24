@@ -39,7 +39,14 @@ export type ListingToolbarProps = {
   addIcon?: ReactNode;
 };
 
-export const DataGridListingToolbar = ({ rowSelectionModel, deleteRows, duplicateRows, onAddItem, addLabel = "Add", addIcon = <Plus /> }: ListingToolbarProps) => {
+export const DataGridListingToolbar = ({
+  rowSelectionModel,
+  deleteRows,
+  duplicateRows,
+  onAddItem,
+  addLabel = "Add",
+  addIcon = <Plus />,
+}: ListingToolbarProps) => {
   const [anchorElExport, setAnchorElExport] = useState<EventTarget | Element | PopoverVirtualElement | null>(null);
   const openExport = Boolean(anchorElExport);
   const handleClickExport = (event: Event | SyntheticEvent) => {
@@ -100,18 +107,16 @@ export const DataGridListingToolbar = ({ rowSelectionModel, deleteRows, duplicat
         <Grid size={{ xs: 12, md: "auto" }} className='flex flex-row items-start gap-1'>
           {selectedCount > 0 && (
             <>
-              <Tooltip title='Selection'>
-                <Button
-                  className='surface-standard'
-                  size='large'
-                  color='text-primary'
-                  variant='surface'
-                  onClick={handleClickSelection}
-                  endIcon={<ChevronRight size={16} className={cn("transition-transform rtl:rotate-180", openSelection && "rotate-90 rtl:rotate-90")} />}
-                >
-                  {selectedCount > 1 ? selectedCount + " Items" : selectedCount + " Item"}
-                </Button>
-              </Tooltip>
+              <Button
+                className='surface-standard'
+                size='large'
+                color='text-primary'
+                variant='surface'
+                onClick={handleClickSelection}
+                endIcon={<ChevronRight size={16} className={cn("transition-transform rtl:rotate-180", openSelection && "rotate-90 rtl:rotate-90")} />}
+              >
+                {selectedCount > 1 ? selectedCount + " Items" : selectedCount + " Item"}
+              </Button>
 
               <Menu
                 anchorOrigin={{ vertical: "bottom", horizontal: "right" }}

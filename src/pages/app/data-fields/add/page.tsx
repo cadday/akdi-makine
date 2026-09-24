@@ -1,16 +1,18 @@
-import { Link, useNavigate } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
 import { Breadcrumbs, Grid, Typography } from "@mui/material";
 import ContentWrapper from "@/components/layout/containers/content-wrapper";
 import TitleWrapper from "@/components/layout/containers/title-wrapper";
 import DataFieldForm from "@/pages/app/data-fields/components/data-field-form";
 import { LINKS } from "@/constants";
-import { useDb } from "@/context/db-context";
+import { useDb, type DataFieldDefinition } from "@/context/db-context";
 
 export default function Page() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
   const { createDataField } = useDb();
+  const initialDataField = (location.state as { initialDataField?: DataFieldDefinition } | null)?.initialDataField;
 
   return (
     <>
@@ -29,6 +31,7 @@ export default function Page() {
 
       <ContentWrapper>
         <DataFieldForm
+          initialDataField={initialDataField}
           onSave={async (input) => {
             await createDataField(input);
             navigate("/data-fields");

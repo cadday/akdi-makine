@@ -52,7 +52,7 @@ export default function Page() {
   const { t } = useTranslation();
   const navigate = useNavigate();
 
-  const { getSpecimens, getDataFields, deleteSpecimen, deleteSpecimens, duplicateSpecimens, duplicateSpecimen } = useDb();
+  const { getSpecimens, getDataFields, deleteSpecimen, deleteSpecimens } = useDb();
   const { showError } = useAppNotifications();
   const { requestDelete, dialog } = useDeleteConfirmation();
   const [specimens, setSpecimens] = useState<SpecimenRecord[]>([]);
@@ -109,30 +109,6 @@ export default function Page() {
       cancelled = true;
     };
   }, [getSpecimens, getDataFields, showError]);
-
-  const duplicateRows = useCallback(
-    async (ids: string[]) => {
-      if (ids.length === 0) return;
-
-      try {
-        const duplicated = ids.length === 1 ? [await duplicateSpecimen(ids[0])] : await duplicateSpecimens(ids);
-        const newSpecimens = duplicated.filter((item): item is SpecimenRecord => Boolean(item));
-
-        setSpecimens((current) => [...newSpecimens, ...current]);
-        setRowSelectionModel({ type: "include", ids: new Set() });
-      } catch (err) {
-        showError("Failed to duplicate specimen(s): " + err);
-      }
-    },
-    [duplicateSpecimens, duplicateSpecimen, showError],
-  );
-
-  const duplicateRow = useCallback(
-    (id: string) => async () => {
-      await duplicateRows([id]);
-    },
-    [duplicateRows],
-  );
 
   const deleteRows = useCallback(
     (ids: string[]) => {
@@ -271,7 +247,13 @@ export default function Page() {
         getActions: (params) => [
           <GridActionsCellItem key='view' icon={<Send size={16} />} label='View' onClick={() => navigate(`/specimens/${params.id}`)} showInMenu />,
           <GridActionsCellItem key='edit' icon={<Pen size={16} />} label='Edit' onClick={() => navigate(`/specimens/${params.id}/edit`)} showInMenu />,
-          <GridActionsCellItem key={0} icon={<Copy size={16} />} label='Duplicate' onClick={duplicateRow(params.id as string)} showInMenu />,
+          <GridActionsCellItem
+            key={0}
+            icon={<Copy size={16} />}
+            label='Duplicate'
+            onClick={() => navigate("/specimens/add", { state: { initialSpecimen: { ...params.row, name: `${params.row.name} (Copy)` } } })}
+            showInMenu
+          />,
           <GridActionsCellItem
             className='hover:bg-error-light/10 hover:text-error'
             key={1}
@@ -283,7 +265,7 @@ export default function Page() {
         ],
       },
     ],
-    [dataFields, deleteRow, duplicateRow, navigate],
+    [dataFields, deleteRow, navigate],
   );
 
   return (
@@ -368,7 +350,6 @@ export default function Page() {
                   toolbar: {
                     rowSelectionModel,
                     deleteRows,
-                    duplicateRows,
                     onAddItem: handleAddItem,
                   },
                 }}

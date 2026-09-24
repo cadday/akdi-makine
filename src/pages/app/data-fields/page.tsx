@@ -51,7 +51,7 @@ export default function Page() {
   const { t } = useTranslation();
   const navigate = useNavigate();
 
-  const { getDataFields, deleteDataField, deleteDataFields, duplicateDataFields, duplicateDataField } = useDb();
+  const { getDataFields, deleteDataField, deleteDataFields } = useDb();
   const { showError } = useAppNotifications();
   const { requestDelete, dialog } = useDeleteConfirmation();
   const [dataFields, setDataFields] = useState<DataFieldDefinition[]>([]);
@@ -105,30 +105,6 @@ export default function Page() {
       cancelled = true;
     };
   }, [getDataFields, showError]);
-
-  const duplicateRows = useCallback(
-    async (ids: string[]) => {
-      if (ids.length === 0) return;
-
-      try {
-        const duplicated = ids.length === 1 ? [await duplicateDataField(ids[0])] : await duplicateDataFields(ids);
-        const newDataFields = duplicated.filter((item): item is DataFieldDefinition => Boolean(item));
-
-        setDataFields((current) => [...newDataFields, ...current]);
-        setRowSelectionModel({ type: "include", ids: new Set() });
-      } catch (err) {
-        showError("Failed to duplicate data field(s): " + err);
-      }
-    },
-    [duplicateDataFields, duplicateDataField, showError],
-  );
-
-  const duplicateRow = useCallback(
-    (id: string) => async () => {
-      await duplicateRows([id]);
-    },
-    [duplicateRows],
-  );
 
   const deleteRows = useCallback(
     (ids: string[]) => {
@@ -257,7 +233,13 @@ export default function Page() {
       headerAlign: "right",
       getActions: (params) => [
         <GridActionsCellItem key='view' icon={<Send size={16} />} label='View' onClick={() => navigate(`/data-fields/${params.id}`)} showInMenu />,
-        <GridActionsCellItem key={0} icon={<Copy size={16} />} label='Duplicate' onClick={duplicateRow(params.id as string)} showInMenu />,
+        <GridActionsCellItem
+          key={0}
+          icon={<Copy size={16} />}
+          label='Duplicate'
+          onClick={() => navigate("/data-fields/add", { state: { initialDataField: { ...params.row, name: `${params.row.name} (Copy)` } } })}
+          showInMenu
+        />,
         <GridActionsCellItem
           className='hover:bg-error-light/10 hover:text-error'
           key={1}
@@ -352,7 +334,6 @@ export default function Page() {
                   toolbar: {
                     rowSelectionModel,
                     deleteRows,
-                    duplicateRows,
                     onAddItem: handleAddItem,
                   },
                 }}

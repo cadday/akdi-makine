@@ -3,7 +3,7 @@ import { Box, Checkbox, FormControl, FormControlLabel, FormHelperText, FormLabel
 import { ChevronDown, Hexagon } from "lucide-react";
 import { DynamicIcon } from "lucide-react/dynamic";
 import { cn } from "@/lib/utils";
-import ImageDataFieldInput from "@/components/data-fields/image-data-field-input";
+import ImageDataFieldInput, { ImageDataFieldInputEdit } from "@/components/data-fields/image-data-field-input";
 
 interface DataFieldInputProps {
   field: Pick<DataFieldDefinition, "type" | "name" | "unit" | "mandatory" | "icon" | "options" | "multipleSelection" | "accept" | "multiple">;
@@ -12,6 +12,7 @@ interface DataFieldInputProps {
   error?: string;
   pendingFiles?: File[];
   previewOnly?: boolean;
+  editableImages?: boolean;
   onPendingFilesChange?: (files: File[]) => void;
 }
 
@@ -19,10 +20,11 @@ function isUploadedImage(value: unknown): value is UploadedImage {
   return Boolean(value && typeof value === "object" && "id" in value && "name" in value && "type" in value && "size" in value);
 }
 
-export default function DataFieldInput({ field, value, onChange, error, pendingFiles, previewOnly, onPendingFilesChange }: DataFieldInputProps) {
+export default function DataFieldInput({ field, value, onChange, error, pendingFiles, previewOnly, editableImages, onPendingFilesChange }: DataFieldInputProps) {
   const fieldIcon = field.icon ? <DynamicIcon name={field.icon} className={cn(error && "text-error!")} /> : <Hexagon className={cn(error && "text-error!")} />;
   const label = field.name;
   const labelClassName = cn(error && "text-error!");
+  const ImageInput = editableImages ? ImageDataFieldInputEdit : ImageDataFieldInput;
 
   switch (field.type) {
     case "Text":
@@ -154,7 +156,7 @@ export default function DataFieldInput({ field, value, onChange, error, pendingF
       );
     case "Image":
       return (
-        <ImageDataFieldInput
+        <ImageInput
           name={label}
           accept={field.accept}
           multiple={field.multiple}

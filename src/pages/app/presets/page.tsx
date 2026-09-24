@@ -50,7 +50,7 @@ type PresetGridRow = PresetRecord;
 export default function Page() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { getPresets, deletePreset, deletePresets, duplicatePresets, duplicatePreset } = useDb();
+  const { getPresets, deletePreset, deletePresets } = useDb();
   const { showError } = useAppNotifications();
   const { requestDelete, dialog } = useDeleteConfirmation();
   const [presets, setPresets] = useState<PresetRecord[]>([]);
@@ -99,24 +99,6 @@ export default function Page() {
       cancelled = true;
     };
   }, [getPresets, showError]);
-
-  const duplicateRows = useCallback(
-    async (ids: string[]) => {
-      if (ids.length === 0) return;
-
-      try {
-        const duplicated = ids.length === 1 ? [await duplicatePreset(ids[0])] : await duplicatePresets(ids);
-        const newPresets = duplicated.filter((item): item is PresetRecord => Boolean(item));
-        setPresets((current) => [...newPresets, ...current]);
-        setRowSelectionModel({ type: "include", ids: new Set() });
-      } catch (err) {
-        showError("Failed to duplicate preset(s): " + err);
-      }
-    },
-    [duplicatePresets, duplicatePreset, showError],
-  );
-
-  const duplicateRow = useCallback((id: string) => async () => duplicateRows([id]), [duplicateRows]);
 
   const deleteRows = useCallback(
     (ids: string[]) => {
@@ -238,7 +220,13 @@ export default function Page() {
       getActions: (params) => [
         <GridActionsCellItem key='view' icon={<Send size={16} />} label='View' onClick={() => navigate(`/presets/${params.id}`)} showInMenu />,
         <GridActionsCellItem key='edit' icon={<Pen size={16} />} label='Edit' onClick={() => navigate(`/presets/${params.id}/edit`)} showInMenu />,
-        <GridActionsCellItem key='duplicate' icon={<Copy size={16} />} label='Duplicate' onClick={duplicateRow(String(params.id))} showInMenu />,
+        <GridActionsCellItem
+          key='duplicate'
+          icon={<Copy size={16} />}
+          label='Duplicate'
+          onClick={() => navigate("/presets/add", { state: { initialPreset: { ...params.row, name: `${params.row.name} (Copy)` } } })}
+          showInMenu
+        />,
         <GridActionsCellItem
           className='hover:bg-error-light/10 hover:text-error'
           key='delete'
@@ -322,7 +310,7 @@ export default function Page() {
                 showToolbar
                 slotProps={{
                   panel: { className: "mt-1!" },
-                  toolbar: { rowSelectionModel, deleteRows, duplicateRows, onAddItem: handleAddItem },
+                  toolbar: { rowSelectionModel, deleteRows, onAddItem: handleAddItem },
                 }}
                 classes={{ main: "overflow-visible" }}
                 slots={{

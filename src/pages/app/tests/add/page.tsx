@@ -339,7 +339,7 @@ export default function Page() {
 
             <Grid size={12}>
               <Typography variant='h6' component='h6' className='mb-3'>
-                Identity
+                Definition
               </Typography>
               <Card>
                 <CardContent className='flex flex-col -mb-4'>

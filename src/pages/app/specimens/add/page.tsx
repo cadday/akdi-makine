@@ -1,18 +1,20 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
 import { Breadcrumbs, Grid, Typography } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import ContentWrapper from "@/components/layout/containers/content-wrapper";
 import TitleWrapper from "@/components/layout/containers/title-wrapper";
 import { LINKS } from "@/constants";
-import { useDb, type DataFieldDefinition } from "@/context/db-context";
+import { useDb, type DataFieldDefinition, type SpecimenRecord } from "@/context/db-context";
 import useAppNotifications from "@/hooks/use-app-notifications";
 import SpecimenForm from "@/pages/app/specimens/components/specimen-form";
 
 export default function Page() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
   const { getDataFields, createSpecimen } = useDb();
+  const initialSpecimen = (location.state as { initialSpecimen?: SpecimenRecord } | null)?.initialSpecimen;
   const { showError } = useAppNotifications();
   const [fields, setFields] = useState<DataFieldDefinition[]>([]);
   const [isLoadingFields, setIsLoadingFields] = useState(true);
@@ -67,6 +69,7 @@ export default function Page() {
       <ContentWrapper>
         <SpecimenForm
           fields={fields}
+          initialSpecimen={initialSpecimen}
           isLoadingFields={isLoadingFields}
           loadError={loadError}
           onSave={async (input) => {

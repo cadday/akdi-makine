@@ -13,16 +13,15 @@ interface ImagePreview {
   key: string;
   name: string;
   url: string | null;
-  image?: UploadedImage;
+  image: UploadedImage;
 }
 
 interface StoredImagePreviewsProps {
   images: UploadedImage[];
-  onRemove?: (image: UploadedImage) => void;
   imageClassName?: string;
 }
 
-export function StoredImagePreviews({ images, onRemove, imageClassName }: StoredImagePreviewsProps) {
+function useStoredImagePreviews(images: UploadedImage[]) {
   const [previews, setPreviews] = useState<ImagePreview[]>([]);
 
   useEffect(() => {
@@ -59,40 +58,60 @@ export function StoredImagePreviews({ images, onRemove, imageClassName }: Stored
     };
   }, [images]);
 
+  return previews;
+}
+
+export function StoredImagePreviews({ images, imageClassName }: StoredImagePreviewsProps) {
+  const previews = useStoredImagePreviews(images);
+
   if (previews.length === 0) return null;
 
   return (
     <Box className='flex items-center gap-1 h-full'>
-      {previews.map((preview) => (
-        <Box key={preview.key}>
-          {preview.url ? (
-            <img alt={preview.name} src={preview.url} className={cn("h-full w-full object-cover rounded-xs", imageClassName)} />
-          ) : (
-            <Typography variant='caption' className='px-1 text-center'>
-              {preview.name}
-            </Typography>
-          )}
-          {onRemove && preview.image && (
-            <Button
-              type='button'
-              aria-label={`Remove ${preview.name}`}
-              className='icon-only absolute right-0.5 top-0.5 flex-none bg-white/90'
-              size='tiny'
-              color='grey'
-              variant='pastel'
-              onClick={(event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                onRemove(preview.image!);
-              }}
-            >
-              <Trash2 size={14} />
-            </Button>
-          )}
-        </Box>
-      ))}
+      {previews.map((preview) =>
+        preview.url ? <img key={preview.key} alt={preview.name} src={preview.url} className={cn("h-8 w-10 rounded-xs object-cover", imageClassName)} /> : null,
+      )}
     </Box>
   );
+}
+
+interface EditableStoredImagePreviewsProps {
+  images: UploadedImage[];
+  onRemove: (image: UploadedImage) => void;
+}
+
+function EditableStoredImagePreviews({ images, onRemove }: EditableStoredImagePreviewsProps) {
+  const previews = useStoredImagePreviews(images);
+
+  return previews.map((preview) => (
+    <Box key={preview.key} className='bg-grey-20 flex w-full items-center gap-2 rounded-sm p-1'>
+      {preview.url ? (
+        <img alt={preview.name} src={preview.url} className='h-12 w-16 rounded-xs object-cover' />
+      ) : (
+        <Box className='flex h-12 w-16 flex-none items-center justify-center rounded-xs bg-grey-100'>
+          <ImagePlus size={18} />
+        </Box>
+      )}
+      <Box className='flex min-w-0 flex-1 items-center justify-between gap-1 pe-2'>
+        <Typography variant='body2' className='truncate'>
+          {preview.name}
+        </Typography>
+        <Button
+          aria-label={`Remove ${preview.name}`}
+          className='icon-only flex-none'
+          size='tiny'
+          color='grey'
+          variant='pastel'
+          onClick={(event) => {
+            event.stopPropagation();
+            onRemove(preview.image);
+          }}
+        >
+          <Trash2 size={16} />
+        </Button>
+      </Box>
+    </Box>
+  ));
 }
 
 interface ImageDataFieldInputProps {
@@ -108,6 +127,10 @@ interface ImageDataFieldInputProps {
   onPendingFilesChange?: (files: File[]) => void;
 }
 
+interface ImageDataFieldInputBaseProps extends ImageDataFieldInputProps {
+  editableStoredImages?: boolean;
+}
+
 function parseAccept(value?: string): Accept {
   const tokens = (value || "image/*")
     .split(",")
@@ -120,7 +143,7 @@ function parseAccept(value?: string): Accept {
   }, {});
 }
 
-export default function ImageDataFieldInput({
+function ImageDataFieldInputBase({
   name,
   accept,
   multiple = false,
@@ -131,7 +154,8 @@ export default function ImageDataFieldInput({
   previewOnly = false,
   onChange,
   onPendingFilesChange,
-}: ImageDataFieldInputProps) {
+  editableStoredImages = false,
+}: ImageDataFieldInputBaseProps) {
   const [dropError, setDropError] = useState<string | null>(null);
   const [previewFiles, setPreviewFiles] = useState<File[]>([]);
   const canSelectFiles = Boolean(onPendingFilesChange || previewOnly);
@@ -158,7 +182,7 @@ export default function ImageDataFieldInput({
     onDrop: (acceptedFiles, rejectedFiles) => {
       setDropError(rejectedFiles.length ? rejectedFiles[0].errors.map((item) => item.message).join(" ") : null);
       if (acceptedFiles.length) {
-        const nextFiles = multiple ? [...activePendingFiles, ...acceptedFiles] : acceptedFiles;
+        const nextFiles = multiple ? [...activePendingFiles, ...acceptedFiles] : acceptedFiles.slice(0, 1);
         if (onPendingFilesChange) onPendingFilesChange(nextFiles);
         else if (previewOnly) setPreviewFiles(nextFiles);
       }
@@ -178,10 +202,13 @@ export default function ImageDataFieldInput({
             className={`border-grey-200 hover:border-grey-500 flex min-h-22.5 flex-row flex-wrap items-center gap-2.5 rounded-md border p-4 transition-colors ${isDragActive ? "border-primary" : ""} ${!canSelectFiles ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
           >
             <input {...getInputProps()} />
-            <StoredImagePreviews
-              images={!multiple && activePendingFiles.length > 0 ? EMPTY_IMAGES : images}
-              onRemove={onPendingFilesChange ? (image) => onChange(images.filter((item) => item.id !== image.id)) : undefined}
-            />
+            {editableStoredImages ? (
+              !multiple && activePendingFiles.length > 0 ? null : (
+                <EditableStoredImagePreviews images={images} onRemove={(image) => onChange(images.filter((item) => item.id !== image.id))} />
+              )
+            ) : (
+              <StoredImagePreviews images={images} />
+            )}
             {pendingPreviews.map(({ key, file, url }) => (
               <Box key={key} className='bg-grey-20 flex w-full items-center gap-2 rounded-sm p-1'>
                 <img alt={file.name} src={url} className='h-12 w-16 rounded-xs object-cover' />
@@ -231,4 +258,12 @@ export default function ImageDataFieldInput({
       </FormControl>
     </Box>
   );
+}
+
+export default function ImageDataFieldInput(props: ImageDataFieldInputProps) {
+  return <ImageDataFieldInputBase {...props} />;
+}
+
+export function ImageDataFieldInputEdit(props: ImageDataFieldInputProps) {
+  return <ImageDataFieldInputBase {...props} editableStoredImages />;
 }

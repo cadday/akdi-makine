@@ -17,7 +17,7 @@ import {
   Select,
   Typography,
 } from "@mui/material";
-import { ChevronDown, Gauge, Save, Tag, Weight, WeightTilde, XSquare } from "lucide-react";
+import { ChevronDown, Gauge, PencilRuler, Save, Tag, Weight, WeightTilde, XSquare } from "lucide-react";
 import type { PresetRecord, PresetType } from "@/context/db-context";
 import { PRESET_TYPES } from "@/lib/db";
 import useAppNotifications from "@/hooks/use-app-notifications";
@@ -33,6 +33,7 @@ type PresetFormValues = Omit<PresetSaveInput, "type" | "preload" | "load" | "spe
 interface PresetFormProps {
   onSave: (input: PresetSaveInput) => Promise<void>;
   preset?: PresetRecord;
+  initialPreset?: PresetRecord;
   saveLabel?: string;
 }
 
@@ -54,11 +55,11 @@ const validationSchema = yup.object({
   speed: yup.number().typeError("Enter a number").min(0, "Must be zero or greater").required("Speed is required"),
 });
 
-export default function PresetForm({ onSave, preset, saveLabel = "Save" }: PresetFormProps) {
+export default function PresetForm({ onSave, preset, initialPreset, saveLabel = "Save" }: PresetFormProps) {
   const [submitted, setSubmitted] = useState(false);
   const { showError } = useAppNotifications();
   const formik = useFormik<PresetFormValues>({
-    initialValues: getInitialValues(preset),
+    initialValues: getInitialValues(preset ?? initialPreset),
     enableReinitialize: true,
     validationSchema,
     validateOnBlur: false,
@@ -112,7 +113,7 @@ export default function PresetForm({ onSave, preset, saveLabel = "Save" }: Prese
               </Box>
 
               <Box className='flex flex-row gap-2'>
-                <Gauge className={fieldError("type") ? "text-error!" : undefined} />
+                <PencilRuler className={fieldError("type") ? "text-error!" : undefined} />
                 <FormControl fullWidth size='small' variant='standard' className='outlined' required>
                   <FormLabel component='label' className={fieldError("type") ? "text-error!" : undefined}>
                     Type

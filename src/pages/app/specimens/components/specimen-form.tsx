@@ -19,6 +19,7 @@ interface SpecimenFormProps {
   isLoadingFields?: boolean;
   loadError?: string | null;
   specimen?: SpecimenRecord;
+  initialSpecimen?: SpecimenRecord;
   saveLabel?: string;
   onSave: (input: { name: string; customData: Record<string, DynamicDataValue> }) => Promise<void>;
 }
@@ -104,11 +105,11 @@ function getInitialValues(specimen: SpecimenRecord | undefined, fields: DataFiel
   return { name: specimen?.name ?? "", customData, pendingImages: {} };
 }
 
-export default function SpecimenForm({ fields, isLoadingFields = false, loadError, specimen, saveLabel = "Save", onSave }: SpecimenFormProps) {
+export default function SpecimenForm({ fields, isLoadingFields = false, loadError, specimen, initialSpecimen, saveLabel = "Save", onSave }: SpecimenFormProps) {
   const [submitted, setSubmitted] = useState(false);
   const { showError } = useAppNotifications();
   const validationSchema = useMemo(() => buildSpecimenValidationSchema(fields), [fields]);
-  const initialValues = useMemo(() => getInitialValues(specimen, fields), [fields, specimen]);
+  const initialValues = useMemo(() => getInitialValues(specimen ?? initialSpecimen, fields), [fields, specimen, initialSpecimen]);
   const formik = useFormik<SpecimenFormValues>({
     validationSchema,
     enableReinitialize: true,
@@ -122,6 +123,7 @@ export default function SpecimenForm({ fields, isLoadingFields = false, loadErro
           const retainedImages = Array.isArray(customData[field.id]) ? (customData[field.id] as UploadedImage[]) : [];
           const savedImages = [...retainedImages];
           if (!field.multiple && (values.pendingImages[field.id]?.length ?? 0) > 0) savedImages.length = 0;
+          else if (!field.multiple) savedImages.splice(1);
           if (savedImages.length > 0) customData[field.id] = savedImages;
           else delete customData[field.id];
           continue;
@@ -136,7 +138,8 @@ export default function SpecimenForm({ fields, isLoadingFields = false, loadErro
         for (const field of fields) {
           if (field.type !== "Image") continue;
           const images = Array.isArray(customData[field.id]) ? [...(customData[field.id] as UploadedImage[])] : [];
-          for (const file of values.pendingImages[field.id] ?? []) {
+          const pendingFiles = values.pendingImages[field.id] ?? [];
+          for (const file of field.multiple ? pendingFiles : pendingFiles.slice(0, 1)) {
             const savedImage = await window.electronAPI.saveImage({
               name: file.name,
               type: file.type,
@@ -205,6 +208,7 @@ export default function SpecimenForm({ fields, isLoadingFields = false, loadErro
                       field={field}
                       value={formik.values.customData[field.id] ?? null}
                       onChange={(value) => void formik.setFieldValue(`customData.${field.id}`, value)}
+                      editableImages={Boolean(specimen || initialSpecimen)}
                       pendingFiles={formik.values.pendingImages[field.id] ?? []}
                       onPendingFilesChange={field.type === "Image" ? (files) => void formik.setFieldValue(`pendingImages.${field.id}`, files) : undefined}
                       error={typeof error === "string" && submitted ? error : undefined}
