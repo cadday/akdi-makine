@@ -27,7 +27,15 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Box, Breadcrumbs, Button, FormControl, Grid, InputLabel, Select, Typography } from "@mui/material";
-import { DataGrid, getGridDateOperators, GridActionsCellItem, GridColDef, GridRowSelectionModel, GridRowSpacingParams } from "@mui/x-data-grid";
+import {
+  DataGrid,
+  getGridDateOperators,
+  GridActionsCellItem,
+  GridColDef,
+  GridRenderCellParams,
+  GridRowSelectionModel,
+  GridRowSpacingParams,
+} from "@mui/x-data-grid";
 import { PresetRecord, useDb } from "@/context/db-context";
 import { Filter } from "lucide-react";
 import Search from "@/components/layout/search/search";
@@ -146,12 +154,38 @@ export default function Page() {
       flex: 1,
       minWidth: 240,
       renderCell: (params) => (
-        <Link to='#' className='text-text-primary link-primary link-underline hover:text-primary py-2 font-semibold transition-colors'>
+        <Link to={`/presets/${params.row.id}`} className='text-text-primary link-primary link-underline hover:text-primary py-2 font-semibold transition-colors'>
           {params.value}
         </Link>
       ),
     },
-    { field: "type", headerName: "Type", minWidth: 150 },
+    {
+      field: "type",
+      headerName: "Type",
+      minWidth: 150,
+      renderCell: (params: GridRenderCellParams<any, string>) => {
+        const value = params.value;
+        if (value === "Tensile") {
+          return (
+            <Button className='pointer-events-none self-center' size='tiny' color='primary' variant='outlined'>
+              {value}
+            </Button>
+          );
+        } else if (value === "Compression") {
+          return (
+            <Button className='pointer-events-none self-center' size='tiny' color='secondary' variant='outlined'>
+              {value}
+            </Button>
+          );
+        } else {
+          return (
+            <Button className='pointer-events-none self-center' size='tiny' color='accent-1' variant='outlined'>
+              {value}
+            </Button>
+          );
+        }
+      },
+    },
     { field: "preload", headerName: "Preload", minWidth: 130, type: "number" },
     { field: "load", headerName: "Load", minWidth: 130, type: "number" },
     { field: "speed", headerName: "Speed", minWidth: 130, type: "number" },
