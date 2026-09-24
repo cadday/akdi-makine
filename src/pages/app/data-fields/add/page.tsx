@@ -32,7 +32,23 @@ import {
   Typography,
 } from "@mui/material";
 import { useTranslation } from "react-i18next";
-import { ChevronDown, File, ImagePlus, ListTree, Package2, Ruler, Save, Scroll, Signpost, SquaresSubtract, Tag, TriangleAlert, X, XSquare } from "lucide-react";
+import {
+  ChevronDown,
+  File,
+  Image,
+  Images,
+  ListTree,
+  Package2,
+  Ruler,
+  Save,
+  Scroll,
+  Signpost,
+  SquaresSubtract,
+  Tag,
+  TriangleAlert,
+  X,
+  XSquare,
+} from "lucide-react";
 import { DynamicIcon, iconNames } from "lucide-react/dynamic";
 import { useState } from "react";
 import * as yup from "yup";
@@ -96,6 +112,7 @@ export default function Page() {
   const formik = useFormik<DataFieldFormValues>({
     initialValues: {
       type: "",
+      container: "",
       name: "",
       unit: "",
       description: "",
@@ -104,15 +121,14 @@ export default function Page() {
       multiple: false,
       mandatory: null,
       icon: null,
-      container: "",
     },
     validationSchema: yup.object({
       type: yup.string().required("Type is required"),
+      container: yup.string().required("Container is required"),
       name: yup.string().trim().required("Name is required"),
       description: yup.string(),
       mandatory: yup.boolean().nullable(),
       icon: yup.string().nullable(),
-      container: yup.string().required("Container is required"),
       options: yup.string().when("type", {
         is: (type: DataFieldType | "") => type === "Select" || type === "Multi-Select",
         then: (schema) => schema.test("has-options", "Add at least one option", (value) => formikOptionLines(value ?? "").length > 0),
@@ -168,10 +184,10 @@ export default function Page() {
           >
             <Grid size={12}>
               <Typography variant='h6' component='h6' className='mb-3'>
-                Field Definition
+                Schema
               </Typography>
               <Card>
-                <CardContent>
+                <CardContent className='-mb-2'>
                   <Box className='flex flex-row gap-2'>
                     <Signpost className={cn(hasFieldError("type") && "text-error!")} />
                     <FormControl fullWidth size='small' variant='standard' className='outlined' required>
@@ -200,6 +216,36 @@ export default function Page() {
                   </Box>
 
                   <Box className='flex flex-row gap-2'>
+                    <Package2 className={cn(hasFieldError("container") && submitted && "text-error!")} />
+                    <FormControl fullWidth size='small' variant='standard' className='outlined' required>
+                      <FormLabel component='label' className={cn(hasFieldError("container") && submitted && "text-error!")}>
+                        Container
+                      </FormLabel>
+                      <Select<DataFieldContainer | "">
+                        value={formik.values.container}
+                        onChange={(event) => void formik.setFieldValue("container", event.target.value)}
+                        IconComponent={ChevronDown}
+                        MenuProps={{ className: "outlined" }}
+                      >
+                        {DATA_FIELD_CONTAINERS.map((fieldContainer) => (
+                          <MenuItem key={fieldContainer} value={fieldContainer}>
+                            {fieldContainer}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            <Grid size={12}>
+              <Typography variant='h6' component='h6' className='mb-3'>
+                Definition
+              </Typography>
+              <Card>
+                <CardContent className='-mb-2'>
+                  <Box className='flex flex-row gap-2'>
                     <Tag className={cn(hasFieldError("name") && submitted && "text-error!")} />
                     <FormControl className='outlined' variant='standard' size='small' fullWidth required>
                       <FormLabel component='label' className={cn(hasFieldError("name") && submitted && "text-error!")}>
@@ -208,66 +254,6 @@ export default function Page() {
                       <Input name='name' value={formik.values.name} onChange={formik.handleChange} />
                     </FormControl>
                   </Box>
-
-                  {(formik.values.type === "Select" || formik.values.type === "Multi-Select") && (
-                    <Box className='flex flex-row gap-2'>
-                      <ListTree className={cn(hasFieldError("options") && submitted && "text-error!")} />
-                      <FormControl className='MuiTextField-root outlined' fullWidth required>
-                        <FormLabel component='label' className={cn(hasFieldError("options") && submitted && "text-error!")}>
-                          Options
-                        </FormLabel>
-                        <TextareaAutosize
-                          name='options'
-                          value={formik.values.options}
-                          onChange={formik.handleChange}
-                          minRows={3}
-                          maxRows={6}
-                          placeholder={"One option per line"}
-                          className='MuiInputBase-root MuiInput-root MuiInputBase-formControl outlined autosize w-full'
-                        />
-                      </FormControl>
-                    </Box>
-                  )}
-
-                  {formik.values.type === "Image" && (
-                    <>
-                      <Box className='flex flex-row gap-2'>
-                        <ImagePlus />
-                        <FormControl fullWidth size='small' variant='standard' className='outlined'>
-                          <FormLabel component='label'>Accepted image types</FormLabel>
-                          <Select<string[]>
-                            multiple
-                            value={formik.values.accept.split(",").filter(Boolean)}
-                            onChange={(event) => {
-                              const selected = typeof event.target.value === "string" ? event.target.value.split(",") : event.target.value;
-                              void formik.setFieldValue("accept", selected.join(","));
-                            }}
-                            IconComponent={ChevronDown}
-                            renderValue={(selected) => selected.map((type) => type.replace("image/", "").toUpperCase()).join(", ")}
-                            MenuProps={{ className: "outlined" }}
-                          >
-                            {IMAGE_ACCEPT_OPTIONS.map((type) => (
-                              <MenuItem key={type} value={type}>
-                                {type.replace("image/", "").toUpperCase()}
-                              </MenuItem>
-                            ))}
-                          </Select>
-                        </FormControl>
-                      </Box>
-                      <Box className='flex flex-row gap-2'>
-                        <ImagePlus />
-                        <FormGroup className='flex flex-col gap-1'>
-                          <FormLabel component='label'>Multiple Images</FormLabel>
-                          <FormControlLabel
-                            label='Allow'
-                            control={
-                              <Checkbox checked={formik.values.multiple} onChange={(event) => void formik.setFieldValue("multiple", event.target.checked)} />
-                            }
-                          />
-                        </FormGroup>
-                      </Box>
-                    </>
-                  )}
 
                   <Box className='flex flex-row gap-2'>
                     <Scroll />
@@ -283,16 +269,6 @@ export default function Page() {
                       />
                     </FormControl>
                   </Box>
-
-                  {(formik.values.type === "Text" || formik.values.type === "Number") && (
-                    <Box className='flex flex-row gap-2'>
-                      <Ruler />
-                      <FormControl className='outlined' variant='standard' size='small' fullWidth>
-                        <FormLabel component='label'>Unit</FormLabel>
-                        <Input name='unit' value={formik.values.unit} onChange={formik.handleChange} />
-                      </FormControl>
-                    </Box>
-                  )}
 
                   <Box className='flex flex-row gap-2'>
                     <TriangleAlert />
@@ -312,7 +288,7 @@ export default function Page() {
 
                   <Box className='flex flex-row gap-2'>
                     <SquaresSubtract />
-                    <FormControl fullWidth className='mb-0'>
+                    <FormControl fullWidth>
                       <FormLabel component='label'>Icon</FormLabel>
                       <Autocomplete<DataFieldIcon, false, false, false>
                         size='small'
@@ -372,35 +348,91 @@ export default function Page() {
                 </CardContent>
               </Card>
             </Grid>
-            <Grid size={12}>
-              <Typography variant='h6' component='h6' className='mb-3'>
-                Relation
-              </Typography>
-              <Card>
-                <CardContent>
-                  <Box className='flex flex-row gap-2'>
-                    <Package2 className={cn(hasFieldError("container") && submitted && "text-error!")} />
-                    <FormControl fullWidth size='small' variant='standard' className='outlined mb-0' required>
-                      <FormLabel component='label' className={cn(hasFieldError("container") && submitted && "text-error!")}>
-                        Container
-                      </FormLabel>
-                      <Select<DataFieldContainer | "">
-                        value={formik.values.container}
-                        onChange={(event) => void formik.setFieldValue("container", event.target.value)}
-                        IconComponent={ChevronDown}
-                        MenuProps={{ className: "outlined" }}
-                      >
-                        {DATA_FIELD_CONTAINERS.map((fieldContainer) => (
-                          <MenuItem key={fieldContainer} value={fieldContainer}>
-                            {fieldContainer}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
+            {(formik.values.type === "Select" ||
+              formik.values.type === "Multi-Select" ||
+              formik.values.type === "Image" ||
+              formik.values.type === "Text" ||
+              formik.values.type === "Number") && (
+              <Grid size={12}>
+                <Typography variant='h6' component='h6' className='mb-3'>
+                  Type Related Options
+                </Typography>
+                <Card>
+                  <CardContent className='-mb-2'>
+                    {(formik.values.type === "Select" || formik.values.type === "Multi-Select") && (
+                      <Box className='flex flex-row gap-2'>
+                        <ListTree className={cn(hasFieldError("options") && submitted && "text-error!")} />
+                        <FormControl className='MuiTextField-root outlined' fullWidth required>
+                          <FormLabel component='label' className={cn(hasFieldError("options") && submitted && "text-error!")}>
+                            Options
+                          </FormLabel>
+                          <TextareaAutosize
+                            name='options'
+                            value={formik.values.options}
+                            onChange={formik.handleChange}
+                            minRows={3}
+                            maxRows={6}
+                            placeholder={"One option per line"}
+                            className='MuiInputBase-root MuiInput-root MuiInputBase-formControl outlined autosize w-full'
+                          />
+                        </FormControl>
+                      </Box>
+                    )}
+
+                    {formik.values.type === "Image" && (
+                      <>
+                        <Box className='flex flex-row gap-2'>
+                          <Image />
+                          <FormControl fullWidth size='small' variant='standard' className='outlined'>
+                            <FormLabel component='label'>Accepted image types</FormLabel>
+                            <Select<string[]>
+                              multiple
+                              value={formik.values.accept.split(",").filter(Boolean)}
+                              onChange={(event) => {
+                                const selected = typeof event.target.value === "string" ? event.target.value.split(",") : event.target.value;
+                                void formik.setFieldValue("accept", selected.join(","));
+                              }}
+                              IconComponent={ChevronDown}
+                              renderValue={(selected) => selected.map((type) => capitalize(type.replace("image/", ""))).join(", ")}
+                              MenuProps={{ className: "outlined" }}
+                            >
+                              {IMAGE_ACCEPT_OPTIONS.map((type) => (
+                                <MenuItem key={type} value={type}>
+                                  {capitalize(type.replace("image/", ""))}
+                                </MenuItem>
+                              ))}
+                            </Select>
+                          </FormControl>
+                        </Box>
+                        <Box className='flex flex-row gap-2'>
+                          <Images />
+                          <FormGroup className='flex flex-col gap-1'>
+                            <FormLabel component='label'>Multiple Images</FormLabel>
+                            <FormControlLabel
+                              label='Allow'
+                              control={
+                                <Checkbox checked={formik.values.multiple} onChange={(event) => void formik.setFieldValue("multiple", event.target.checked)} />
+                              }
+                            />
+                          </FormGroup>
+                        </Box>
+                      </>
+                    )}
+
+                    {(formik.values.type === "Text" || formik.values.type === "Number") && (
+                      <Box className='flex flex-row gap-2'>
+                        <Ruler />
+                        <FormControl className='outlined' variant='standard' size='small' fullWidth>
+                          <FormLabel component='label'>Unit</FormLabel>
+                          <Input name='unit' value={formik.values.unit} onChange={formik.handleChange} />
+                        </FormControl>
+                      </Box>
+                    )}
+                  </CardContent>
+                </Card>
+              </Grid>
+            )}
+
             <Grid size={12}>
               {saveError && (
                 <Alert severity='error' className='mb-2'>

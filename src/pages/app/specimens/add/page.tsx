@@ -189,7 +189,7 @@ export default function Page() {
             void formik.submitForm();
           }}
         >
-          <Grid size={{ lg: 8, xs: 12 }} container spacing={5}>
+          <Grid size={{ xs: 12 }} container spacing={5}>
             <Grid size={12}>
               <Typography variant='h6' component='h2' className='mb-3'>
                 Specimen Info
