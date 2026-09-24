@@ -16,5 +16,7 @@
   "mode-dark": "Karart",
   "mode-system": "Sistem",
   "language": "Dil",
-  "search": "Ara"
+  "search": "Ara",
+  "expand-fluid": "Genişlet",
+  "expand-boxed": "Daralt"
 }

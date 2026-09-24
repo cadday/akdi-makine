@@ -13,7 +13,7 @@ import { MenuShowState } from "@/types/types";
 import { usePlcData } from "@/context/plc-context";
 import WindowControls from "./window-controls";
 import { LINKS } from "@/constants";
-import Language from "../language/language";
+import Expand from "../expand/expand";
 
 export default function Header() {
   const { showLeftInMobile, showLeftMobileButton, leftPrimaryCurrent, leftShowBackdrop } = useLayoutContext();
@@ -65,7 +65,9 @@ export default function Header() {
                 {!connectionStatus.isError && <ArrowUpDown className='text-success' />}
 
                 <Box className='flex flex-row gap-1'>
-                  <Typography variant='subtitle1' className="leading-1">{connectionStatus.text}</Typography>
+                  <Typography variant='subtitle1' className='leading-1'>
+                    {connectionStatus.text}
+                  </Typography>
                 </Box>
               </Box>
             </Box>
@@ -77,7 +79,7 @@ export default function Header() {
           <Fade in={rightButtonsVisibleMobile || !isMobile}>
             <Box className={cn("hidden flex-row sm:flex! sm:gap-1", rightButtonsVisibleMobile ? "flex" : "hidden")}>
               <Search />
-              <Language />
+              <Expand />
               <Mode />
             </Box>
           </Fade>

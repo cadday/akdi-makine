@@ -16,5 +16,7 @@
   "mode-dark": "Go Dark",
   "mode-system": "System",
   "language": "Language",
-  "search": "Search"
+  "search": "Search",
+  "expand-fluid": "Widen",
+  "expand-boxed": "Narrow"
 }
