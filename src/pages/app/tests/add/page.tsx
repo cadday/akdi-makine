@@ -20,7 +20,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { ChevronDown, DraftingCompass, Play, Settings2, SlidersVertical, Tag, X, XSquare } from "lucide-react";
+import { ChevronDown, DraftingCompass, Play, SlidersVertical, Tag, X, XSquare } from "lucide-react";
 import DataFieldInput from "@/components/data-fields/data-field-input";
 import ContentWrapper from "@/components/layout/containers/content-wrapper";
 import TitleWrapper from "@/components/layout/containers/title-wrapper";
@@ -274,7 +274,7 @@ export default function Page() {
                 <Typography variant='h6' component='h6' className='mb-3'>
                   Specimen
                 </Typography>
-                <Button
+                {/* <Button
                   size='tiny'
                   color='grey'
                   variant='text'
@@ -282,7 +282,7 @@ export default function Page() {
                   startIcon={<Settings2 size={16} />}
                 >
                   Configure
-                </Button>
+                </Button> */}
               </Box>
               <Card>
                 <CardContent className='-mb-4'>
@@ -329,7 +329,7 @@ export default function Page() {
                 <Typography variant='h6' component='h6' className='mb-3'>
                   Preset
                 </Typography>
-                <Button
+                {/* <Button
                   size='tiny'
                   color='grey'
                   variant='text'
@@ -337,7 +337,7 @@ export default function Page() {
                   startIcon={<Settings2 size={16} />}
                 >
                   Configure
-                </Button>
+                </Button> */}
               </Box>
               <Card>
                 <CardContent className='-mb-4'>

@@ -253,10 +253,17 @@ export async function getTest(id: string) {
 }
 
 export async function updateTest(id: string, changes: Partial<Omit<TestRecord, "id" | "createdAt">>) {
-  return db.tests.update(id, {
+  const previousTest = await db.tests.get(id);
+  const updatedCount = await db.tests.update(id, {
     ...changes,
     updatedAt: Date.now(),
   });
+
+  if (updatedCount > 0 && previousTest) {
+    await deleteUnreferencedImages([previousTest]).catch(() => undefined);
+  }
+
+  return updatedCount;
 }
 
 export async function updateTestResults(id: string, results: Partial<TestResults>) {

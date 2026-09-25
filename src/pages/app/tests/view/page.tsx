@@ -12,14 +12,9 @@ import ContentWrapper from "@/components/layout/containers/content-wrapper";
 import TitleWrapper from "@/components/layout/containers/title-wrapper";
 import ImageLightboxGallery from "@/components/data-fields/image-lightbox-gallery";
 import LoadingFullScreen from "@/components/loading/loading-full-screen";
+import TestDefinition from "@/pages/app/tests/components/test-definition";
 import { LINKS } from "@/constants";
-import {
-  useDb,
-  type DataFieldDefinition,
-  type DynamicDataValue,
-  type TestRecord,
-  type UploadedImage,
-} from "@/context/db-context";
+import { useDb, type DataFieldDefinition, type DynamicDataValue, type TestRecord, type UploadedImage } from "@/context/db-context";
 import useAppNotifications from "@/hooks/use-app-notifications";
 import useDeleteConfirmation from "@/hooks/use-delete-confirmation";
 
@@ -58,10 +53,7 @@ export default function Page() {
           return;
         }
 
-        const [testFields, linkedSpecimenFields] = await Promise.all([
-          getDataFields("Test"),
-          getDataFields("Specimen"),
-        ]);
+        const [testFields, linkedSpecimenFields] = await Promise.all([getDataFields("Test"), getDataFields("Specimen")]);
         if (cancelled) return;
 
         setTest(record);
@@ -90,9 +82,7 @@ export default function Page() {
 
   const renderValue = (field: DataFieldDefinition, value: DynamicDataValue) => {
     if (value == null) return "-";
-    if (field.type === "Image" && Array.isArray(value)) {
-      return <ImageLightboxGallery images={value as UploadedImage[]} />;
-    }
+    if (field.type === "Image" && Array.isArray(value)) return <ImageLightboxGallery images={value as UploadedImage[]} />;
     if (typeof value === "boolean") return value ? "True" : "False";
     const displayValue = Array.isArray(value)
       ? value.map((item) => (item && typeof item === "object" && "name" in item ? item.name : String(item))).join(", ")
@@ -333,47 +323,6 @@ export default function Page() {
 
                       <Grid size={12}>
                         <Typography variant='h6' component='h6' className='mb-3'>
-                          Definition
-                        </Typography>
-                        <Card>
-                          <CardContent className='flex flex-col gap-5'>
-                            <Box className='flex flex-row gap-2'>
-                              <Hexagon />
-                              <Box className='flex flex-col gap-1'>
-                                <Typography variant='subtitle1'>Name</Typography>
-                                <Typography>{test.name}</Typography>
-                              </Box>
-                            </Box>
-                            <Box className='flex flex-row gap-2'>
-                              <Hexagon />
-                              <Box className='flex flex-col gap-1'>
-                                <Typography variant='subtitle1'>Specimen</Typography>
-                                <Typography>{specimen?.name ?? "-"}</Typography>
-                              </Box>
-                            </Box>
-                            <Box className='flex flex-row gap-2'>
-                              <Hexagon />
-                              <Box className='flex flex-col gap-1'>
-                                <Typography variant='subtitle1'>Preset</Typography>
-                                <Typography>{preset?.name ?? "-"}</Typography>
-                              </Box>
-                            </Box>
-
-                            {fields.length > 0 &&
-                              fields.map((field) => (
-                                <Box key={field.id} className='flex flex-row gap-2'>
-                                  {field.icon ? <DynamicIcon name={field.icon} /> : <Hexagon />}
-                                  <Box className='flex flex-col gap-1'>
-                                    <Typography variant='subtitle1'>{field.name}</Typography>
-                                    {renderValue(field, test.customData?.[field.id] ?? test.customData?.[field.name] ?? null)}
-                                  </Box>
-                                </Box>
-                              ))}
-                          </CardContent>
-                        </Card>
-                      </Grid>
-                      <Grid size={12}>
-                        <Typography variant='h6' component='h6' className='mb-3'>
                           Preset
                         </Typography>
                         <Card>
@@ -422,6 +371,8 @@ export default function Page() {
                           </CardContent>
                         </Card>
                       </Grid>
+
+                      <TestDefinition test={test} fields={fields} onTestUpdated={setTest} />
                     </Grid>
                   </Grid>
                 )}
