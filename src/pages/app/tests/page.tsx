@@ -15,7 +15,6 @@ import {
   File,
   Filter,
   OctagonAlert,
-  Pen,
   Play,
   Repeat2,
   Send,
@@ -24,14 +23,13 @@ import {
   XSquare,
 } from "lucide-react";
 import {
-  DataGrid,
   getGridDateOperators,
-  GridActionsCellItem,
   type GridColDef,
   type GridRenderCellParams,
   type GridRowSelectionModel,
   type GridRowSpacingParams,
 } from "@mui/x-data-grid";
+import DataGridWithRowActions, { type DataGridRowAction } from "@/components/data-grid/data-grid-with-row-actions";
 import { DataGridPaginationFullPage } from "@/components/data-grid/data-grid-pagination";
 import { DataGridListingToolbar } from "@/components/data-grid/data-grid-listing-toolbar";
 import ContentWrapper from "@/components/layout/containers/content-wrapper";
@@ -148,6 +146,14 @@ export default function Page() {
   const deleteRow = useCallback((id: string) => async () => deleteRows([id]), [deleteRows]);
   const handleAddItem = useCallback(() => navigate("/tests/add"), [navigate]);
   const getRowSpacing = useCallback((params: GridRowSpacingParams) => ({ top: params.isFirstVisible ? 0 : 5, bottom: 5 }), []);
+  const getRowActions = useCallback(
+    (id: string): DataGridRowAction[] => [
+      { key: "view", icon: <Send size={16} />, label: "View", onClick: () => navigate(`/tests/${id}`) },
+      { key: "duplicate", icon: <Copy size={16} />, label: "Duplicate", onClick: duplicateRow(id) },
+      { key: "delete", icon: <XSquare size={16} />, label: "Delete", onClick: deleteRow(id), className: "hover:bg-error-light/10 hover:text-error" },
+    ],
+    [deleteRow, duplicateRow, navigate],
+  );
 
   const rows = useMemo<TestGridRow[]>(() => {
     return tests.map((test) => ({
@@ -220,30 +226,8 @@ export default function Page() {
         valueFormatter: (value) => new Date(Number(value)).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short" }),
         filterOperators: getGridDateOperators(false).map((item) => ({ ...item, InputComponent: DataGridDateTimeFilter })),
       },
-      {
-        field: "actions",
-        headerName: "Actions",
-        type: "actions",
-        minWidth: 80,
-        flex: 1,
-        align: "right",
-        headerAlign: "right",
-        getActions: (params) => [
-          <GridActionsCellItem key='view' icon={<Send size={16} />} label='View' onClick={() => navigate(`/tests/${params.id}`)} showInMenu />,
-          <GridActionsCellItem key='edit' icon={<Pen size={16} />} label='Edit' onClick={() => navigate(`/tests/${params.id}/edit`)} showInMenu />,
-          <GridActionsCellItem key='duplicate' icon={<Copy size={16} />} label='Duplicate' onClick={duplicateRow(String(params.id))} showInMenu />,
-          <GridActionsCellItem
-            className='hover:bg-error-light/10 hover:text-error'
-            key='delete'
-            icon={<XSquare size={16} />}
-            label='Delete'
-            onClick={deleteRow(String(params.id))}
-            showInMenu
-          />,
-        ],
-      },
     ],
-    [dataFields, deleteRow, duplicateRow, navigate],
+    [dataFields],
   );
 
   return (
@@ -294,60 +278,61 @@ export default function Page() {
                 </Button>
               </Box>
             ) : (
-              <DataGrid
-                autoHeight
-                rows={rows}
-                columns={columns}
-                loading={isLoading}
-                initialState={{
-                  columns: { columnVisibilityModel: { id: false, createdAt: false } },
-                  pagination: { paginationModel: { pageSize: 10 } },
-                }}
-                getRowSpacing={getRowSpacing}
-                columnHeaderHeight={40}
-                checkboxSelection
-                disableRowSelectionOnClick
-                className='full-page dense border-none'
-                pagination
-                rowSelectionModel={rowSelectionModel}
-                pageSizeOptions={[10, 20, 50, 100]}
-                disableRowSelectionExcludeModel
-                onRowSelectionModelChange={setRowSelectionModel}
-                hideFooterSelectedRowCount
-                showToolbar
-                slotProps={{
-                  panel: { className: "mt-1!" },
-                  toolbar: { rowSelectionModel, deleteRows, duplicateRows, onAddItem: handleAddItem, addLabel: "Run Test", addIcon: <Play /> },
-                }}
-                classes={{ main: "overflow-visible" }}
-                slots={{
-                  basePagination: DataGridPaginationFullPage,
-                  columnSortedDescendingIcon: () => <ArrowDown size={16} />,
-                  columnSortedAscendingIcon: () => <ArrowUp size={16} />,
-                  columnFilteredIcon: () => <Filter size={18} />,
-                  columnReorderIcon: () => <ChevronLeft />,
-                  columnMenuIcon: () => <EllipsisVertical size={16} />,
-                  columnMenuSortAscendingIcon: ArrowUp,
-                  columnMenuSortDescendingIcon: ArrowDown,
-                  columnMenuFilterIcon: Filter,
-                  columnMenuHideIcon: EyeClosed,
-                  columnMenuClearIcon: X,
-                  columnMenuManageColumnsIcon: Columns,
-                  filterPanelDeleteIcon: X,
-                  filterPanelRemoveAllIcon: Trash,
-                  baseSelect: (props: any) => (
-                    <FormControl size='small' variant='outlined'>
-                      <InputLabel>{props.label}</InputLabel>
-                      <Select {...props} IconComponent={ChevronDown} MenuProps={{ className: "outlined" }} />
-                    </FormControl>
-                  ),
-                  quickFilterIcon: () => <Search />,
-                  quickFilterClearIcon: () => <X />,
-                  baseButton: (props) => <Button {...props} variant='pastel' color='grey'></Button>,
-                  moreActionsIcon: () => <Ellipsis size={16} />,
-                  toolbar: DataGridListingToolbar,
-                }}
-              />
+                <DataGridWithRowActions
+                  autoHeight
+                  rows={rows}
+                  columns={columns}
+                  loading={isLoading}
+                  initialState={{
+                    columns: { columnVisibilityModel: { id: false, createdAt: false } },
+                    pagination: { paginationModel: { pageSize: 10 } },
+                  }}
+                  getRowSpacing={getRowSpacing}
+                  columnHeaderHeight={40}
+                  checkboxSelection
+                  disableRowSelectionOnClick
+                  className='full-page dense border-none'
+                  pagination
+                  rowSelectionModel={rowSelectionModel}
+                  pageSizeOptions={[10, 20, 50, 100]}
+                  disableRowSelectionExcludeModel
+                  onRowSelectionModelChange={setRowSelectionModel}
+                  hideFooterSelectedRowCount
+                  showToolbar
+                  slotProps={{
+                    panel: { className: "mt-1!" },
+                    toolbar: { rowSelectionModel, deleteRows, duplicateRows, onAddItem: handleAddItem, addLabel: "Run Test", addIcon: <Play /> },
+                  }}
+                  classes={{ main: "overflow-visible" }}
+                  slots={{
+                    basePagination: DataGridPaginationFullPage,
+                    columnSortedDescendingIcon: () => <ArrowDown size={16} />,
+                    columnSortedAscendingIcon: () => <ArrowUp size={16} />,
+                    columnFilteredIcon: () => <Filter size={18} />,
+                    columnReorderIcon: () => <ChevronLeft />,
+                    columnMenuIcon: () => <EllipsisVertical size={16} />,
+                    columnMenuSortAscendingIcon: ArrowUp,
+                    columnMenuSortDescendingIcon: ArrowDown,
+                    columnMenuFilterIcon: Filter,
+                    columnMenuHideIcon: EyeClosed,
+                    columnMenuClearIcon: X,
+                    columnMenuManageColumnsIcon: Columns,
+                    filterPanelDeleteIcon: X,
+                    filterPanelRemoveAllIcon: Trash,
+                    baseSelect: (props: any) => (
+                      <FormControl size='small' variant='outlined'>
+                        <InputLabel>{props.label}</InputLabel>
+                        <Select {...props} IconComponent={ChevronDown} MenuProps={{ className: "outlined" }} />
+                      </FormControl>
+                    ),
+                    quickFilterIcon: () => <Search />,
+                    quickFilterClearIcon: () => <X />,
+                    baseButton: (props) => <Button {...props} variant='pastel' color='grey'></Button>,
+                    moreActionsIcon: () => <Ellipsis size={16} />,
+                    toolbar: DataGridListingToolbar,
+                  }}
+                  getRowActions={getRowActions}
+                />
             )}
           </Grid>
         </Grid>

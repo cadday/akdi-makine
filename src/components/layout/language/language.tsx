@@ -51,14 +51,6 @@ export default function Language() {
         anchorEl={anchorElLang as Element}
         disableScrollLock
         open={openLang}
-        anchorOrigin={{
-          vertical: "bottom",
-          horizontal: "right",
-        }}
-        transformOrigin={{
-          vertical: "top",
-          horizontal: "right",
-        }}
         onClose={handleCloseLang}
         classes={{ paper: "mt-1 w-42" }}
         slots={{

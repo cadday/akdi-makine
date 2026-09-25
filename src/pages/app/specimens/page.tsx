@@ -2,6 +2,7 @@ import { Link, useNavigate } from "react-router";
 
 import { DataGridPaginationFullPage } from "@/components/data-grid/data-grid-pagination";
 import { DataGridListingToolbar } from "@/components/data-grid/data-grid-listing-toolbar";
+import DataGridWithRowActions, { type DataGridRowAction } from "@/components/data-grid/data-grid-with-row-actions";
 import ContentWrapper from "@/components/layout/containers/content-wrapper";
 import TitleWrapper from "@/components/layout/containers/title-wrapper";
 import { LINKS } from "@/constants";
@@ -18,7 +19,6 @@ import {
   EyeClosed,
   File,
   OctagonAlert,
-  Pen,
   Plus,
   Repeat2,
   Send,
@@ -29,15 +29,7 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Box, Breadcrumbs, Button, FormControl, Grid, InputLabel, Select, Typography } from "@mui/material";
-import {
-  DataGrid,
-  getGridDateOperators,
-  GridActionsCellItem,
-  GridColDef,
-  GridRenderCellParams,
-  GridRowSelectionModel,
-  GridRowSpacingParams,
-} from "@mui/x-data-grid";
+import { getGridDateOperators, GridColDef, GridRenderCellParams, GridRowSelectionModel, GridRowSpacingParams } from "@mui/x-data-grid";
 import { Filter } from "lucide-react";
 import Search from "@/components/layout/search/search";
 import DataGridDateTimeFilter from "@/components/data-grid/data-grid-date-time-filter";
@@ -140,6 +132,31 @@ export default function Page() {
     [deleteRows],
   );
 
+  const getRowActions = useCallback(
+    (id: string): DataGridRowAction[] => {
+      const specimen = specimens.find((item) => item.id === id);
+      if (!specimen) return [];
+
+      return [
+        { key: "view", icon: <Send size={16} />, label: "View", onClick: () => navigate(`/specimens/${id}`) },
+        {
+          key: "duplicate",
+          icon: <Copy size={16} />,
+          label: "Duplicate",
+          onClick: () => navigate("/specimens/add", { state: { initialSpecimen: { ...specimen, name: `${specimen.name} (Copy)` } } }),
+        },
+        {
+          key: "delete",
+          icon: <XSquare size={16} />,
+          label: "Delete",
+          onClick: deleteRow(id),
+          className: "hover:bg-error-light/10 hover:text-error",
+        },
+      ];
+    },
+    [deleteRow, navigate, specimens],
+  );
+
   const handleAddItem = useCallback(() => {
     navigate("/specimens/add");
   }, [navigate]);
@@ -194,7 +211,7 @@ export default function Page() {
             const value = params.value;
             if (value == null) return "-";
             if (dataField.type === "Image" && Array.isArray(value)) {
-              return <StoredImagePreviews images={value as UploadedImage[]} imageClassName="h-8 w-10"/>;
+              return <StoredImagePreviews images={value as UploadedImage[]} imageClassName='h-8 w-10' />;
             }
             if (typeof value === "boolean") return value ? "True" : "False";
             const displayValue = Array.isArray(value)
@@ -235,36 +252,8 @@ export default function Page() {
           InputComponent: DataGridDateTimeFilter,
         })),
       },
-      {
-        field: "actions",
-        headerName: "Actions",
-        type: "actions",
-        minWidth: 80,
-        flex: 1,
-        align: "right",
-        headerAlign: "right",
-        getActions: (params) => [
-          <GridActionsCellItem key='view' icon={<Send size={16} />} label='View' onClick={() => navigate(`/specimens/${params.id}`)} showInMenu />,
-          <GridActionsCellItem key='edit' icon={<Pen size={16} />} label='Edit' onClick={() => navigate(`/specimens/${params.id}/edit`)} showInMenu />,
-          <GridActionsCellItem
-            key={0}
-            icon={<Copy size={16} />}
-            label='Duplicate'
-            onClick={() => navigate("/specimens/add", { state: { initialSpecimen: { ...params.row, name: `${params.row.name} (Copy)` } } })}
-            showInMenu
-          />,
-          <GridActionsCellItem
-            className='hover:bg-error-light/10 hover:text-error'
-            key={1}
-            icon={<XSquare size={16} />}
-            label='Delete'
-            onClick={deleteRow(params.id as string)}
-            showInMenu
-          />,
-        ],
-      },
     ],
-    [dataFields, deleteRow, navigate],
+    [dataFields],
   );
 
   return (
@@ -315,7 +304,7 @@ export default function Page() {
                 </Button>
               </Box>
             ) : (
-              <DataGrid
+              <DataGridWithRowActions
                 autoHeight
                 rows={rows}
                 columns={columns}
@@ -402,6 +391,7 @@ export default function Page() {
                   },
                   toolbar: DataGridListingToolbar,
                 }}
+                getRowActions={getRowActions}
               />
             )}
           </Grid>

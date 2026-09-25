@@ -1084,7 +1084,7 @@
     &:active,
     &.active,
     &[aria-expanded="true"] {
-      @apply bg-grey-50 text-text-primary;
+      @apply bg-grey-25 text-text-primary;
     }
 
     &.Mui-disabled {

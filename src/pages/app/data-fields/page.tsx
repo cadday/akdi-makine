@@ -2,6 +2,7 @@ import { Link, useNavigate } from "react-router";
 
 import { DataGridPaginationFullPage } from "@/components/data-grid/data-grid-pagination";
 import { DataGridListingToolbar } from "@/components/data-grid/data-grid-listing-toolbar";
+import DataGridWithRowActions, { type DataGridRowAction } from "@/components/data-grid/data-grid-with-row-actions";
 import ContentWrapper from "@/components/layout/containers/content-wrapper";
 import TitleWrapper from "@/components/layout/containers/title-wrapper";
 import { LINKS } from "@/constants";
@@ -29,9 +30,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Box, Breadcrumbs, Button, FormControl, Grid, InputLabel, Select, Typography } from "@mui/material";
 import {
-  DataGrid,
   getGridDateOperators,
-  GridActionsCellItem,
   GridColDef,
   GridRenderCellParams,
   GridRowSelectionModel,
@@ -136,6 +135,31 @@ export default function Page() {
     [deleteRows],
   );
 
+  const getRowActions = useCallback(
+    (id: string): DataGridRowAction[] => {
+      const dataField = dataFields.find((item) => item.id === id);
+      if (!dataField) return [];
+
+      return [
+        { key: "view", icon: <Send size={16} />, label: "View", onClick: () => navigate(`/data-fields/${id}`) },
+        {
+          key: "duplicate",
+          icon: <Copy size={16} />,
+          label: "Duplicate",
+          onClick: () => navigate("/data-fields/add", { state: { initialDataField: { ...dataField, name: `${dataField.name} (Copy)` } } }),
+        },
+        {
+          key: "delete",
+          icon: <XSquare size={16} />,
+          label: "Delete",
+          onClick: deleteRow(id),
+          className: "hover:bg-error-light/10 hover:text-error",
+        },
+      ];
+    },
+    [dataFields, deleteRow, navigate],
+  );
+
   const handleAddItem = useCallback(() => {
     navigate("/data-fields/add");
   }, [navigate]);
@@ -222,33 +246,6 @@ export default function Page() {
         InputComponent: DataGridDateTimeFilter,
       })),
     },
-    {
-      field: "actions",
-      headerName: "Actions",
-      type: "actions",
-      minWidth: 80,
-      flex: 1,
-      align: "right",
-      headerAlign: "right",
-      getActions: (params) => [
-        <GridActionsCellItem key='view' icon={<Send size={16} />} label='View' onClick={() => navigate(`/data-fields/${params.id}`)} showInMenu />,
-        <GridActionsCellItem
-          key={0}
-          icon={<Copy size={16} />}
-          label='Duplicate'
-          onClick={() => navigate("/data-fields/add", { state: { initialDataField: { ...params.row, name: `${params.row.name} (Copy)` } } })}
-          showInMenu
-        />,
-        <GridActionsCellItem
-          className='hover:bg-error-light/10 hover:text-error'
-          key={1}
-          icon={<XSquare size={16} />}
-          label='Delete'
-          onClick={deleteRow(params.id as string)}
-          showInMenu
-        />,
-      ],
-    },
   ];
 
   return (
@@ -299,7 +296,7 @@ export default function Page() {
                 </Button>
               </Box>
             ) : (
-              <DataGrid
+              <DataGridWithRowActions
                 autoHeight
                 rows={rows}
                 columns={columns}
@@ -386,6 +383,7 @@ export default function Page() {
                   },
                   toolbar: DataGridListingToolbar,
                 }}
+                getRowActions={getRowActions}
               />
             )}
           </Grid>

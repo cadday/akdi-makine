@@ -2,6 +2,7 @@ import { Link, useNavigate } from "react-router";
 
 import { DataGridPaginationFullPage } from "@/components/data-grid/data-grid-pagination";
 import { DataGridListingToolbar } from "@/components/data-grid/data-grid-listing-toolbar";
+import DataGridWithRowActions, { type DataGridRowAction } from "@/components/data-grid/data-grid-with-row-actions";
 import ContentWrapper from "@/components/layout/containers/content-wrapper";
 import TitleWrapper from "@/components/layout/containers/title-wrapper";
 import { LINKS } from "@/constants";
@@ -18,7 +19,6 @@ import {
   EyeClosed,
   File,
   OctagonAlert,
-  Pen,
   Plus,
   Repeat2,
   Send,
@@ -29,15 +29,7 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Box, Breadcrumbs, Button, FormControl, Grid, InputLabel, Select, Typography } from "@mui/material";
-import {
-  DataGrid,
-  getGridDateOperators,
-  GridActionsCellItem,
-  GridColDef,
-  GridRenderCellParams,
-  GridRowSelectionModel,
-  GridRowSpacingParams,
-} from "@mui/x-data-grid";
+import { getGridDateOperators, GridColDef, GridRenderCellParams, GridRowSelectionModel, GridRowSpacingParams } from "@mui/x-data-grid";
 import { PresetRecord, useDb } from "@/context/db-context";
 import { Filter } from "lucide-react";
 import Search from "@/components/layout/search/search";
@@ -121,6 +113,31 @@ export default function Page() {
   );
 
   const deleteRow = useCallback((id: string) => async () => deleteRows([id]), [deleteRows]);
+
+  const getRowActions = useCallback(
+    (id: string): DataGridRowAction[] => {
+      const preset = presets.find((item) => item.id === id);
+      if (!preset) return [];
+
+      return [
+        { key: "view", icon: <Send size={16} />, label: "View", onClick: () => navigate(`/presets/${id}`) },
+        {
+          key: "duplicate",
+          icon: <Copy size={16} />,
+          label: "Duplicate",
+          onClick: () => navigate("/presets/add", { state: { initialPreset: { ...preset, name: `${preset.name} (Copy)` } } }),
+        },
+        {
+          key: "delete",
+          icon: <XSquare size={16} />,
+          label: "Delete",
+          onClick: deleteRow(id),
+          className: "hover:bg-error-light/10 hover:text-error",
+        },
+      ];
+    },
+    [deleteRow, navigate, presets],
+  );
 
   const handleAddItem = useCallback(() => {
     navigate("/presets/add");
@@ -208,34 +225,6 @@ export default function Page() {
         InputComponent: DataGridDateTimeFilter,
       })),
     },
-    {
-      field: "actions",
-      headerName: "Actions",
-      type: "actions",
-      minWidth: 80,
-      flex: 1,
-      align: "right",
-      headerAlign: "right",
-      getActions: (params) => [
-        <GridActionsCellItem key='view' icon={<Send size={16} />} label='View' onClick={() => navigate(`/presets/${params.id}`)} showInMenu />,
-        <GridActionsCellItem key='edit' icon={<Pen size={16} />} label='Edit' onClick={() => navigate(`/presets/${params.id}/edit`)} showInMenu />,
-        <GridActionsCellItem
-          key='duplicate'
-          icon={<Copy size={16} />}
-          label='Duplicate'
-          onClick={() => navigate("/presets/add", { state: { initialPreset: { ...params.row, name: `${params.row.name} (Copy)` } } })}
-          showInMenu
-        />,
-        <GridActionsCellItem
-          className='hover:bg-error-light/10 hover:text-error'
-          key='delete'
-          icon={<XSquare size={16} />}
-          label='Delete'
-          onClick={deleteRow(String(params.id))}
-          showInMenu
-        />,
-      ],
-    },
   ];
 
   return (
@@ -286,7 +275,7 @@ export default function Page() {
                 </Button>
               </Box>
             ) : (
-              <DataGrid
+              <DataGridWithRowActions
                 autoHeight
                 rows={rows}
                 columns={columns}
@@ -339,6 +328,7 @@ export default function Page() {
                   moreActionsIcon: () => <Ellipsis size={16} />,
                   toolbar: DataGridListingToolbar,
                 }}
+                getRowActions={getRowActions}
               />
             )}
           </Grid>

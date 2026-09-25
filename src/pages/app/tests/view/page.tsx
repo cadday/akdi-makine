@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import TabContext from "@mui/lab/TabContext";
 import TabList from "@mui/lab/TabList";
 import TabPanel from "@mui/lab/TabPanel";
-import { ChevronLeft, ChevronRight, Ellipsis, Gauge, Hexagon, Pen, PencilRuler, Tag, Weight, WeightTilde, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Ellipsis, Gauge, Hexagon, PencilRuler, Tag, Weight, WeightTilde, X } from "lucide-react";
 import { DynamicIcon } from "lucide-react/dynamic";
 import PopupState, { bindMenu, bindTrigger } from "material-ui-popup-state";
 import ContentWrapper from "@/components/layout/containers/content-wrapper";
@@ -132,17 +132,6 @@ export default function Page() {
                           anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
                           transformOrigin={{ vertical: "top", horizontal: "right" }}
                         >
-                          <MenuItem
-                            onClick={() => {
-                              popupState.close();
-                              if (id) navigate(`/tests/${id}/edit`);
-                            }}
-                          >
-                            <ListItemIcon>
-                              <Pen size={16} />
-                            </ListItemIcon>
-                            <ListItemText>Edit</ListItemText>
-                          </MenuItem>
                           <MenuItem
                             onClick={() => {
                               popupState.close();

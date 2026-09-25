@@ -1,7 +1,7 @@
 import { SyntheticEvent, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { Box, Breadcrumbs, Button, Card, CardContent, Grid, ListItemIcon, ListItemText, Menu, MenuItem, Tab, Tooltip, Typography } from "@mui/material";
-import { ChevronLeft, ChevronRight, Ellipsis, Gauge, Pen, Tag, Weight, WeightTilde, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Ellipsis, Gauge, Tag, Weight, WeightTilde, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import TabContext from "@mui/lab/TabContext";
 import TabList from "@mui/lab/TabList";
@@ -117,21 +117,12 @@ export default function Page() {
                             <MenuItem
                               onClick={() => {
                                 popupState.close();
-                                if (id) navigate(`/presets/${id}/edit`);
-                              }}
-                            >
-                              <ListItemIcon>
-                                <Pen size={16} />
-                              </ListItemIcon>
-                              <ListItemText>Edit</ListItemText>
-                            </MenuItem>
-                            <MenuItem
-                              onClick={() => {
-                                popupState.close();
                                 if (!id) return;
                                 requestDelete({
                                   title: "Delete Preset",
-                                  message: preset?.name ? `Delete “${preset.name}”? This action cannot be undone.` : "Delete this preset? This action cannot be undone.",
+                                  message: preset?.name
+                                    ? `Delete “${preset.name}”? This action cannot be undone.`
+                                    : "Delete this preset? This action cannot be undone.",
                                   errorMessage: "Failed to delete preset:",
                                   onConfirm: async () => {
                                     await deletePreset(id);

@@ -11,7 +11,7 @@ import { useTranslation } from "react-i18next";
 import LoadingFullScreen from "@/components/loading/loading-full-screen";
 import useAppNotifications from "@/hooks/use-app-notifications";
 import { DynamicIcon } from "lucide-react/dynamic";
-import { ChevronLeft, ChevronRight, Ellipsis, Hexagon, Pen, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Ellipsis, Hexagon, X } from "lucide-react";
 import TabList from "@mui/lab/TabList";
 import TabPanel from "@mui/lab/TabPanel";
 import TabContext from "@mui/lab/TabContext";
@@ -127,21 +127,12 @@ export default function Page() {
                             <MenuItem
                               onClick={() => {
                                 popupState.close();
-                                if (id) navigate(`/specimens/${id}/edit`);
-                              }}
-                            >
-                              <ListItemIcon>
-                                <Pen size={16} />
-                              </ListItemIcon>
-                              <ListItemText>Edit</ListItemText>
-                            </MenuItem>
-                            <MenuItem
-                              onClick={() => {
-                                popupState.close();
                                 if (!id) return;
                                 requestDelete({
                                   title: "Delete Specimen",
-                                  message: specimen?.name ? `Delete “${specimen.name}”? This action cannot be undone.` : "Delete this specimen? This action cannot be undone.",
+                                  message: specimen?.name
+                                    ? `Delete “${specimen.name}”? This action cannot be undone.`
+                                    : "Delete this specimen? This action cannot be undone.",
                                   errorMessage: "Failed to delete specimen:",
                                   onConfirm: async () => {
                                     await deleteSpecimen(id);

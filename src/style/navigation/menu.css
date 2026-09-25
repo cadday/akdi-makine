@@ -5,7 +5,7 @@
 @layer style {
   /* Menu and Autocomplete containers */
   .MuiMenu-paper {
-    @apply bg-background-paper shadow-darker-sm! outline-grey-50 rounded-lg px-2 py-2 outline-1;
+    @apply bg-background-paper shadow-darker-sm! outline-grey-50! rounded-lg px-2 py-2 outline-1!;
 
     &:empty {
       @apply m-0! border-none! p-0! outline-hidden!;
