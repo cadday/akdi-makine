@@ -166,7 +166,6 @@ export default function Page() {
       {
         field: "name",
         headerName: "Name",
-        flex: 1,
         minWidth: 200,
         renderCell: (params: GridRenderCellParams<SpecimenGridRow, string>) => (
           <Link

@@ -14,6 +14,7 @@ import { usePlcData } from "@/context/plc-context";
 import WindowControls from "./window-controls";
 import { LINKS } from "@/constants";
 import Expand from "../expand/expand";
+import RouterNav from "../router-nav/router-nav";
 
 export default function Header() {
   const { showLeftInMobile, showLeftMobileButton, leftPrimaryCurrent, leftShowBackdrop } = useLayoutContext();
@@ -57,48 +58,46 @@ export default function Header() {
             <Logo classNameFull='hidden' classNameMobile='md:hidden' />
           </Link>
 
-          {/* Subscribe CTA */}
-          <Fade in={!rightButtonsVisibleMobile || !isMobile}>
-            <Box component={Link} to={"#"} className='bg-grey-75 flex flex-row gap-5 rounded-lg py-2.5 px-4 transition-all! hover:bg-grey-200 no-drag'>
-              <Box className='flex flex-row items-center gap-2'>
-                {connectionStatus.isError && <OctagonX className='text-error' />}
-                {!connectionStatus.isError && <ArrowUpDown className='text-success' />}
+          <Box className='flex flex-row sm:gap-1 no-drag'>
+            <Fade in={rightButtonsVisibleMobile || !isMobile}>
+              <Box className={cn("hidden flex-row sm:flex! sm:gap-1", rightButtonsVisibleMobile ? "flex" : "hidden")}>
+                <RouterNav />
+                <Expand />
+                <Mode />
+                <Search />
+              </Box>
+            </Fade>
 
-                <Box className='flex flex-row gap-1'>
-                  <Typography variant='subtitle1' className='leading-1'>
-                    {connectionStatus.text}
-                  </Typography>
-                </Box>
+            {/* The button to turn on and off the mobile version of the right buttons and version select */}
+            <Button
+              variant='text'
+              size='large'
+              color='text-primary'
+              className={cn(
+                "icon-only hover-icon-shrink [&.active]:text-primary hover:bg-grey-75 [&.active]:bg-grey-75 ms-1 sm:hidden",
+                rightButtonsVisibleMobile && "active",
+              )}
+              onClick={handleRightButtonsMobileToggle}
+              startIcon={<ListChevronsUpDown />}
+            />
+          </Box>
+        </Box>
+
+        <Fade in={!rightButtonsVisibleMobile || !isMobile}>
+          <Box component={Link} to={"#"} className='bg-grey-75 flex flex-row gap-5 rounded-lg py-2.5 px-4 transition-all! hover:bg-grey-200 no-drag'>
+            <Box className='flex flex-row items-center gap-2'>
+              {connectionStatus.isError && <OctagonX className='text-error' />}
+              {!connectionStatus.isError && <ArrowUpDown className='text-success' />}
+
+              <Box className='flex flex-row gap-1'>
+                <Typography variant='subtitle1' className='leading-1'>
+                  {connectionStatus.text}
+                </Typography>
               </Box>
             </Box>
-          </Fade>
-        </Box>
+          </Box>
+        </Fade>
 
-        {/* Right buttons */}
-        <Box className='flex flex-row sm:gap-1 no-drag'>
-          <Fade in={rightButtonsVisibleMobile || !isMobile}>
-            <Box className={cn("hidden flex-row sm:flex! sm:gap-1", rightButtonsVisibleMobile ? "flex" : "hidden")}>
-              <Search />
-              <Expand />
-              <Mode />
-            </Box>
-          </Fade>
-
-          {/* The button to turn on and off the mobile version of the right buttons and version select */}
-          <Button
-            variant='text'
-            size='large'
-            color='text-primary'
-            className={cn(
-              "icon-only hover-icon-shrink [&.active]:text-primary hover:bg-grey-75 [&.active]:bg-grey-75 ms-1 sm:hidden",
-              rightButtonsVisibleMobile && "active",
-            )}
-            onClick={handleRightButtonsMobileToggle}
-            startIcon={<ListChevronsUpDown />}
-          />
-        </Box>
-
-        {/* User Avatar and Menu */}
         <WindowControls />
       </Box>
     </Box>

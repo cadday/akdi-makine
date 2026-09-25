@@ -20,7 +20,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { ChevronDown, DraftingCompass, Gauge, Play, Tag, X, XSquare } from "lucide-react";
+import { ChevronDown, DraftingCompass, Play, Settings2, SlidersVertical, Tag, X, XSquare } from "lucide-react";
 import DataFieldInput from "@/components/data-fields/data-field-input";
 import ContentWrapper from "@/components/layout/containers/content-wrapper";
 import TitleWrapper from "@/components/layout/containers/title-wrapper";
@@ -126,6 +126,11 @@ export default function Page() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [defaultTestName] = useState(() => {
+    const now = new Date();
+    const twoDigits = (value: number) => String(value).padStart(2, "0");
+    return `Test ${twoDigits(now.getDate())}-${twoDigits(now.getMonth() + 1)}-${String(now.getFullYear()).slice(-2)} ${twoDigits(now.getHours())}:${twoDigits(now.getMinutes())}`;
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -158,11 +163,18 @@ export default function Page() {
 
   const validationSchema = useMemo(() => buildTestValidationSchema(fields), [fields]);
   const formik = useFormik<TestFormValues>({
-    initialValues: { specimenId: "", presetId: "", name: "", customData: {}, pendingImages: {} },
+    initialValues: { specimenId: "", presetId: "", name: defaultTestName, customData: {}, pendingImages: {} },
     validationSchema,
     validateOnBlur: false,
     validateOnChange: true,
     onSubmit: async (values) => {
+      const specimen = specimens.find((item) => item.id === values.specimenId);
+      const preset = presets.find((item) => item.id === values.presetId);
+      if (!specimen || !preset) {
+        showError("The selected specimen or preset is no longer available.");
+        return;
+      }
+
       const customData = { ...values.customData };
       for (const field of fields) {
         if (field.type !== "Image") {
@@ -198,6 +210,14 @@ export default function Page() {
           name: values.name.trim(),
           specimenId: values.specimenId,
           presetId: values.presetId,
+          specimenSnapshot: { name: specimen.name, customData: { ...specimen.customData } },
+          presetSnapshot: {
+            name: preset.name,
+            type: preset.type,
+            preload: preset.preload,
+            load: preset.load,
+            speed: preset.speed,
+          },
           customData,
         });
         navigate("/tests");
@@ -249,12 +269,23 @@ export default function Page() {
           }}
         >
           <Grid size={{ xs: 12 }} container spacing={5}>
-            <Grid size={12}>
-              <Typography variant='h6' component='h6' className='mb-3'>
-                Specimen
-              </Typography>
+            <Grid size={12} className='group/grid'>
+              <Box className='flex flex-row items-center justify-between'>
+                <Typography variant='h6' component='h6' className='mb-3'>
+                  Specimen
+                </Typography>
+                <Button
+                  size='tiny'
+                  color='grey'
+                  variant='text'
+                  className={cn(!specimenError && selectedSpecimen && "group-hover/grid:opacity-100", " transition-all opacity-0")}
+                  startIcon={<Settings2 size={16} />}
+                >
+                  Configure
+                </Button>
+              </Box>
               <Card>
-                <CardContent className='-mb-5'>
+                <CardContent className='-mb-4'>
                   <Box className='flex flex-row gap-2'>
                     <DraftingCompass className={cn(specimenError && "text-error!")} />
                     <FormControl fullWidth required>
@@ -293,14 +324,25 @@ export default function Page() {
               </Card>
             </Grid>
 
-            <Grid size={12}>
-              <Typography variant='h6' component='h6' className='mb-3'>
-                Preset
-              </Typography>
+            <Grid size={12} className='group/grid'>
+              <Box className='flex flex-row items-center justify-between'>
+                <Typography variant='h6' component='h6' className='mb-3'>
+                  Preset
+                </Typography>
+                <Button
+                  size='tiny'
+                  color='grey'
+                  variant='text'
+                  className={cn(!presetError && selectedPreset && "group-hover/grid:opacity-100", " transition-all opacity-0")}
+                  startIcon={<Settings2 size={16} />}
+                >
+                  Configure
+                </Button>
+              </Box>
               <Card>
-                <CardContent className='-mb-5'>
+                <CardContent className='-mb-4'>
                   <Box className='flex flex-row gap-2'>
-                    <Gauge className={cn(presetError && "text-error!")} />
+                    <SlidersVertical className={cn(presetError && "text-error!")} />
                     <FormControl fullWidth required>
                       <FormLabel component='label' className={cn(presetError && "text-error!")}>
                         Preset
@@ -385,7 +427,7 @@ export default function Page() {
             <Grid size={12}>
               {submitted && !formik.isValid && (
                 <Alert severity='error' icon={<XSquare />} className='neutral rounded-3xl! bg-transparent! mb-2 mt-2 p-5'>
-                  <AlertTitle variant='subtitle2' className='pt-0.5'>
+                  <AlertTitle variant='subtitle1' className='pt-0.5'>
                     The following inputs have errors!
                   </AlertTitle>
                   {collectErrorMessages(formik.errors).map(([key, message]) => {

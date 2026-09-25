@@ -223,7 +223,7 @@ export default function SpecimenForm({ fields, isLoadingFields = false, loadErro
         <Grid size={12}>
           {submitted && !formik.isValid && (
             <Alert severity='error' icon={<XSquare />} className='neutral rounded-3xl! bg-transparent! mb-2 mt-2 p-5'>
-              <AlertTitle variant='subtitle2' className='pt-0.5'>
+              <AlertTitle variant='subtitle1' className='pt-0.5'>
                 The following inputs have errors!
               </AlertTitle>
               {collectErrorMessages(formik.errors).map(([key, message]) => {

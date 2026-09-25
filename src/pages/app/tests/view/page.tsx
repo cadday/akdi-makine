@@ -17,8 +17,6 @@ import {
   useDb,
   type DataFieldDefinition,
   type DynamicDataValue,
-  type PresetRecord,
-  type SpecimenRecord,
   type TestRecord,
   type UploadedImage,
 } from "@/context/db-context";
@@ -29,12 +27,10 @@ export default function Page() {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { getTest, getSpecimen, getPreset, getDataFields, deleteTest } = useDb();
+  const { getTest, getDataFields, deleteTest } = useDb();
   const { showError } = useAppNotifications();
   const { requestDelete, dialog } = useDeleteConfirmation();
   const [test, setTest] = useState<TestRecord | null>(null);
-  const [specimen, setSpecimen] = useState<SpecimenRecord | null>(null);
-  const [preset, setPreset] = useState<PresetRecord | null>(null);
   const [fields, setFields] = useState<DataFieldDefinition[]>([]);
   const [specimenFields, setSpecimenFields] = useState<DataFieldDefinition[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -47,8 +43,6 @@ export default function Page() {
       setIsLoading(true);
       setLoadError(null);
       setTest(null);
-      setSpecimen(null);
-      setPreset(null);
       setSpecimenFields([]);
 
       if (!id) {
@@ -64,17 +58,13 @@ export default function Page() {
           return;
         }
 
-        const [linkedSpecimen, linkedPreset, testFields, linkedSpecimenFields] = await Promise.all([
-          record.specimenId ? getSpecimen(record.specimenId) : Promise.resolve(undefined),
-          record.presetId ? getPreset(record.presetId) : Promise.resolve(undefined),
+        const [testFields, linkedSpecimenFields] = await Promise.all([
           getDataFields("Test"),
           getDataFields("Specimen"),
         ]);
         if (cancelled) return;
 
         setTest(record);
-        setSpecimen(linkedSpecimen ?? null);
-        setPreset(linkedPreset ?? null);
         setFields(testFields);
         setSpecimenFields(linkedSpecimenFields);
       } catch (error) {
@@ -88,7 +78,7 @@ export default function Page() {
     return () => {
       cancelled = true;
     };
-  }, [getDataFields, getPreset, getSpecimen, getTest, id]);
+  }, [getDataFields, getTest, id]);
 
   useEffect(() => {
     if (loadError) showError(loadError);
@@ -109,6 +99,9 @@ export default function Page() {
       : String(value);
     return field.unit ? `${displayValue} ${field.unit}` : displayValue;
   };
+
+  const specimen = test?.specimenSnapshot ?? null;
+  const preset = test?.presetSnapshot ?? null;
 
   return (
     <>
@@ -222,7 +215,7 @@ export default function Page() {
                                 <Box className='flex flex-row gap-2'>
                                   <Hexagon />
                                   <Box className='flex flex-col gap-1'>
-                                    <Typography variant='subtitle2'>Name</Typography>
+                                    <Typography variant='subtitle1'>Name</Typography>
                                     <Typography>{specimen.name}</Typography>
                                   </Box>
                                 </Box>
@@ -230,7 +223,7 @@ export default function Page() {
                                   <Box key={field.id} className='flex flex-row gap-2'>
                                     {field.icon ? <DynamicIcon name={field.icon} /> : <Hexagon />}
                                     <Box className='flex flex-col gap-1'>
-                                      <Typography variant='subtitle2'>{field.name}</Typography>
+                                      <Typography variant='subtitle1'>{field.name}</Typography>
                                       {renderValue(field, specimen.customData?.[field.id] ?? specimen.customData?.[field.name] ?? null)}
                                     </Box>
                                   </Box>
@@ -256,9 +249,86 @@ export default function Page() {
                         <Typography variant='h6' component='h6' className='mb-3'>
                           Results
                         </Typography>
-                        <Card>
-                          <CardContent className='flex flex-col gap-5'></CardContent>
-                        </Card>
+                        <Grid size={12} container spacing={2.5}>
+                          <Grid size={{ xl: 4, md: 6, xs: 12 }}>
+                            <Card>
+                              <CardContent className='flex flex-col gap-5'>
+                                <Box className='flex flex-row gap-2'>
+                                  <Hexagon />
+                                  <Box className='flex flex-col gap-1'>
+                                    <Typography variant='subtitle1'>Yield Strength</Typography>
+                                    <Typography>{test.results?.yieldStrength ?? "-"}</Typography>
+                                  </Box>
+                                </Box>
+                              </CardContent>
+                            </Card>
+                          </Grid>
+                          <Grid size={{ xl: 4, md: 6, xs: 12 }}>
+                            <Card>
+                              <CardContent className='flex flex-col gap-5'>
+                                <Box className='flex flex-row gap-2'>
+                                  <Hexagon />
+                                  <Box className='flex flex-col gap-1'>
+                                    <Typography variant='subtitle1'>Tensile Strength</Typography>
+                                    <Typography>{test.results?.tensileStrength ?? "-"}</Typography>
+                                  </Box>
+                                </Box>
+                              </CardContent>
+                            </Card>
+                          </Grid>
+                          <Grid size={{ xl: 4, md: 6, xs: 12 }}>
+                            <Card>
+                              <CardContent className='flex flex-col gap-5'>
+                                <Box className='flex flex-row gap-2'>
+                                  <Hexagon />
+                                  <Box className='flex flex-col gap-1'>
+                                    <Typography variant='subtitle1'>Elongation</Typography>
+                                    <Typography>{test.results?.elongation ?? "-"}</Typography>
+                                  </Box>
+                                </Box>
+                              </CardContent>
+                            </Card>
+                          </Grid>
+                          <Grid size={{ xl: 4, md: 6, xs: 12 }}>
+                            <Card>
+                              <CardContent className='flex flex-col gap-5'>
+                                <Box className='flex flex-row gap-2'>
+                                  <Hexagon />
+                                  <Box className='flex flex-col gap-1'>
+                                    <Typography variant='subtitle1'>First Length</Typography>
+                                    <Typography>{test.results?.firstLength ?? "-"}</Typography>
+                                  </Box>
+                                </Box>
+                              </CardContent>
+                            </Card>
+                          </Grid>
+                          <Grid size={{ xl: 4, md: 6, xs: 12 }}>
+                            <Card>
+                              <CardContent className='flex flex-col gap-5'>
+                                <Box className='flex flex-row gap-2'>
+                                  <Hexagon />
+                                  <Box className='flex flex-col gap-1'>
+                                    <Typography variant='subtitle1'>Last Length</Typography>
+                                    <Typography>{test.results?.lastLength ?? "-"}</Typography>
+                                  </Box>
+                                </Box>
+                              </CardContent>
+                            </Card>
+                          </Grid>
+                          <Grid size={{ xl: 4, md: 6, xs: 12 }}>
+                            <Card>
+                              <CardContent className='flex flex-col gap-5'>
+                                <Box className='flex flex-row gap-2'>
+                                  <Hexagon />
+                                  <Box className='flex flex-col gap-1'>
+                                    <Typography variant='subtitle1'>Test Duration</Typography>
+                                    <Typography>{test.results?.testDuration ?? "-"}</Typography>
+                                  </Box>
+                                </Box>
+                              </CardContent>
+                            </Card>
+                          </Grid>
+                        </Grid>
                       </Grid>
 
                       <Grid size={12}>
@@ -270,21 +340,21 @@ export default function Page() {
                             <Box className='flex flex-row gap-2'>
                               <Hexagon />
                               <Box className='flex flex-col gap-1'>
-                                <Typography variant='subtitle2'>Name</Typography>
+                                <Typography variant='subtitle1'>Name</Typography>
                                 <Typography>{test.name}</Typography>
                               </Box>
                             </Box>
                             <Box className='flex flex-row gap-2'>
                               <Hexagon />
                               <Box className='flex flex-col gap-1'>
-                                <Typography variant='subtitle2'>Specimen</Typography>
+                                <Typography variant='subtitle1'>Specimen</Typography>
                                 <Typography>{specimen?.name ?? "-"}</Typography>
                               </Box>
                             </Box>
                             <Box className='flex flex-row gap-2'>
                               <Hexagon />
                               <Box className='flex flex-col gap-1'>
-                                <Typography variant='subtitle2'>Preset</Typography>
+                                <Typography variant='subtitle1'>Preset</Typography>
                                 <Typography>{preset?.name ?? "-"}</Typography>
                               </Box>
                             </Box>
@@ -294,7 +364,7 @@ export default function Page() {
                                 <Box key={field.id} className='flex flex-row gap-2'>
                                   {field.icon ? <DynamicIcon name={field.icon} /> : <Hexagon />}
                                   <Box className='flex flex-col gap-1'>
-                                    <Typography variant='subtitle2'>{field.name}</Typography>
+                                    <Typography variant='subtitle1'>{field.name}</Typography>
                                     {renderValue(field, test.customData?.[field.id] ?? test.customData?.[field.name] ?? null)}
                                   </Box>
                                 </Box>
@@ -313,35 +383,35 @@ export default function Page() {
                                 <Box className='flex flex-row gap-2'>
                                   <Tag />
                                   <Box className='flex flex-col gap-1'>
-                                    <Typography variant='subtitle2'>Name</Typography>
+                                    <Typography variant='subtitle1'>Name</Typography>
                                     <Typography>{preset.name}</Typography>
                                   </Box>
                                 </Box>
                                 <Box className='flex flex-row gap-2'>
                                   <PencilRuler />
                                   <Box className='flex flex-col gap-1'>
-                                    <Typography variant='subtitle2'>Type</Typography>
+                                    <Typography variant='subtitle1'>Type</Typography>
                                     <Typography>{preset.type}</Typography>
                                   </Box>
                                 </Box>
                                 <Box className='flex flex-row gap-2'>
                                   <WeightTilde />
                                   <Box className='flex flex-col gap-1'>
-                                    <Typography variant='subtitle2'>Preload</Typography>
+                                    <Typography variant='subtitle1'>Preload</Typography>
                                     <Typography>{preset.preload} N</Typography>
                                   </Box>
                                 </Box>
                                 <Box className='flex flex-row gap-2'>
                                   <Weight />
                                   <Box className='flex flex-col gap-1'>
-                                    <Typography variant='subtitle2'>Load</Typography>
+                                    <Typography variant='subtitle1'>Load</Typography>
                                     <Typography>{preset.load} N</Typography>
                                   </Box>
                                 </Box>
                                 <Box className='flex flex-row gap-2'>
                                   <Gauge />
                                   <Box className='flex flex-col gap-1'>
-                                    <Typography variant='subtitle2'>Speed</Typography>
+                                    <Typography variant='subtitle1'>Speed</Typography>
                                     <Typography>{preset.speed} mm/s</Typography>
                                   </Box>
                                 </Box>

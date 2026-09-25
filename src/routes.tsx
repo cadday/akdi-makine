@@ -1,6 +1,7 @@
 import React from "react";
 import { Navigate, Route, Routes } from "react-router";
 
+import { LINKS } from "@/constants";
 import { leftMenuBottomItems, leftMenuItems } from "@/menu-items";
 import AppLayout from "@/pages/app/layout";
 import Loading from "@/pages/loading.tsx";
@@ -14,9 +15,7 @@ const modules = import.meta.glob("./pages/**/page.tsx");
 const lazyLoad = (path: string) => {
   // Handle different paths based on the route
   let key: string;
-  if (path === "/") {
-    key = "./pages/page.tsx";
-  } else if (path.startsWith("/auth")) {
+  if (path.startsWith("/auth")) {
     key = `./pages/auth${path.substring(5)}/page.tsx`; // Remove "/auth"
   } else {
     key = `./pages/app${path}/page.tsx`;
@@ -67,7 +66,7 @@ const AppRoutes = () => {
   return (
     <Routes>
       {/* Landing page route */}
-      <Route path='/' element={lazyLoad("/")} />
+      <Route path='/' element={<Navigate to={LINKS.home} replace />} />
       {/* App routes with AppLayout */}
       <Route element={<AppLayout />}>
         {/* Routes generated from menu items */}

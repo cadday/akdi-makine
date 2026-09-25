@@ -440,7 +440,7 @@ export default function DataFieldForm({ dataField, initialDataField, onSave, sav
         <Grid size={12}>
           {submitted && !formik.isValid && (
             <Alert severity='error' icon={<XSquare />} className='neutral rounded-3xl! bg-transparent! mb-2 mt-2 p-5'>
-              <AlertTitle variant='subtitle2' className='pt-0.5'>
+              <AlertTitle variant='subtitle1' className='pt-0.5'>
                 The following inputs have errors!
               </AlertTitle>
               {Object.entries(formik.errors).map(([key, value]) => (

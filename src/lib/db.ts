@@ -24,12 +24,43 @@ export interface SpecimenRecord {
   updatedAt: number;
 }
 
+export interface TestGraphPoint {
+  x: number;
+  y: number;
+}
+
+export interface TestResults {
+  yieldStrength?: number;
+  tensileStrength?: number;
+  elongation?: number;
+  firstLength?: number;
+  lastLength?: number;
+  testDuration?: number;
+  graphData?: TestGraphPoint[];
+}
+
+export interface TestSpecimenSnapshot {
+  name: string;
+  customData: Record<string, DynamicDataValue>;
+}
+
+export interface TestPresetSnapshot {
+  name: string;
+  type: PresetType;
+  preload: number;
+  load: number;
+  speed: number;
+}
+
 export interface TestRecord {
   id: string;
   name: string;
   specimenId?: string | null;
   presetId?: string | null;
+  specimenSnapshot: TestSpecimenSnapshot;
+  presetSnapshot: TestPresetSnapshot;
   customData: Record<string, DynamicDataValue>;
+  results?: TestResults;
   createdAt: number;
   updatedAt: number;
 }
@@ -120,13 +151,15 @@ export async function updateSpecimen(id: string, changes: Partial<Omit<SpecimenR
   return updatedCount;
 }
 
-function getImageIds(records: Array<{ customData: Record<string, DynamicDataValue> }>) {
+function getImageIds(records: Array<{ customData?: Record<string, DynamicDataValue>; specimenSnapshot?: TestSpecimenSnapshot }>) {
   const imageIds = new Set<string>();
   for (const record of records) {
-    for (const value of Object.values(record.customData ?? {})) {
-      if (!Array.isArray(value)) continue;
-      for (const item of value) {
-        if (item && typeof item === "object" && "id" in item && typeof item.id === "string") imageIds.add(item.id);
+    for (const customData of [record.customData, record.specimenSnapshot?.customData]) {
+      for (const value of Object.values(customData ?? {})) {
+        if (!Array.isArray(value)) continue;
+        for (const item of value) {
+          if (item && typeof item === "object" && "id" in item && typeof item.id === "string") imageIds.add(item.id);
+        }
       }
     }
   }
@@ -226,16 +259,27 @@ export async function updateTest(id: string, changes: Partial<Omit<TestRecord, "
   });
 }
 
+export async function updateTestResults(id: string, results: Partial<TestResults>) {
+  return db.tests.where("id").equals(id).modify((test) => {
+    test.results = { ...test.results, ...results };
+    test.updatedAt = Date.now();
+  });
+}
+
 export async function deleteTest(id: string) {
+  const test = await db.tests.get(id);
   await db.tests.delete(id);
+  if (test) await deleteUnreferencedImages([test]);
 }
 
 export async function deleteTests(ids: string[]) {
   if (ids.length === 0) return;
 
+  const tests = (await db.tests.bulkGet(ids)).filter((test): test is TestRecord => Boolean(test));
   await db.transaction("rw", db.tests, async () => {
     await db.tests.bulkDelete(ids);
   });
+  await deleteUnreferencedImages(tests);
 }
 
 export async function duplicateTest(id: string) {

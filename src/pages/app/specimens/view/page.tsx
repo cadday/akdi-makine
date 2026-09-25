@@ -198,7 +198,7 @@ export default function Page() {
                                 <Box key={field.id} className='flex flex-row gap-2'>
                                   {field.icon ? <DynamicIcon name={field.icon} /> : <Hexagon />}
                                   <Box className='flex flex-col gap-1'>
-                                    <Typography variant='subtitle2'>{field.name}</Typography>
+                                    <Typography variant='subtitle1'>{field.name}</Typography>
                                     {renderValue(field, specimen.customData?.[field.id] ?? specimen.customData?.[field.name] ?? null)}
                                   </Box>
                                 </Box>

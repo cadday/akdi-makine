@@ -161,7 +161,6 @@ export default function Page() {
     {
       field: "name",
       headerName: "Name",
-      flex: 1,
       minWidth: 260,
       renderCell: (params: GridRenderCellParams<DataFieldGridRow, string>) => (
         <Link

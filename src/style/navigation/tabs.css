@@ -107,7 +107,7 @@
     .MuiTabs-list {
       @apply gap-5;
       .MuiTab-root {
-        @apply hover:text-primary rounded-none border-0 border-b border-gray-100 bg-transparent! px-0 font-semibold;
+        @apply hover:text-primary rounded-none border-0 border-b border-gray-100 bg-transparent! px-0 font-bold;
 
         &.Mui-selected {
           @apply border-primary;

@@ -106,7 +106,7 @@
 
   /* Standard label with semibold font */
   .MuiFormLabel-root:not(.MuiInputLabel-animated) {
-    @apply font-body text-text-primary mb-2 text-base font-semibold;
+    @apply font-body text-text-primary mb-2 text-base font-bold;
   }
 
   /* Outline input and its notched outline */

@@ -34,6 +34,7 @@ import {
   updatePreset,
   updateSpecimen,
   updateTest,
+  updateTestResults,
   type DataFieldContainer,
   type DataFieldDefinition,
   type DataFieldType,
@@ -42,6 +43,8 @@ import {
   type PresetType,
   type SpecimenRecord,
   type TestRecord,
+  type TestGraphPoint,
+  type TestResults,
   type UploadedImage,
 } from "@/lib/db";
 
@@ -59,6 +62,7 @@ interface DbContextType {
   getTests: typeof getTests;
   getTest: typeof getTest;
   updateTest: typeof updateTest;
+  updateTestResults: typeof updateTestResults;
   deleteTest: typeof deleteTest;
   deleteTests: typeof deleteTests;
   duplicateTest: typeof duplicateTest;
@@ -99,6 +103,7 @@ export function DbProvider({ children }: PropsWithChildren) {
       getTests,
       getTest,
       updateTest,
+      updateTestResults,
       deleteTest,
       deleteTests,
       duplicateTest,
@@ -136,4 +141,16 @@ export function useDb() {
   return context;
 }
 
-export type { DataFieldContainer, DataFieldDefinition, DataFieldType, DynamicDataValue, PresetRecord, PresetType, SpecimenRecord, TestRecord, UploadedImage };
+export type {
+  DataFieldContainer,
+  DataFieldDefinition,
+  DataFieldType,
+  DynamicDataValue,
+  PresetRecord,
+  PresetType,
+  SpecimenRecord,
+  TestGraphPoint,
+  TestRecord,
+  TestResults,
+  UploadedImage,
+};

@@ -183,28 +183,28 @@ export default function Page() {
                               <Box className='flex flex-row gap-2'>
                                 <Tag />
                                 <Box className='flex flex-col gap-1'>
-                                  <Typography variant='subtitle2'>Type</Typography>
+                                  <Typography variant='subtitle1'>Type</Typography>
                                   <Typography>{preset.type}</Typography>
                                 </Box>
                               </Box>
                               <Box className='flex flex-row gap-2'>
                                 <WeightTilde />
                                 <Box className='flex flex-col gap-1'>
-                                  <Typography variant='subtitle2'>Preload</Typography>
+                                  <Typography variant='subtitle1'>Preload</Typography>
                                   <Typography>{preset.preload} N</Typography>
                                 </Box>
                               </Box>
                               <Box className='flex flex-row gap-2'>
                                 <Weight />
                                 <Box className='flex flex-col gap-1'>
-                                  <Typography variant='subtitle2'>Load</Typography>
+                                  <Typography variant='subtitle1'>Load</Typography>
                                   <Typography>{preset.load} N</Typography>
                                 </Box>
                               </Box>
                               <Box className='flex flex-row gap-2'>
                                 <Gauge />
                                 <Box className='flex flex-col gap-1'>
-                                  <Typography variant='subtitle2'>Speed</Typography>
+                                  <Typography variant='subtitle1'>Speed</Typography>
                                   <Typography>{preset.speed} mm/s</Typography>
                                 </Box>
                               </Box>

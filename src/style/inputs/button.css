@@ -5,7 +5,7 @@
 @layer style {
   /* Root */
   .MuiButtonBase-root {
-    @apply font-body font-medium tracking-normal normal-case transition-all focus:outline-transparent!;
+    @apply font-body font-semibold tracking-normal normal-case transition-all focus:outline-transparent!;
     &.icon-only > span {
       @apply mx-0;
     }

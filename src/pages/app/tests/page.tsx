@@ -43,8 +43,6 @@ import { LINKS } from "@/constants";
 import {
   useDb,
   type DataFieldDefinition,
-  type PresetRecord,
-  type SpecimenRecord,
   type TestRecord,
   type UploadedImage,
 } from "@/context/db-context";
@@ -59,12 +57,10 @@ type TestGridRow = TestRecord & {
 export default function Page() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { getTests, getSpecimens, getPresets, getDataFields, deleteTest, deleteTests, duplicateTest, duplicateTests } = useDb();
+  const { getTests, getDataFields, deleteTest, deleteTests, duplicateTest, duplicateTests } = useDb();
   const { showError } = useAppNotifications();
   const { requestDelete, dialog } = useDeleteConfirmation();
   const [tests, setTests] = useState<TestRecord[]>([]);
-  const [specimens, setSpecimens] = useState<SpecimenRecord[]>([]);
-  const [presets, setPresets] = useState<PresetRecord[]>([]);
   const [dataFields, setDataFields] = useState<DataFieldDefinition[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -74,10 +70,8 @@ export default function Page() {
     setIsLoading(true);
     setError(null);
     try {
-      const [testData, specimenData, presetData, fieldData] = await Promise.all([getTests(), getSpecimens(), getPresets(), getDataFields("Test")]);
+      const [testData, fieldData] = await Promise.all([getTests(), getDataFields("Test")]);
       setTests(testData);
-      setSpecimens(specimenData);
-      setPresets(presetData);
       setDataFields(fieldData);
     } catch (loadError) {
       const message = `Failed to load tests: ${String(loadError)}`;
@@ -86,7 +80,7 @@ export default function Page() {
     } finally {
       setIsLoading(false);
     }
-  }, [getDataFields, getPresets, getSpecimens, getTests, showError]);
+  }, [getDataFields, getTests, showError]);
 
   useEffect(() => {
     let cancelled = false;
@@ -94,11 +88,9 @@ export default function Page() {
       setIsLoading(true);
       setError(null);
       try {
-        const [testData, specimenData, presetData, fieldData] = await Promise.all([getTests(), getSpecimens(), getPresets(), getDataFields("Test")]);
+        const [testData, fieldData] = await Promise.all([getTests(), getDataFields("Test")]);
         if (!cancelled) {
           setTests(testData);
-          setSpecimens(specimenData);
-          setPresets(presetData);
           setDataFields(fieldData);
         }
       } catch (loadError) {
@@ -116,7 +108,7 @@ export default function Page() {
     return () => {
       cancelled = true;
     };
-  }, [getDataFields, getPresets, getSpecimens, getTests, showError]);
+  }, [getDataFields, getTests, showError]);
 
   const duplicateRows = useCallback(
     async (ids: string[]) => {
@@ -158,14 +150,12 @@ export default function Page() {
   const getRowSpacing = useCallback((params: GridRowSpacingParams) => ({ top: params.isFirstVisible ? 0 : 5, bottom: 5 }), []);
 
   const rows = useMemo<TestGridRow[]>(() => {
-    const specimenNames = new Map(specimens.map((specimen) => [specimen.id, specimen.name]));
-    const presetNames = new Map(presets.map((preset) => [preset.id, preset.name]));
     return tests.map((test) => ({
       ...test,
-      specimenName: test.specimenId ? (specimenNames.get(test.specimenId) ?? "-") : "-",
-      presetName: test.presetId ? (presetNames.get(test.presetId) ?? "-") : "-",
+      specimenName: test.specimenSnapshot.name,
+      presetName: test.presetSnapshot.name,
     }));
-  }, [presets, specimens, tests]);
+  }, [tests]);
 
   const columns = useMemo<GridColDef<TestGridRow>[]>(
     () => [
@@ -173,7 +163,6 @@ export default function Page() {
       {
         field: "name",
         headerName: "Name",
-        flex: 1,
         minWidth: 220,
         renderCell: (params: GridRenderCellParams<TestGridRow, string>) => (
           <Link
