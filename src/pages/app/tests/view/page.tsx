@@ -41,6 +41,9 @@ import TestResultsMachine from "../components/test-results-machine";
 import { DataGridListingToolbar } from "@/components/data-grid/data-grid-listing-toolbar";
 import { DataGridPaginationFullPage } from "@/components/data-grid/data-grid-pagination";
 import SearchInput from "@/components/layout/search/search";
+import SaveRecordPdfMenuItem from "@/components/pdf/save-record-pdf-menu-item";
+import usePrintReadiness from "@/hooks/use-print-readiness";
+import { cn } from "@/lib/utils";
 
 interface RawGraphDataRow {
   id: number;
@@ -62,7 +65,7 @@ const rawGraphDataColumns: GridColDef<RawGraphDataRow>[] = [
   { field: "stress", headerName: "Stress (MPa)", minWidth: 160, flex: 1, type: "number", align: "left", headerAlign: "left" },
 ];
 
-export default function Page() {
+export default function Page({ printMode = false }: { printMode?: boolean }) {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -76,6 +79,7 @@ export default function Page() {
   const [isLoading, setIsLoading] = useState(true);
   const [tabValue, setTabValue] = useState("Result");
   const getRowSpacing = useCallback((params: GridRowSpacingParams) => ({ top: params.isFirstVisible ? 0 : 5, bottom: 5 }), []);
+  usePrintReadiness(printMode, isLoading, loadError);
 
   useEffect(() => {
     let cancelled = false;
@@ -161,7 +165,7 @@ export default function Page() {
                     {test && <Typography variant='body2'>{test.name}</Typography>}
                   </Breadcrumbs>
                 </Grid>
-                <Grid size={{ xs: 12, md: "auto" }}>
+                <Grid size={{ xs: 12, md: "auto" }} className={cn("print:hidden", tabValue !== "Result" && "hidden")}>
                   <PopupState variant='popover' popupId='test-actions-menu'>
                     {(popupState) => (
                       <>
@@ -177,6 +181,7 @@ export default function Page() {
                           anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
                           transformOrigin={{ vertical: "top", horizontal: "right" }}
                         >
+                          <SaveRecordPdfMenuItem type='test' id={id} name={test?.name ?? "Test"} closeMenu={popupState.close} />
                           <MenuItem
                             onClick={() => {
                               popupState.close();
@@ -224,7 +229,7 @@ export default function Page() {
             </TitleWrapper>
 
             <ContentWrapper>
-              <TabPanel value='Result'>
+              <TabPanel value='Result' keepMounted={printMode}>
                 {!loadError && test && (
                   <Grid size={12} container spacing={5} className='w-full'>
                     <Grid container spacing={5} size={{ lg: 4, xs: 12 }}>
@@ -263,6 +268,7 @@ export default function Page() {
                     <Grid container spacing={5} size={{ lg: 8, xs: 12 }}>
                       <TestResultsMachine
                         test={test}
+                        readOnly={printMode}
                         onResultsSaved={(results) => {
                           setTest((current) => (current ? { ...current, results, updatedAt: Date.now() } : current));
                         }}
@@ -331,13 +337,13 @@ export default function Page() {
                   </Grid>
                 )}
               </TabPanel>
-              <TabPanel value='Raw Test Data'>
+              <TabPanel value='Raw Test Data' keepMounted={printMode}>
                 {!loadError && test && (
                   <DataGrid
                     autoHeight
                     rows={(test.results?.graphData ?? []).map((point, index) => ({ id: index, strain: point.x, stress: point.y }))}
                     columns={rawGraphDataColumns}
-                    initialState={{ pagination: { paginationModel: { pageSize: 50 } } }}
+                    initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
                     getRowSpacing={getRowSpacing}
                     pageSizeOptions={[10, 20, 50, 100]}
                     columnHeaderHeight={40}

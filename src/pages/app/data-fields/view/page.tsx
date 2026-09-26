@@ -12,8 +12,11 @@ import useAppNotifications from "@/hooks/use-app-notifications";
 import { Ellipsis, X } from "lucide-react";
 import PopupState, { bindMenu, bindTrigger } from "material-ui-popup-state";
 import useDeleteConfirmation from "@/hooks/use-delete-confirmation";
+import SaveRecordPdfMenuItem from "@/components/pdf/save-record-pdf-menu-item";
+import usePrintReadiness from "@/hooks/use-print-readiness";
+import { cn } from "@/lib/utils";
 
-export default function Page() {
+export default function Page({ printMode = false }: { printMode?: boolean }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
@@ -23,6 +26,7 @@ export default function Page() {
   const [isLoading, setIsLoading] = useState(true);
   const { showError } = useAppNotifications();
   const { requestDelete, dialog } = useDeleteConfirmation();
+  usePrintReadiness(printMode, isLoading, loadError);
 
   useEffect(() => {
     let cancelled = false;
@@ -82,8 +86,8 @@ export default function Page() {
                   {dataField && <Typography variant='body2'>{dataField.name}</Typography>}
                 </Breadcrumbs>
               </Grid>
-              <Grid size={{ xs: 12, md: "auto" }}>
-                <PopupState variant='popover' popupId='data-field-actions-menu'>
+              <Grid size={{ xs: 12, md: "auto" }} className={cn("print:hidden")}>
+                <PopupState variant='popover' popupId='data-field-actions-menu' >
                   {(popupState) => (
                     <>
                       <Tooltip title='Actions' placement='bottom'>
@@ -98,6 +102,7 @@ export default function Page() {
                         anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
                         transformOrigin={{ vertical: "top", horizontal: "right" }}
                       >
+                        <SaveRecordPdfMenuItem type='data-field' id={id} name={dataField?.name ?? "Data Field"} closeMenu={popupState.close} />
                         <MenuItem
                           onClick={() => {
                             popupState.close();

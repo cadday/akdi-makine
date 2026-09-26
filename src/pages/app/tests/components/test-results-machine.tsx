@@ -14,6 +14,7 @@ import useAppNotifications from "@/hooks/use-app-notifications";
 interface TestResultsMachineProps {
   test: TestRecord;
   onResultsSaved: (results: TestResults) => void;
+  readOnly?: boolean;
 }
 
 const resultItems = [
@@ -65,12 +66,13 @@ function StressStrainTooltip({ stress, strain }: { stress: number; strain: numbe
   );
 }
 
-export default function TestResultsMachine({ test, onResultsSaved }: TestResultsMachineProps) {
+export default function TestResultsMachine({ test, onResultsSaved, readOnly = false }: TestResultsMachineProps) {
   const { graphData, progress, results, status } = useMockTestRun({
     testId: test.id,
     duration: test.presetSnapshot.duration,
     savedResults: test.results,
     onResultsSaved,
+    readOnly,
   });
   const { showSuccess } = useAppNotifications();
   const { isDarkMode } = useThemeContext();

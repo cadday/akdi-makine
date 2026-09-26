@@ -17,8 +17,11 @@ import TabPanel from "@mui/lab/TabPanel";
 import TabContext from "@mui/lab/TabContext";
 import PopupState, { bindMenu, bindTrigger } from "material-ui-popup-state";
 import useDeleteConfirmation from "@/hooks/use-delete-confirmation";
+import SaveRecordPdfMenuItem from "@/components/pdf/save-record-pdf-menu-item";
+import usePrintReadiness from "@/hooks/use-print-readiness";
+import { cn } from "@/lib/utils";
 
-export default function Page() {
+export default function Page({ printMode = false }: { printMode?: boolean }) {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -29,6 +32,7 @@ export default function Page() {
   const [isLoading, setIsLoading] = useState(true);
   const { showError } = useAppNotifications();
   const { requestDelete, dialog } = useDeleteConfirmation();
+  usePrintReadiness(printMode, isLoading, loadError);
 
   useEffect(() => {
     let cancelled = false;
@@ -108,7 +112,7 @@ export default function Page() {
                       {specimen && <Typography variant='body2'>{specimen.name}</Typography>}
                     </Breadcrumbs>
                   </Grid>
-                  <Grid size={{ xs: 12, md: "auto" }}>
+                  <Grid size={{ xs: 12, md: "auto" }} className={cn("print:hidden", tabValue !== "Overview" && "hidden")}>
                     <PopupState variant='popover' popupId='specimen-actions-menu'>
                       {(popupState) => (
                         <>
@@ -124,6 +128,7 @@ export default function Page() {
                             anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
                             transformOrigin={{ vertical: "top", horizontal: "right" }}
                           >
+                            <SaveRecordPdfMenuItem type='specimen' id={id} name={specimen?.name ?? "Specimen"} closeMenu={popupState.close} />
                             <MenuItem
                               onClick={() => {
                                 popupState.close();
@@ -175,7 +180,7 @@ export default function Page() {
               </TitleWrapper>
 
               <ContentWrapper>
-                <TabPanel value='Overview'>
+                <TabPanel value='Overview' keepMounted={printMode}>
                   {!loadError && specimen && (
                     <Grid size={12} container spacing={5} className='w-full'>
                       <Grid container spacing={5} size={{ lg: 8, xs: 12 }}>
@@ -211,7 +216,7 @@ export default function Page() {
                     </Grid>
                   )}
                 </TabPanel>
-                <TabPanel value='Tests'>
+                <TabPanel value='Tests' keepMounted={printMode}>
                   <Grid size={12} container spacing={5} className='w-full'>
                     <Grid size={12}>Second Tab Content</Grid>
                   </Grid>

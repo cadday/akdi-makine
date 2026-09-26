@@ -120,7 +120,7 @@
 
 @layer utilities {
   body {
-    @apply bg-background text-text-primary m-0 p-0 font-sans text-base;
+    @apply bg-transparent text-text-primary m-0 p-0 font-sans text-base;
   }
 }
 

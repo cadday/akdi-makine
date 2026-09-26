@@ -19,12 +19,14 @@ interface ImagePreview {
 export default function ImageLightboxGallery({ images }: ImageLightboxGalleryProps) {
   const [previews, setPreviews] = useState<ImagePreview[]>([]);
   const [index, setIndex] = useState(-1);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
     const objectUrls: string[] = [];
 
     const loadImages = async () => {
+      setIsLoading(true);
       const loaded = await Promise.all(
         images.map(async (image) => {
           try {
@@ -46,6 +48,7 @@ export default function ImageLightboxGallery({ images }: ImageLightboxGalleryPro
         return;
       }
       setPreviews(loaded.filter((preview): preview is ImagePreview => preview !== null));
+      setIsLoading(false);
     };
 
     void loadImages();
@@ -59,52 +62,54 @@ export default function ImageLightboxGallery({ images }: ImageLightboxGalleryPro
     setIndex(-1);
   }, [images]);
 
-  if (previews.length === 0) return null;
-
   return (
-    <>
-      <Grid container spacing={1}>
-        {previews.map((preview, previewIndex) => (
-          <Grid size='auto' key={preview.id}>
-            <ButtonBase aria-label={`Open ${preview.name}`} className='h-24 w-32 overflow-hidden rounded-lg' onClick={() => setIndex(previewIndex)}>
-              <img alt={preview.name} src={preview.src} className='h-full w-full object-cover' />
-            </ButtonBase>
+    <Box data-print-assets-loading={isLoading ? "true" : undefined}>
+      {previews.length > 0 && (
+        <>
+          <Grid container spacing={1}>
+            {previews.map((preview, previewIndex) => (
+              <Grid size='auto' key={preview.id}>
+                <ButtonBase aria-label={`Open ${preview.name}`} className='h-24 w-32 overflow-hidden rounded-lg' onClick={() => setIndex(previewIndex)}>
+                  <img alt={preview.name} src={preview.src} className='h-full w-full object-cover' />
+                </ButtonBase>
+              </Grid>
+            ))}
           </Grid>
-        ))}
-      </Grid>
 
-      <Lightbox
-        index={index}
-        open={index >= 0}
-        close={() => setIndex(-1)}
-        slides={previews.map(({ name, src }) => ({ src, alt: name }))}
-        controller={{ closeOnBackdropClick: true, disableSwipeNavigation: previews.length === 1 ? true : false }}
-        className='rounded-lightbox'
-        render={{
-          ...(previews.length === 1
-            ? {
-                buttonPrev: () => undefined,
-                buttonNext: () => undefined,
-              }
-            : {}),
-          iconPrev: () => (
-            <Box className='flex h-5 w-5 items-center justify-center'>
-              <ChevronLeft size={14} />
-            </Box>
-          ),
-          iconNext: () => (
-            <Box className='flex h-5 w-5 items-center justify-center'>
-              <ChevronRight size={14} />
-            </Box>
-          ),
-          iconClose: () => (
-            <Box className='flex h-5 w-5 items-center justify-center'>
-              <X size={14} />
-            </Box>
-          ),
-          iconError: () => <TriangleAlert className='text-text-contrast' />,
-        }}
-      />
-    </>
+          <Lightbox
+            index={index}
+            open={index >= 0}
+            close={() => setIndex(-1)}
+            slides={previews.map(({ name, src }) => ({ src, alt: name }))}
+            controller={{ closeOnBackdropClick: true, disableSwipeNavigation: previews.length === 1 ? true : false }}
+            className='rounded-lightbox'
+            render={{
+              ...(previews.length === 1
+                ? {
+                    buttonPrev: () => undefined,
+                    buttonNext: () => undefined,
+                  }
+                : {}),
+              iconPrev: () => (
+                <Box className='flex h-5 w-5 items-center justify-center'>
+                  <ChevronLeft size={14} />
+                </Box>
+              ),
+              iconNext: () => (
+                <Box className='flex h-5 w-5 items-center justify-center'>
+                  <ChevronRight size={14} />
+                </Box>
+              ),
+              iconClose: () => (
+                <Box className='flex h-5 w-5 items-center justify-center'>
+                  <X size={14} />
+                </Box>
+              ),
+              iconError: () => <TriangleAlert className='text-text-contrast' />,
+            }}
+          />
+        </>
+      )}
+    </Box>
   );
 }

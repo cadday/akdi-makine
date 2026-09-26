@@ -1,8 +1,8 @@
-import { ipcMain, app, BrowserWindow, session, shell } from "electron";
+import { ipcMain, app, BrowserWindow, session, shell, dialog } from "electron";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
-import { randomUUID } from "node:crypto";
 import { mkdir, writeFile, readFile, rm } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
 import require$$1 from "tty";
 import require$$1$1 from "util";
 import require$$0 from "os";
@@ -4091,6 +4091,16 @@ const RENDERER_DIST = path.join(process.env.APP_ROOT, "dist");
 process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, "public") : RENDERER_DIST;
 let mainWindow;
 registerImageStorage(() => mainWindow);
+const pdfReadyWaiters = /* @__PURE__ */ new Map();
+ipcMain.handle("pdf:ready", (event, error) => {
+  const waiter = pdfReadyWaiters.get(event.sender.id);
+  if (!waiter) throw new Error("Unexpected PDF ready signal");
+  clearTimeout(waiter.timeout);
+  pdfReadyWaiters.delete(event.sender.id);
+  if (typeof error === "string" && error) waiter.reject(new Error(error));
+  else waiter.resolve();
+  return true;
+});
 ipcMain.handle("window:minimize", () => {
   mainWindow == null ? void 0 : mainWindow.minimize();
 });
@@ -4107,6 +4117,67 @@ ipcMain.handle("window:close", () => {
 });
 ipcMain.handle("window:is-maximized", () => {
   return !!mainWindow && mainWindow.isMaximized();
+});
+ipcMain.handle("pdf:save-record", async (event, input) => {
+  if (!mainWindow || mainWindow.isDestroyed() || event.sender !== mainWindow.webContents) {
+    throw new Error("Unauthorized PDF request");
+  }
+  if (!input || typeof input !== "object") throw new Error("Invalid PDF request");
+  const request2 = input;
+  const recordTypes = /* @__PURE__ */ new Set(["test", "specimen", "preset", "data-field"]);
+  if (!request2.type || !recordTypes.has(request2.type) || typeof request2.id !== "string" || !request2.id || typeof request2.name !== "string") {
+    throw new Error("Invalid PDF request");
+  }
+  const safeName = Array.from(request2.name.replace(/[<>:"/\\|?*]/g, "_"), (character) => character.charCodeAt(0) < 32 ? "_" : character).join("").trim().replace(/[. ]+$/, "") || "Test";
+  const parentWindow = mainWindow;
+  const { canceled, filePath } = await dialog.showSaveDialog(mainWindow, {
+    title: "Save Record as PDF",
+    defaultPath: path.join(app.getPath("documents"), `${safeName}.pdf`),
+    filters: [{ name: "PDF", extensions: ["pdf"] }]
+  });
+  if (canceled || !filePath) return { canceled: true };
+  if (parentWindow.isDestroyed()) throw new Error("The main window was closed before PDF export completed");
+  const printWindow = new BrowserWindow({
+    parent: parentWindow,
+    width: 750,
+    minWidth: 750,
+    maxWidth: 750,
+    height: 900,
+    show: false,
+    autoHideMenuBar: true,
+    webPreferences: {
+      preload: path.join(__dirname$1, "preload.mjs"),
+      devTools: !app.isPackaged,
+      backgroundThrottling: false
+    }
+  });
+  const printWindowId = printWindow.webContents.id;
+  const ready = new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      pdfReadyWaiters.delete(printWindowId);
+      reject(new Error("Timed out waiting for the PDF report to render"));
+    }, 3e4);
+    pdfReadyWaiters.set(printWindowId, { resolve, reject, timeout });
+  });
+  const printRoute = `/print/${request2.type}/${encodeURIComponent(request2.id)}`;
+  try {
+    const load = VITE_DEV_SERVER_URL ? printWindow.loadURL(`${VITE_DEV_SERVER_URL.replace(/\/$/, "")}/#${printRoute}`) : printWindow.loadFile(path.join(RENDERER_DIST, "index.html"), { hash: printRoute });
+    await Promise.all([load, ready]);
+    const pdf = await printWindow.webContents.printToPDF({
+      pageSize: "A4",
+      printBackground: true,
+      displayHeaderFooter: false
+    });
+    await writeFile(filePath, pdf);
+    return { canceled: false, filePath };
+  } finally {
+    const waiter = pdfReadyWaiters.get(printWindowId);
+    if (waiter) {
+      clearTimeout(waiter.timeout);
+      pdfReadyWaiters.delete(printWindowId);
+    }
+    if (!printWindow.isDestroyed()) printWindow.close();
+  }
 });
 function createWindow() {
   if (mainWindow && !mainWindow.isDestroyed()) return;

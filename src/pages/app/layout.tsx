@@ -9,6 +9,8 @@ import LeftMenu from "@/components/layout/menu/left-menu";
 import MenuBackdrop from "@/components/layout/menu/menu-backdrop";
 import Loading from "@/pages/loading";
 import { Box } from "@mui/material";
+import { OverlayScrollbarsComponent } from "overlayscrollbars-react";
+import "overlayscrollbars/overlayscrollbars.css";
 
 export default function AppLayout() {
   const { pathname, search } = useLocation();
@@ -19,16 +21,18 @@ export default function AppLayout() {
 
   return (
     <>
-      <LeftMenu />
-      <Main>
-        <Header />
-        <Box className='min-h-[calc(100vh-3.5rem)]'>
-          <Suspense fallback={<Loading />}>
-            <Outlet />
-          </Suspense>
-        </Box>
-      </Main>
-      <MenuBackdrop />
+      <OverlayScrollbarsComponent defer className='h-dvh os-scrollbar-body'>
+        <LeftMenu />
+        <Main>
+          <Header />
+          <Box className='min-h-[calc(100vh-3.5rem)]'>
+            <Suspense fallback={<Loading />}>
+              <Outlet />
+            </Suspense>
+          </Box>
+        </Main>
+        <MenuBackdrop />
+      </OverlayScrollbarsComponent>
     </>
   );
 }

@@ -229,7 +229,7 @@ export default function TestDefinition({ test, fields, onTestUpdated }: TestDefi
                 setSubmitted(true);
                 void formik.submitForm();
               }}
-              className='flex flex-col gap-5'
+              className='flex flex-col'
             >
               <Box className='flex flex-row gap-2'>
                 <Tag className={cn(submitted && formik.errors.name && "text-error!")} />

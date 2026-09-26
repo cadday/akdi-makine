@@ -60,6 +60,7 @@ const generateRoutesFromMenuItems = (menuItems: MenuItem[]): React.ReactElement[
 // Generate routes from both menu arrays
 const mainRoutes = generateRoutesFromMenuItems(leftMenuItems);
 const bottomRoutes = generateRoutesFromMenuItems(leftMenuBottomItems);
+const PrintPage = React.lazy(() => import("@/pages/print/record-view"));
 
 // Main Routes component
 const AppRoutes = () => {
@@ -87,6 +88,14 @@ const AppRoutes = () => {
 
       {/* 404 route */}
       <Route path='/404' element={<NotFound />} />
+      <Route
+        path='/print/:type/:id'
+        element={
+          <React.Suspense fallback={<Loading />}>
+            <PrintPage />
+          </React.Suspense>
+        }
+      />
       <Route path='*' element={<Navigate to='/404' replace />} />
     </Routes>
   );

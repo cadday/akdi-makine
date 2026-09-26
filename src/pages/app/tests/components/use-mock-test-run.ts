@@ -18,6 +18,7 @@ interface UseMockTestRunOptions {
   duration: number;
   savedResults?: TestResults;
   onResultsSaved?: (results: TestResults) => void;
+  readOnly?: boolean;
 }
 
 function hasCompleteResults(results?: TestResults): results is TestResults & Required<Omit<TestResults, "graphData">> & { graphData: TestGraphPoint[] } {
@@ -70,9 +71,10 @@ function getMockResults(graphData: TestGraphPoint[], duration: number): TestResu
   };
 }
 
-export default function useMockTestRun({ testId, duration, savedResults, onResultsSaved }: UseMockTestRunOptions) {
+export default function useMockTestRun({ testId, duration, savedResults, onResultsSaved, readOnly = false }: UseMockTestRunOptions) {
   const { updateTestResults } = useDb();
   const [state, setState] = useState<TestRunState>(() => {
+    if (readOnly) return { status: "done", progress: 1, graphData: savedResults?.graphData ?? [], results: savedResults ?? null, error: null };
     if (hasCompleteResults(savedResults)) {
       return { status: "done", progress: 1, graphData: savedResults.graphData, results: savedResults, error: null };
     }
@@ -104,6 +106,10 @@ export default function useMockTestRun({ testId, duration, savedResults, onResul
   }, [saveResults]);
 
   useEffect(() => {
+    if (readOnly) {
+      setState({ status: "done", progress: 1, graphData: savedResults?.graphData ?? [], results: savedResults ?? null, error: null });
+      return;
+    }
     if (hasCompleteResults(savedResults)) {
       pendingResultsRef.current = null;
       setState({ status: "done", progress: 1, graphData: savedResults.graphData, results: savedResults, error: null });
@@ -130,7 +136,7 @@ export default function useMockTestRun({ testId, duration, savedResults, onResul
       cancelled = true;
       window.clearInterval(intervalId);
     };
-  }, [duration, savedResults, saveResults, testId]);
+  }, [duration, readOnly, savedResults, saveResults, testId]);
 
   return { ...state, retrySave };
 }
