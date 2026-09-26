@@ -7,6 +7,7 @@ declare module "@mui/x-data-grid" {
     rowSelectionModel?: GridRowSelectionModel;
     deleteRows?: (ids: string[]) => Promise<void>;
     duplicateRows?: (ids: string[]) => Promise<void>;
+    onCompare?: (ids: string[]) => void;
     onAddItem?: () => void;
     addLabel?: string;
     addIcon?: ReactNode;

@@ -23,6 +23,11 @@ interface PdfRecordRequest {
   id: string;
   name: string;
 }
+interface PdfComparisonRequest {
+  type: "test-comparison";
+  testIds: string[];
+  name: string;
+}
 
 const pdfReadyWaiters = new Map<number, { resolve: () => void; reject: (error: Error) => void; timeout: ReturnType<typeof setTimeout> }>();
 
@@ -65,20 +70,48 @@ ipcMain.handle("pdf:save-record", async (event, input: unknown) => {
   }
 
   if (!input || typeof input !== "object") throw new Error("Invalid PDF request");
-  const request = input as Partial<PdfRecordRequest>;
+  const request = input as Partial<PdfRecordRequest> & Partial<PdfComparisonRequest>;
   const recordTypes = new Set<PdfRecordType>(["test", "specimen", "preset", "data-field"]);
-  if (!request.type || !recordTypes.has(request.type) || typeof request.id !== "string" || !request.id || typeof request.name !== "string") {
-    throw new Error("Invalid PDF request");
+  let name: string;
+  let printRoute: string;
+  if (request.type === "test-comparison") {
+    const comparisonRequest = input as Partial<PdfComparisonRequest>;
+    const testIds = comparisonRequest.testIds;
+    if (
+      typeof comparisonRequest.name !== "string" ||
+      !Array.isArray(testIds) ||
+      testIds.length < 2 ||
+      !testIds.every((id) => typeof id === "string" && id.trim().length > 0)
+    ) {
+      throw new Error("Invalid PDF comparison request");
+    }
+    name = comparisonRequest.name;
+    const searchParams = new URLSearchParams();
+    testIds.forEach((id) => searchParams.append("testId", id));
+    printRoute = `/print/test-comparison?${searchParams.toString()}`;
+  } else {
+    const recordRequest = input as Partial<PdfRecordRequest>;
+    if (
+      !recordRequest.type ||
+      !recordTypes.has(recordRequest.type) ||
+      typeof recordRequest.id !== "string" ||
+      !recordRequest.id ||
+      typeof recordRequest.name !== "string"
+    ) {
+      throw new Error("Invalid PDF request");
+    }
+    name = recordRequest.name;
+    printRoute = `/print/${recordRequest.type}/${encodeURIComponent(recordRequest.id)}`;
   }
 
-  const safeName = Array.from(request.name.replace(/[<>:"/\\|?*]/g, "_"), (character) => (character.charCodeAt(0) < 32 ? "_" : character))
+  const safeName = Array.from(name.replace(/[<>:"/\\|?*]/g, "_"), (character) => (character.charCodeAt(0) < 32 ? "_" : character))
     .join("")
     .trim()
     .replace(/[. ]+$/, "") || "Test";
 
   const parentWindow = mainWindow;
   const { canceled, filePath } = await dialog.showSaveDialog(mainWindow, {
-    title: "Save Record as PDF",
+    title: request.type === "test-comparison" ? "Save Test Comparison as PDF" : "Save Record as PDF",
     defaultPath: path.join(app.getPath("documents"), `${safeName}.pdf`),
     filters: [{ name: "PDF", extensions: ["pdf"] }],
   });
@@ -110,8 +143,6 @@ ipcMain.handle("pdf:save-record", async (event, input: unknown) => {
     }, 30_000);
     pdfReadyWaiters.set(printWindowId, { resolve, reject, timeout });
   });
-
-  const printRoute = `/print/${request.type}/${encodeURIComponent(request.id)}`;
 
   try {
     const load = VITE_DEV_SERVER_URL

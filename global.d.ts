@@ -31,6 +31,7 @@ interface ElectronAPI {
   readImage: (id: string) => Promise<{ bytes: Uint8Array } | null>;
   deleteImage: (id: string) => Promise<void>;
   saveRecordPdf: (request: { type: "test" | "specimen" | "preset" | "data-field"; id: string; name: string }) => Promise<{ canceled: boolean; filePath?: string }>;
+  saveTestComparisonPdf: (request: { testIds: string[]; name: string }) => Promise<{ canceled: boolean; filePath?: string }>;
   notifyPdfReady: (error?: string) => Promise<boolean>;
   minimize: () => Promise<void>;
   maximize: () => Promise<void>;

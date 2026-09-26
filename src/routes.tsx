@@ -61,6 +61,7 @@ const generateRoutesFromMenuItems = (menuItems: MenuItem[]): React.ReactElement[
 const mainRoutes = generateRoutesFromMenuItems(leftMenuItems);
 const bottomRoutes = generateRoutesFromMenuItems(leftMenuBottomItems);
 const PrintPage = React.lazy(() => import("@/pages/print/record-view"));
+const PrintComparisonPage = React.lazy(() => import("@/pages/print/comparison-view"));
 
 // Main Routes component
 const AppRoutes = () => {
@@ -73,6 +74,7 @@ const AppRoutes = () => {
         {/* Routes generated from menu items */}
         {mainRoutes}
         {bottomRoutes}
+        <Route path='/tests/compare' element={lazyLoad("/tests/compare")} />
         <Route path='/tests/add' element={lazyLoad("/tests/add")} />
         <Route path='/tests/:id/edit' element={lazyLoad("/tests/edit")} />
         <Route path='/tests/:id' element={lazyLoad("/tests/view")} />
@@ -88,6 +90,14 @@ const AppRoutes = () => {
 
       {/* 404 route */}
       <Route path='/404' element={<NotFound />} />
+      <Route
+        path='/print/test-comparison'
+        element={
+          <React.Suspense fallback={<Loading />}>
+            <PrintComparisonPage />
+          </React.Suspense>
+        }
+      />
       <Route
         path='/print/:type/:id'
         element={

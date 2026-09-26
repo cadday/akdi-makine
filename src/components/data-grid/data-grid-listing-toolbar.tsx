@@ -26,7 +26,7 @@ import {
   Toolbar,
   GridRowSelectionModel,
 } from "@mui/x-data-grid";
-import { ChevronRight, Columns, Copy, Download, FileText, Filter, Plus, Printer, Search, X } from "lucide-react";
+import { ChevronRight, Columns, Copy, Download, FileText, Filter, GitCompareArrows, Plus, Printer, Search, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -34,6 +34,7 @@ export type ListingToolbarProps = {
   rowSelectionModel?: GridRowSelectionModel;
   deleteRows?: (ids: string[]) => Promise<void>;
   duplicateRows?: (ids: string[]) => Promise<void>;
+  onCompare?: (ids: string[]) => void;
   onAddItem?: () => void;
   addLabel?: string;
   addIcon?: ReactNode;
@@ -43,6 +44,7 @@ export const DataGridListingToolbar = ({
   rowSelectionModel,
   deleteRows,
   duplicateRows,
+  onCompare,
   onAddItem,
   addLabel = "Add",
   addIcon = <Plus />,
@@ -137,6 +139,19 @@ export const DataGridListingToolbar = ({
                       <Copy size={16} />
                     </ListItemIcon>
                     <ListItemText>Duplicate</ListItemText>
+                  </MenuItem>
+                )}
+                {onCompare && rowSelectionModel && selectedCount >= 2 && (
+                  <MenuItem
+                    onClick={() => {
+                      handleCloseSelection();
+                      onCompare(Array.from(rowSelectionModel.ids, String));
+                    }}
+                  >
+                    <ListItemIcon>
+                      <GitCompareArrows size={16} />
+                    </ListItemIcon>
+                    <ListItemText>Compare</ListItemText>
                   </MenuItem>
                 )}
                 {deleteRows && rowSelectionModel && (

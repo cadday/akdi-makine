@@ -145,6 +145,14 @@ export default function Page() {
 
   const deleteRow = useCallback((id: string) => async () => deleteRows([id]), [deleteRows]);
   const handleAddItem = useCallback(() => navigate("/tests/add"), [navigate]);
+  const handleCompare = useCallback(
+    (ids: string[]) => {
+      const params = new URLSearchParams();
+      ids.forEach((id) => params.append("testId", id));
+      navigate(`/tests/compare?${params.toString()}`);
+    },
+    [navigate],
+  );
   const getRowSpacing = useCallback((params: GridRowSpacingParams) => ({ top: params.isFirstVisible ? 0 : 5, bottom: 5 }), []);
   const getRowActions = useCallback(
     (id: string): DataGridRowAction[] => [
@@ -301,7 +309,7 @@ export default function Page() {
                   showToolbar
                   slotProps={{
                     panel: { className: "mt-1!" },
-                    toolbar: { rowSelectionModel, deleteRows, duplicateRows, onAddItem: handleAddItem, addLabel: "Run Test", addIcon: <Play /> },
+                    toolbar: { rowSelectionModel, deleteRows, duplicateRows, onCompare: handleCompare, onAddItem: handleAddItem, addLabel: "Run Test", addIcon: <Play /> },
                   }}
                   classes={{ main: "overflow-visible" }}
                   slots={{
