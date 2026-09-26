@@ -17,6 +17,7 @@ import { LINKS } from "@/constants";
 import { useDb, type DataFieldDefinition, type DynamicDataValue, type TestRecord, type UploadedImage } from "@/context/db-context";
 import useAppNotifications from "@/hooks/use-app-notifications";
 import useDeleteConfirmation from "@/hooks/use-delete-confirmation";
+import TestResultsMachine from "../components/test-results-machine";
 
 export default function Page() {
   const { t } = useTranslation();
@@ -216,99 +217,12 @@ export default function Page() {
                       </Grid>
                     </Grid>
                     <Grid container spacing={5} size={{ lg: 8, xs: 12 }}>
-                      <Grid size={12}>
-                        <Typography variant='h6' component='h6' className='mb-3'>
-                          Stress Strain Graph
-                        </Typography>
-                        <Card>
-                          <CardContent className='flex flex-col gap-5'></CardContent>
-                        </Card>
-                      </Grid>
-                      <Grid size={12}>
-                        <Typography variant='h6' component='h6' className='mb-3'>
-                          Results
-                        </Typography>
-                        <Grid size={12} container spacing={2.5}>
-                          <Grid size={{ xl: 4, md: 6, xs: 12 }}>
-                            <Card>
-                              <CardContent className='flex flex-col gap-5'>
-                                <Box className='flex flex-row gap-2'>
-                                  <Hexagon />
-                                  <Box className='flex flex-col gap-1'>
-                                    <Typography variant='subtitle1'>Yield Strength</Typography>
-                                    <Typography>{test.results?.yieldStrength ?? "-"}</Typography>
-                                  </Box>
-                                </Box>
-                              </CardContent>
-                            </Card>
-                          </Grid>
-                          <Grid size={{ xl: 4, md: 6, xs: 12 }}>
-                            <Card>
-                              <CardContent className='flex flex-col gap-5'>
-                                <Box className='flex flex-row gap-2'>
-                                  <Hexagon />
-                                  <Box className='flex flex-col gap-1'>
-                                    <Typography variant='subtitle1'>Tensile Strength</Typography>
-                                    <Typography>{test.results?.tensileStrength ?? "-"}</Typography>
-                                  </Box>
-                                </Box>
-                              </CardContent>
-                            </Card>
-                          </Grid>
-                          <Grid size={{ xl: 4, md: 6, xs: 12 }}>
-                            <Card>
-                              <CardContent className='flex flex-col gap-5'>
-                                <Box className='flex flex-row gap-2'>
-                                  <Hexagon />
-                                  <Box className='flex flex-col gap-1'>
-                                    <Typography variant='subtitle1'>Elongation</Typography>
-                                    <Typography>{test.results?.elongation ?? "-"}</Typography>
-                                  </Box>
-                                </Box>
-                              </CardContent>
-                            </Card>
-                          </Grid>
-                          <Grid size={{ xl: 4, md: 6, xs: 12 }}>
-                            <Card>
-                              <CardContent className='flex flex-col gap-5'>
-                                <Box className='flex flex-row gap-2'>
-                                  <Hexagon />
-                                  <Box className='flex flex-col gap-1'>
-                                    <Typography variant='subtitle1'>First Length</Typography>
-                                    <Typography>{test.results?.firstLength ?? "-"}</Typography>
-                                  </Box>
-                                </Box>
-                              </CardContent>
-                            </Card>
-                          </Grid>
-                          <Grid size={{ xl: 4, md: 6, xs: 12 }}>
-                            <Card>
-                              <CardContent className='flex flex-col gap-5'>
-                                <Box className='flex flex-row gap-2'>
-                                  <Hexagon />
-                                  <Box className='flex flex-col gap-1'>
-                                    <Typography variant='subtitle1'>Last Length</Typography>
-                                    <Typography>{test.results?.lastLength ?? "-"}</Typography>
-                                  </Box>
-                                </Box>
-                              </CardContent>
-                            </Card>
-                          </Grid>
-                          <Grid size={{ xl: 4, md: 6, xs: 12 }}>
-                            <Card>
-                              <CardContent className='flex flex-col gap-5'>
-                                <Box className='flex flex-row gap-2'>
-                                  <Hexagon />
-                                  <Box className='flex flex-col gap-1'>
-                                    <Typography variant='subtitle1'>Test Duration</Typography>
-                                    <Typography>{test.results?.testDuration ?? "-"}</Typography>
-                                  </Box>
-                                </Box>
-                              </CardContent>
-                            </Card>
-                          </Grid>
-                        </Grid>
-                      </Grid>
+                      <TestResultsMachine
+                        test={test}
+                        onResultsSaved={(results) => {
+                          setTest((current) => (current ? { ...current, results, updatedAt: Date.now() } : current));
+                        }}
+                      />
 
                       <Grid size={12}>
                         <Typography variant='h6' component='h6' className='mb-3'>

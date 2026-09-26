@@ -206,7 +206,7 @@ export default function Page() {
           if (images.length > 0) customData[field.id] = images;
         }
 
-        await createTest({
+        const testId = await createTest({
           name: values.name.trim(),
           specimenId: values.specimenId,
           presetId: values.presetId,
@@ -220,7 +220,7 @@ export default function Page() {
           },
           customData,
         });
-        navigate("/tests");
+        navigate(`/tests/${testId}`);
       } catch (error) {
         await Promise.allSettled(savedImageIds.map((imageId) => window.electronAPI.deleteImage(imageId)));
         showError(`Failed to save test: ${String(error)}`);
