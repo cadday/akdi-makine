@@ -33,8 +33,8 @@ export default function PrintRecordView() {
         .print-view .MuiBreadcrumbs-root,
         .print-view .title-wrapper .MuiButton-root,
         .print-view .MuiTabs-root { display: none !important; }
-        .print-view .MuiTabPanel-root,
-        .print-view .MuiTabPanel-root[hidden] { display: block !important; padding-top: 12px; }
+        .print-view .MuiTabPanel-root { padding-top: 12px; }
+        .print-view .MuiTabPanel-root[hidden] { display: none !important; }
         .print-view .MuiDataGrid-toolbar,
         .print-view .MuiDataGrid-footerContainer { display: none !important; }
         .print-view .MuiDataGrid-main,

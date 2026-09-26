@@ -229,7 +229,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
             </TitleWrapper>
 
             <ContentWrapper>
-              <TabPanel value='Result' keepMounted={printMode}>
+              <TabPanel value='Result'>
                 {!loadError && test && (
                   <Grid size={12} container spacing={5} className='w-full'>
                     <Grid container spacing={5} size={{ lg: 4, xs: 12 }}>
@@ -337,7 +337,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                   </Grid>
                 )}
               </TabPanel>
-              <TabPanel value='Raw Test Data' keepMounted={printMode}>
+              <TabPanel value='Raw Test Data'>
                 {!loadError && test && (
                   <DataGrid
                     autoHeight

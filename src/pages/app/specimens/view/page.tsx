@@ -11,7 +11,7 @@ import { useTranslation } from "react-i18next";
 import LoadingFullScreen from "@/components/loading/loading-full-screen";
 import useAppNotifications from "@/hooks/use-app-notifications";
 import { DynamicIcon } from "lucide-react/dynamic";
-import { ChevronLeft, ChevronRight, Ellipsis, Hexagon, X } from "lucide-react";
+import { CalendarCog, CalendarPlus, ChevronLeft, ChevronRight, Ellipsis, Hexagon, X } from "lucide-react";
 import TabList from "@mui/lab/TabList";
 import TabPanel from "@mui/lab/TabPanel";
 import TabContext from "@mui/lab/TabContext";
@@ -180,7 +180,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
               </TitleWrapper>
 
               <ContentWrapper>
-                <TabPanel value='Overview' keepMounted={printMode}>
+                <TabPanel value='Overview'>
                   {!loadError && specimen && (
                     <Grid size={12} container spacing={5} className='w-full'>
                       <Grid container spacing={5} size={{ lg: 8, xs: 12 }}>
@@ -199,6 +199,20 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                                   </Box>
                                 </Box>
                               ))}
+                              <Box className='flex flex-row gap-2'>
+                                <CalendarPlus />
+                                <Box className='flex flex-col gap-1'>
+                                  <Typography variant='subtitle1'>Created</Typography>
+                                  <Typography>{new Date(specimen.createdAt).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short" })}</Typography>
+                                </Box>
+                              </Box>
+                              <Box className='flex flex-row gap-2'>
+                                <CalendarCog />
+                                <Box className='flex flex-col gap-1'>
+                                  <Typography variant='subtitle1'>Updated</Typography>
+                                  <Typography>{new Date(specimen.updatedAt).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short" })}</Typography>
+                                </Box>
+                              </Box>
                             </CardContent>
                           </Card>
                         </Grid>
@@ -216,7 +230,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                     </Grid>
                   )}
                 </TabPanel>
-                <TabPanel value='Tests' keepMounted={printMode}>
+                <TabPanel value='Tests'>
                   <Grid size={12} container spacing={5} className='w-full'>
                     <Grid size={12}>Second Tab Content</Grid>
                   </Grid>

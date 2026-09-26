@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useFormik } from "formik";
 import * as yup from "yup";
 import { Alert, AlertTitle, Box, Button, capitalize, Card, CardContent, FormControl, FormLabel, Grid, Input, Typography } from "@mui/material";
-import { Hexagon, Pen, Save, Tag, X, XSquare } from "lucide-react";
+import { CalendarCog, CalendarPlus, Hexagon, Pen, Save, Tag, X, XSquare } from "lucide-react";
 import { DynamicIcon } from "lucide-react/dynamic";
 import DataFieldInput from "@/components/data-fields/data-field-input";
 import ImageLightboxGallery from "@/components/data-fields/image-lightbox-gallery";
@@ -301,6 +301,20 @@ export default function TestDefinition({ test, fields, onTestUpdated }: TestDefi
                   </Box>
                 </Box>
               ))}
+              <Box className='flex flex-row gap-2'>
+                <CalendarPlus />
+                <Box className='flex flex-col gap-1'>
+                  <Typography variant='subtitle1'>Created</Typography>
+                  <Typography>{new Date(test.createdAt).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short" })}</Typography>
+                </Box>
+              </Box>
+              <Box className='flex flex-row gap-2'>
+                <CalendarCog />
+                <Box className='flex flex-col gap-1'>
+                  <Typography variant='subtitle1'>Updated</Typography>
+                  <Typography>{new Date(test.updatedAt).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short" })}</Typography>
+                </Box>
+              </Box>
             </>
           )}
         </CardContent>

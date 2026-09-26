@@ -1,7 +1,7 @@
 import { SyntheticEvent, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { Box, Breadcrumbs, Button, Card, CardContent, Grid, ListItemIcon, ListItemText, Menu, MenuItem, Tab, Tooltip, Typography } from "@mui/material";
-import { ChevronLeft, ChevronRight, Clock3, Ellipsis, Gauge, Tag, Weight, WeightTilde, X } from "lucide-react";
+import { CalendarCog, CalendarPlus, ChevronLeft, ChevronRight, Clock3, Ellipsis, Gauge, Tag, Weight, WeightTilde, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import TabContext from "@mui/lab/TabContext";
 import TabList from "@mui/lab/TabList";
@@ -166,7 +166,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
               </TitleWrapper>
 
               <ContentWrapper>
-                <TabPanel value='Overview' keepMounted={printMode}>
+                <TabPanel value='Overview'>
                   {!loadError && preset && (
                     <Grid size={12} container spacing={5} className='w-full'>
                       <Grid container spacing={5} size={{ lg: 8, xs: 12 }}>
@@ -211,6 +211,20 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                                   <Typography>{preset.duration} s</Typography>
                                 </Box>
                               </Box>
+                              <Box className='flex flex-row gap-2'>
+                                <CalendarPlus />
+                                <Box className='flex flex-col gap-1'>
+                                  <Typography variant='subtitle1'>Created</Typography>
+                                  <Typography>{new Date(preset.createdAt).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short" })}</Typography>
+                                </Box>
+                              </Box>
+                              <Box className='flex flex-row gap-2'>
+                                <CalendarCog />
+                                <Box className='flex flex-col gap-1'>
+                                  <Typography variant='subtitle1'>Updated</Typography>
+                                  <Typography>{new Date(preset.updatedAt).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short" })}</Typography>
+                                </Box>
+                              </Box>
                             </CardContent>
                           </Card>
                         </Grid>
@@ -228,7 +242,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                     </Grid>
                   )}
                 </TabPanel>
-                <TabPanel value='Tests' keepMounted={printMode}>
+                <TabPanel value='Tests'>
                   <Grid size={12} container spacing={5} className='w-full'>
                     <Grid size={12}>Tests</Grid>
                   </Grid>

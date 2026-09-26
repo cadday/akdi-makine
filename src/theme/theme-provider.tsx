@@ -1,6 +1,7 @@
 import MuiLayerOverride from "./mui-layer-override";
 import { createContext, ReactNode, useContext, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { useLocation } from "react-router";
 import { useLocalStorage } from "react-use";
 
 import { createTheme, ThemeProvider as MuiThemeProvider } from "@mui/material/styles";
@@ -250,23 +251,26 @@ export const muiTheme = createMuiTheme();
 
 export default function ThemeProvider({ children }: { children: ReactNode }) {
   const { i18n } = useTranslation();
+  const { pathname } = useLocation();
   const [theme, setTheme] = useLocalStorage<ThemeVariant>(LS_KEYS.themeColor, DEFAULTS.themeColor);
   const [mode, setMode] = useLocalStorage<ModeVariant>(LS_KEYS.themeMode, DEFAULTS.themeMode);
+  const isPrintRoute = pathname.startsWith("/print/");
 
   // Determine direction based on language
   const direction = i18n.language === "ar" ? "rtl" : "ltr";
   const muiThemeInstance = useMemo(() => createMuiTheme(direction), [direction]);
 
+  const preferredSystemMode = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  const effectiveMode = isPrintRoute ? "light" : mode === "system" ? preferredSystemMode : (mode ?? preferredSystemMode);
+
   // Set the theme and mode on the document element
   useEffect(() => {
     const classList = document.documentElement.classList;
-
-    const preferredSystemMode = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-    const finalMode = mode === "system" ? preferredSystemMode : (mode ?? preferredSystemMode);
-    classList.add(theme ?? DEFAULTS.themeColor, finalMode);
-    const removeList = [...Object.values(THEME_OPTIONS), ...THEME_MODE_OPTIONS].filter((x) => x !== theme && x !== finalMode);
+    const activeTheme = theme ?? DEFAULTS.themeColor;
+    classList.add(activeTheme, effectiveMode);
+    const removeList = [...Object.values(THEME_OPTIONS), ...THEME_MODE_OPTIONS].filter((value) => value !== activeTheme && value !== effectiveMode);
     classList.remove(...removeList);
-  }, [theme, mode]);
+  }, [effectiveMode, theme]);
 
   // Set document direction and dir attribute
   useEffect(() => {
@@ -275,11 +279,7 @@ export default function ThemeProvider({ children }: { children: ReactNode }) {
 
   const [content, setContent] = useLocalStorage<ContentType>(LS_KEYS.contentType, DEFAULTS.contentType);
 
-  const isDarkMode = useMemo(() => {
-    const preferredSystemMode = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-    const finalMode = mode === "system" ? preferredSystemMode : (mode ?? preferredSystemMode);
-    return finalMode === "dark";
-  }, [mode]);
+  const isDarkMode = effectiveMode === "dark";
 
   useEffect(() => {
     setTimeout(() => document.documentElement.style.setProperty("--layout-duration", `${DEFAULTS.transitionDuration}ms`), 30);
@@ -290,7 +290,7 @@ export default function ThemeProvider({ children }: { children: ReactNode }) {
       value={{
         theme: theme ?? DEFAULTS.themeColor,
         setTheme,
-        mode: mode ?? DEFAULTS.themeMode,
+        mode: effectiveMode,
         setMode,
         content: content ?? DEFAULTS.contentType,
         setContent,
@@ -298,7 +298,7 @@ export default function ThemeProvider({ children }: { children: ReactNode }) {
       }}
     >
       <MuiLayerOverride />
-      <MuiThemeProvider theme={muiThemeInstance} defaultMode={mode || DEFAULTS.themeMode}>
+      <MuiThemeProvider theme={muiThemeInstance} defaultMode={effectiveMode}>
         {children}
       </MuiThemeProvider>
     </ThemeContext.Provider>
