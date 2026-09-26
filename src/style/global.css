@@ -33,9 +33,6 @@
 /* --------- Theme --------- */
 @import "./theme/common.css";
 @import "./theme/blue.css";
-@import "./theme/green.css";
-@import "./theme/orange.css";
-@import "./theme/purple.css";
 
 /* --------- Surfaces --------- */
 @import "./surfaces/accordion.css";

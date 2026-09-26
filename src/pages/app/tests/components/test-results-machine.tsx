@@ -1,11 +1,10 @@
-import { Box, Card, CardContent, Grid, Skeleton, Typography, useTheme } from "@mui/material";
+import { Box, Card, CardContent, Grid, hslToRgb, Skeleton, Typography } from "@mui/material";
 import * as echarts from "echarts";
 import type { EChartsOption } from "echarts";
 import { renderToStaticMarkup } from "react-dom/server";
 import { useEffect, useRef } from "react";
 import { Hexagon } from "lucide-react";
 import type { TestRecord, TestResults } from "@/context/db-context";
-import { cssVariableColorToRgb } from "@/lib/chart-helper";
 import { useThemeContext } from "@/theme/theme-provider";
 import useMockTestRun from "./use-mock-test-run";
 
@@ -23,21 +22,36 @@ const resultItems = [
   { key: "testDuration", label: "Test Duration", unit: "s" },
 ] as const;
 
+const chartColors = {
+  light: {
+    divider: hslToRgb("hsl(0, 0%, 90%)"),
+    hoverLabelBackground: hslToRgb("hsl(0, 0%, 90%)"),
+    secondaryText: hslToRgb("hsl(0, 0%, 60%)"),
+    primary: hslToRgb("hsl(199, 100%, 43%)"),
+  },
+  dark: {
+    divider: hslToRgb("hsl(226, 4%, 20%)"),
+    hoverLabelBackground: hslToRgb("hsl(226, 4%, 20%)"),
+    secondaryText: hslToRgb("hsl(0, 0%, 60%)"),
+    primary: hslToRgb("hsl(199, 100%, 43%)"),
+  },
+} as const;
+
 function StressStrainTooltip({ stress, strain }: { stress: number; strain: number }) {
   return (
     <Box className='bg-background-paper shadow-darker-sm! outline-grey-50 rounded-lg p-5 outline-1 flex flex-col gap-2'>
       <Box className='flex flex-row gap-2'>
         <Hexagon size={20}/>
         <Box className='flex flex-row gap-1'>
-          <Typography variant='subtitle1'>Stress</Typography>
-          <Typography color='text-secondary'>{stress.toFixed(2)} (MPa)</Typography>
+          <Typography variant='subtitle1' className='text-text-primary'>Stress</Typography>
+          <Typography className='text-text-secondary'>{stress.toFixed(2)} (MPa)</Typography>
         </Box>
       </Box>
       <Box className='flex flex-row gap-2'>
         <Hexagon size={20}/>
         <Box className='flex flex-row gap-1'>
-          <Typography variant='subtitle1'>Strain</Typography>
-          <Typography color='text-secondary'>{strain.toFixed(3)} (%)</Typography>
+          <Typography variant='subtitle1' className='text-text-primary'>Strain</Typography>
+          <Typography className='text-text-secondary'>{strain.toFixed(3)} (%)</Typography>
         </Box>
       </Box>
     </Box>
@@ -50,7 +64,6 @@ export default function TestResultsMachine({ test, onResultsSaved }: TestResults
     savedResults: test.results,
     onResultsSaved,
   });
-  const theme = useTheme();
   const { isDarkMode } = useThemeContext();
   const chartElementRef = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<echarts.ECharts | null>(null);
@@ -71,81 +84,78 @@ export default function TestResultsMachine({ test, onResultsSaved }: TestResults
   }, []);
 
   useEffect(() => {
-    const frameId = window.requestAnimationFrame(() => {
-      const dividerColor = cssVariableColorToRgb(theme.palette.divider);
-      const hoverLabelBackgroundColor = cssVariableColorToRgb(theme.palette.grey[100]);
-      const secondaryTextColor = cssVariableColorToRgb(theme.palette.text.secondary);
-      const primaryColor = cssVariableColorToRgb(theme.palette.primary.main);
+    const colors = isDarkMode ? chartColors.dark : chartColors.light;
+    const option: EChartsOption = {
+      animation: false,
+      grid: { top: 10, right: 10, bottom: 36, left: 10 },
+      tooltip: {
+        trigger: "axis",
+        renderMode: "html",
+        backgroundColor: "transparent",
+        borderWidth: 0,
+        padding: 0,
+        extraCssText: "box-shadow: none;",
+        axisPointer: { type: "cross", lineStyle: { type: "solid", color: colors.divider } },
+        formatter: (params) => {
+          const point = Array.isArray(params) ? params[0] : params;
+          const values = point?.value;
+          if (!Array.isArray(values)) return "";
 
-      const option: EChartsOption = {
-        animation: false,
-        grid: { top: 10, right: 10, bottom: 36, left: 10 },
-        tooltip: {
-          trigger: "axis",
-          renderMode: "html",
-          backgroundColor: "transparent",
-          borderWidth: 0,
-          padding: 0,
-          extraCssText: "box-shadow: none;",
-          axisPointer: { type: "cross", lineStyle: { type: "solid", color: dividerColor } },
-          formatter: (params) => {
-            const point = Array.isArray(params) ? params[0] : params;
-            const values = point?.value;
-            if (!Array.isArray(values)) return "";
+          const [strain, stress] = values;
+          return renderToStaticMarkup(<StressStrainTooltip stress={Number(stress)} strain={Number(strain)} />);
+        },
+      },
+      dataZoom: [{ type: "inside", filterMode: "none", zoomOnMouseWheel: true, moveOnMouseMove: true, moveOnMouseWheel: false }],
+      xAxis: {
+        type: "value",
+        axisPointer: {
+          type: "line",
+          lineStyle: { type: "solid", color: colors.divider },
+          label: { backgroundColor: colors.hoverLabelBackground, color: colors.secondaryText },
+        },
+        name: "Strain (%)",
+        nameLocation: "middle",
+        nameGap: 32,
+        nameTextStyle: { color: colors.secondaryText },
+        axisLabel: { color: colors.secondaryText },
+        axisLine: { lineStyle: { color: colors.divider } },
+        splitLine: { lineStyle: { color: colors.divider, type: "dashed" } },
+      },
+      yAxis: {
+        type: "value",
+        axisPointer: {
+          type: "line",
+          lineStyle: { type: "solid", color: colors.divider },
+          label: { backgroundColor: colors.hoverLabelBackground, color: colors.secondaryText },
+        },
+        name: "Stress (MPa)",
+        nameLocation: "middle",
+        nameGap: 48,
+        nameTextStyle: { color: colors.secondaryText },
+        axisLabel: { color: colors.secondaryText },
+        axisLine: { lineStyle: { color: colors.divider } },
+        splitLine: { lineStyle: { color: colors.divider, type: "dashed" } },
+      },
+      series: [
+        {
+          name: "Stress",
+          type: "line",
+          showSymbol: false,
+          emphasis: { disabled: true },
+          lineStyle: { width: 2, color: colors.primary },
+          itemStyle: { color: colors.primary },
+        },
+      ],
+    };
 
-            const [strain, stress] = values;
-            return renderToStaticMarkup(<StressStrainTooltip stress={Number(stress)} strain={Number(strain)} />);
-          },
-        },
-        dataZoom: [{ type: "inside", filterMode: "none", zoomOnMouseWheel: true, moveOnMouseMove: true, moveOnMouseWheel: false }],
-        xAxis: {
-          type: "value",
-          axisPointer: {
-            type: "line",
-            lineStyle: { type: "solid", color: dividerColor },
-            label: { backgroundColor: hoverLabelBackgroundColor, color: secondaryTextColor },
-          },
-          name: "Strain (%)",
-          nameLocation: "middle",
-          nameGap: 32,
-          nameTextStyle: { color: secondaryTextColor },
-          axisLabel: { color: secondaryTextColor },
-          axisLine: { lineStyle: { color: dividerColor } },
-          splitLine: { lineStyle: { color: dividerColor, type: "dashed" } },
-        },
-        yAxis: {
-          type: "value",
-          axisPointer: {
-            type: "line",
-            lineStyle: { type: "solid", color: dividerColor },
-            label: { backgroundColor: hoverLabelBackgroundColor, color: secondaryTextColor },
-          },
-          name: "Stress (MPa)",
-          nameLocation: "middle",
-          nameGap: 48,
-          nameTextStyle: { color: secondaryTextColor },
-          axisLabel: { color: secondaryTextColor },
-          axisLine: { lineStyle: { color: dividerColor } },
-          splitLine: { lineStyle: { color: dividerColor, type: "dashed" } },
-        },
-        series: [
-          {
-            name: "Stress",
-            type: "line",
-            showSymbol: false,
-            emphasis: { disabled: true },
-            data: graphData.map(({ x, y }) => [x, y]),
-            lineStyle: { width: 2, color: primaryColor },
-            itemStyle: { color: primaryColor },
-          },
-        ],
-      };
+    chartRef.current?.setOption(option, { lazyUpdate: true });
+  }, [isDarkMode]);
 
-      chartRef.current?.setOption(option, { lazyUpdate: true });
+  useEffect(() => {
+    chartRef.current?.setOption({
+      series: [{ type: "line", data: graphData.map(({ x, y }) => [x, y]) }],
     });
-
-    return () => window.cancelAnimationFrame(frameId);
-  }, [graphData, isDarkMode, theme]);
+  }, [graphData]);
 
   return (
     <>
