@@ -50,6 +50,7 @@ export interface TestPresetSnapshot {
   preload: number;
   load: number;
   speed: number;
+  duration: number;
 }
 
 export interface TestRecord {
@@ -72,6 +73,7 @@ export interface PresetRecord {
   preload: number;
   load: number;
   speed: number;
+  duration: number;
   createdAt: number;
   updatedAt: number;
 }
@@ -108,6 +110,22 @@ class AkdiMakineDatabase extends Dexie {
       presets: "&id, name, type, createdAt, updatedAt",
       dataFields: "&id, container, type, name, mandatory, createdAt, updatedAt",
     });
+
+    this.version(3)
+      .stores({
+        specimens: "&id, name, createdAt, updatedAt",
+        tests: "&id, name, specimenId, presetId, createdAt, updatedAt",
+        presets: "&id, name, type, createdAt, updatedAt",
+        dataFields: "&id, container, type, name, mandatory, createdAt, updatedAt",
+      })
+      .upgrade(async (transaction) => {
+        await transaction.table("presets").toCollection().modify((preset) => {
+          preset.duration ??= 0;
+        });
+        await transaction.table("tests").toCollection().modify((test) => {
+          if (test.presetSnapshot) test.presetSnapshot.duration ??= 0;
+        });
+      });
   }
 }
 

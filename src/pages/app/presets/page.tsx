@@ -197,6 +197,7 @@ export default function Page() {
     { field: "preload", headerName: "Preload", minWidth: 130, type: "number" },
     { field: "load", headerName: "Load", minWidth: 130, type: "number" },
     { field: "speed", headerName: "Speed", minWidth: 130, type: "number" },
+    { field: "duration", headerName: "Duration (s)", minWidth: 130, type: "number" },
     {
       field: "createdAt",
       headerName: "Created",

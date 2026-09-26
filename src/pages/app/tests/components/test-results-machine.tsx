@@ -7,6 +7,9 @@ import { Hexagon } from "lucide-react";
 import type { TestRecord, TestResults } from "@/context/db-context";
 import { useThemeContext } from "@/theme/theme-provider";
 import useMockTestRun from "./use-mock-test-run";
+import TestProgress from "./test-progress";
+import { cn } from "@/lib/utils";
+import useAppNotifications from "@/hooks/use-app-notifications";
 
 interface TestResultsMachineProps {
   test: TestRecord;
@@ -41,16 +44,20 @@ function StressStrainTooltip({ stress, strain }: { stress: number; strain: numbe
   return (
     <Box className='bg-background-paper shadow-darker-sm! outline-grey-50 rounded-lg p-5 outline-1 flex flex-col gap-2'>
       <Box className='flex flex-row gap-2'>
-        <Hexagon size={20}/>
+        <Hexagon size={20} />
         <Box className='flex flex-row gap-1'>
-          <Typography variant='subtitle1' className='text-text-primary'>Stress</Typography>
+          <Typography variant='subtitle1' className='text-text-primary'>
+            Stress
+          </Typography>
           <Typography className='text-text-secondary'>{stress.toFixed(2)} (MPa)</Typography>
         </Box>
       </Box>
       <Box className='flex flex-row gap-2'>
-        <Hexagon size={20}/>
+        <Hexagon size={20} />
         <Box className='flex flex-row gap-1'>
-          <Typography variant='subtitle1' className='text-text-primary'>Strain</Typography>
+          <Typography variant='subtitle1' className='text-text-primary'>
+            Strain
+          </Typography>
           <Typography className='text-text-secondary'>{strain.toFixed(3)} (%)</Typography>
         </Box>
       </Box>
@@ -59,14 +66,22 @@ function StressStrainTooltip({ stress, strain }: { stress: number; strain: numbe
 }
 
 export default function TestResultsMachine({ test, onResultsSaved }: TestResultsMachineProps) {
-  const { graphData, results } = useMockTestRun({
+  const { graphData, progress, results, status } = useMockTestRun({
     testId: test.id,
+    duration: test.presetSnapshot.duration,
     savedResults: test.results,
     onResultsSaved,
   });
+  const { showSuccess } = useAppNotifications();
   const { isDarkMode } = useThemeContext();
   const chartElementRef = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<echarts.ECharts | null>(null);
+  const previousStatusRef = useRef(status);
+
+  useEffect(() => {
+    if (status === "done" && previousStatusRef.current !== "done") showSuccess("Test completed!");
+    previousStatusRef.current = status;
+  }, [showSuccess, status]);
 
   useEffect(() => {
     if (!chartElementRef.current) return;
@@ -159,39 +174,44 @@ export default function TestResultsMachine({ test, onResultsSaved }: TestResults
 
   return (
     <>
-      <Grid size={12}>
-        <Typography variant='h6' component='h6' className='mb-3'>
-          Stress Strain Graph
-        </Typography>
-        <Card>
-          <CardContent>
-            <Box ref={chartElementRef} role='img' aria-label='Live stress strain line chart' className='h-140 w-full' />
-          </CardContent>
-        </Card>
-      </Grid>
-      <Grid size={12}>
-        <Typography variant='h6' component='h6' className='mb-3'>
-          Results
-        </Typography>
-        <Grid size={12} container spacing={2.5}>
-          {resultItems.map(({ key, label, unit }) => {
-            const value = results?.[key];
-            return (
-              <Grid key={key} size={{ xl: 4, md: 6, xs: 12 }}>
-                <Card>
-                  <CardContent className='flex flex-col gap-5'>
-                    <Box className='flex flex-row gap-2'>
-                      <Hexagon className='flex-none' />
-                      <Box className='flex flex-col gap-1 flex-1'>
-                        <Typography variant='subtitle1'>{label}</Typography>
-                        <Typography color='textSecondary'>{typeof value === "number" ? `${value} (${unit})` : <Skeleton />}</Typography>
-                      </Box>
-                    </Box>
-                  </CardContent>
-                </Card>
-              </Grid>
-            );
-          })}
+      <Grid container size={12} spacing={5} className='relative'>
+        {status === "in-progress" && <TestProgress progress={progress} />}
+        <Grid container size={12} spacing={5} className={cn(status === "in-progress" && "relative z-5001")}>
+          <Grid size={12}>
+            <Typography variant='h6' component='h6' className='mb-3'>
+              Stress Strain Graph
+            </Typography>
+            <Card>
+              <CardContent>
+                <Box ref={chartElementRef} role='img' aria-label='Live stress strain line chart' className='h-140 w-full' />
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid size={12}>
+            <Typography variant='h6' component='h6' className='mb-3'>
+              Results
+            </Typography>
+            <Grid size={12} container spacing={2.5}>
+              {resultItems.map(({ key, label, unit }) => {
+                const value = results?.[key];
+                return (
+                  <Grid key={key} size={{ xl: 4, md: 6, xs: 12 }}>
+                    <Card>
+                      <CardContent className='flex flex-col gap-5'>
+                        <Box className='flex flex-row gap-2'>
+                          <Hexagon className='flex-none' />
+                          <Box className='flex flex-col gap-1 flex-1'>
+                            <Typography variant='subtitle1'>{label}</Typography>
+                            <Typography color='textSecondary'>{typeof value === "number" ? `${value} (${unit})` : <Skeleton />}</Typography>
+                          </Box>
+                        </Box>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                );
+              })}
+            </Grid>
+          </Grid>
         </Grid>
       </Grid>
     </>

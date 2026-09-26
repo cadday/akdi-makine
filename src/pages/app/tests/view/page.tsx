@@ -1,11 +1,31 @@
-import { useEffect, useState, type SyntheticEvent } from "react";
+import { useCallback, useEffect, useState, type SyntheticEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { Box, Breadcrumbs, Button, Card, CardContent, Grid, ListItemIcon, ListItemText, Menu, MenuItem, Tab, Tooltip, Typography } from "@mui/material";
+import { DataGrid, type GridColDef, type GridRowSpacingParams } from "@mui/x-data-grid";
 import { useTranslation } from "react-i18next";
 import TabContext from "@mui/lab/TabContext";
 import TabList from "@mui/lab/TabList";
 import TabPanel from "@mui/lab/TabPanel";
-import { ChevronLeft, ChevronRight, Ellipsis, Gauge, Hexagon, PencilRuler, Tag, Weight, WeightTilde, X } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  ChevronLeft,
+  ChevronRight,
+  Clock3,
+  Columns,
+  Ellipsis,
+  EllipsisVertical,
+  EyeClosed,
+  Filter,
+  Gauge,
+  Hexagon,
+  PencilRuler,
+  Tag,
+  Trash,
+  Weight,
+  WeightTilde,
+  X,
+} from "lucide-react";
 import { DynamicIcon } from "lucide-react/dynamic";
 import PopupState, { bindMenu, bindTrigger } from "material-ui-popup-state";
 import ContentWrapper from "@/components/layout/containers/content-wrapper";
@@ -18,6 +38,29 @@ import { useDb, type DataFieldDefinition, type DynamicDataValue, type TestRecord
 import useAppNotifications from "@/hooks/use-app-notifications";
 import useDeleteConfirmation from "@/hooks/use-delete-confirmation";
 import TestResultsMachine from "../components/test-results-machine";
+import { DataGridListingToolbar } from "@/components/data-grid/data-grid-listing-toolbar";
+import { DataGridPaginationFullPage } from "@/components/data-grid/data-grid-pagination";
+import SearchInput from "@/components/layout/search/search";
+
+interface RawGraphDataRow {
+  id: number;
+  strain: number;
+  stress: number;
+}
+
+const rawGraphDataColumns: GridColDef<RawGraphDataRow>[] = [
+  {
+    field: "strain",
+    headerName: "Strain (%)",
+    minWidth: 160,
+    flex: 1,
+    type: "number",
+    align: "left",
+    headerAlign: "left",
+    renderCell: (params) => <Box className='ps-4'>{params.value}</Box>,
+  },
+  { field: "stress", headerName: "Stress (MPa)", minWidth: 160, flex: 1, type: "number", align: "left", headerAlign: "left" },
+];
 
 export default function Page() {
   const { t } = useTranslation();
@@ -32,6 +75,7 @@ export default function Page() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [tabValue, setTabValue] = useState("Result");
+  const getRowSpacing = useCallback((params: GridRowSpacingParams) => ({ top: params.isFirstVisible ? 0 : 5, bottom: 5 }), []);
 
   useEffect(() => {
     let cancelled = false;
@@ -267,6 +311,13 @@ export default function Page() {
                                     <Typography>{preset.speed} mm/s</Typography>
                                   </Box>
                                 </Box>
+                                <Box className='flex flex-row gap-2'>
+                                  <Clock3 />
+                                  <Box className='flex flex-col gap-1'>
+                                    <Typography variant='subtitle1'>Duration</Typography>
+                                    <Typography>{preset.duration} s</Typography>
+                                  </Box>
+                                </Box>
                               </>
                             ) : (
                               <Typography color='textSecondary'>No related preset</Typography>
@@ -282,13 +333,40 @@ export default function Page() {
               </TabPanel>
               <TabPanel value='Raw Test Data'>
                 {!loadError && test && (
-                  <Card>
-                    <CardContent>
-                      <Box component='pre' className='m-0 overflow-auto whitespace-pre-wrap wrap-break-word font-mono text-sm'>
-                        {JSON.stringify(test.customData, null, 2)}
-                      </Box>
-                    </CardContent>
-                  </Card>
+                  <DataGrid
+                    autoHeight
+                    rows={(test.results?.graphData ?? []).map((point, index) => ({ id: index, strain: point.x, stress: point.y }))}
+                    columns={rawGraphDataColumns}
+                    initialState={{ pagination: { paginationModel: { pageSize: 50 } } }}
+                    getRowSpacing={getRowSpacing}
+                    pageSizeOptions={[10, 20, 50, 100]}
+                    columnHeaderHeight={40}
+                    disableRowSelectionOnClick
+                    className='full-page dense border-none'
+                    pagination
+                    showToolbar
+                    slotProps={{ panel: { className: "mt-1!" } }}
+                    slots={{
+                      basePagination: DataGridPaginationFullPage,
+                      columnSortedDescendingIcon: () => <ArrowDown size={16} />,
+                      columnSortedAscendingIcon: () => <ArrowUp size={16} />,
+                      columnFilteredIcon: () => <Filter size={18} />,
+                      columnReorderIcon: () => <ChevronLeft />,
+                      columnMenuIcon: () => <EllipsisVertical size={16} />,
+                      columnMenuSortAscendingIcon: ArrowUp,
+                      columnMenuSortDescendingIcon: ArrowDown,
+                      columnMenuFilterIcon: Filter,
+                      columnMenuHideIcon: EyeClosed,
+                      columnMenuClearIcon: X,
+                      columnMenuManageColumnsIcon: Columns,
+                      filterPanelDeleteIcon: X,
+                      filterPanelRemoveAllIcon: Trash,
+                      quickFilterIcon: () => <SearchInput />,
+                      quickFilterClearIcon: () => <X />,
+                      toolbar: DataGridListingToolbar,
+                    }}
+                    classes={{ main: "overflow-visible" }}
+                  />
                 )}
               </TabPanel>
             </ContentWrapper>

@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useDb, type TestGraphPoint, type TestResults } from "@/context/db-context";
 
-const RUN_DURATION_MS = 3000;
-const SAMPLE_INTERVAL_MS = 10;
+const SAMPLE_INTERVAL_MS = 20;
 
 export type TestRunStatus = "in-progress" | "done" | "error";
 
 interface TestRunState {
   status: TestRunStatus;
+  progress: number;
   graphData: TestGraphPoint[];
   results: TestResults | null;
   error: string | null;
@@ -15,6 +15,7 @@ interface TestRunState {
 
 interface UseMockTestRunOptions {
   testId: string;
+  duration: number;
   savedResults?: TestResults;
   onResultsSaved?: (results: TestResults) => void;
 }
@@ -57,25 +58,25 @@ function getMockPoint(progress: number): TestGraphPoint {
   };
 }
 
-function getMockResults(graphData: TestGraphPoint[]): TestResults {
+function getMockResults(graphData: TestGraphPoint[], duration: number): TestResults {
   return {
     yieldStrength: 285,
     tensileStrength: 390,
     elongation: 24,
     firstLength: 100,
     lastLength: 120,
-    testDuration: RUN_DURATION_MS / 1000,
+    testDuration: duration,
     graphData,
   };
 }
 
-export default function useMockTestRun({ testId, savedResults, onResultsSaved }: UseMockTestRunOptions) {
+export default function useMockTestRun({ testId, duration, savedResults, onResultsSaved }: UseMockTestRunOptions) {
   const { updateTestResults } = useDb();
   const [state, setState] = useState<TestRunState>(() => {
     if (hasCompleteResults(savedResults)) {
-      return { status: "done", graphData: savedResults.graphData, results: savedResults, error: null };
+      return { status: "done", progress: 1, graphData: savedResults.graphData, results: savedResults, error: null };
     }
-    return { status: "in-progress", graphData: [getMockPoint(0)], results: null, error: null };
+    return { status: "in-progress", progress: 0, graphData: [getMockPoint(0)], results: null, error: null };
   });
   const pendingResultsRef = useRef<TestResults | null>(null);
   const onResultsSavedRef = useRef(onResultsSaved);
@@ -89,7 +90,7 @@ export default function useMockTestRun({ testId, savedResults, onResultsSaved }:
         const updatedCount = await updateTestResults(testId, results);
         if (updatedCount === 0) throw new Error("Test was not found and results could not be saved.");
         pendingResultsRef.current = null;
-        setState({ status: "done", graphData: results.graphData ?? [], results, error: null });
+        setState({ status: "done", progress: 1, graphData: results.graphData ?? [], results, error: null });
         onResultsSavedRef.current?.(results);
       } catch (error) {
         setState((current) => ({ ...current, status: "error", error: `Failed to save test results: ${String(error)}` }));
@@ -105,23 +106,23 @@ export default function useMockTestRun({ testId, savedResults, onResultsSaved }:
   useEffect(() => {
     if (hasCompleteResults(savedResults)) {
       pendingResultsRef.current = null;
-      setState({ status: "done", graphData: savedResults.graphData, results: savedResults, error: null });
+      setState({ status: "done", progress: 1, graphData: savedResults.graphData, results: savedResults, error: null });
       return;
     }
 
     let cancelled = false;
     let graphData = [getMockPoint(0)];
     const startTime = performance.now();
-    setState({ status: "in-progress", graphData, results: null, error: null });
+    setState({ status: "in-progress", progress: 0, graphData, results: null, error: null });
 
     const intervalId = window.setInterval(() => {
-      const progress = Math.min((performance.now() - startTime) / RUN_DURATION_MS, 1);
+      const progress = duration <= 0 ? 1 : Math.min((performance.now() - startTime) / (duration * 1000), 1);
       graphData = [...graphData, getMockPoint(progress)];
-      setState((current) => (current.status === "in-progress" ? { ...current, graphData } : current));
+      setState((current) => (current.status === "in-progress" ? { ...current, progress, graphData } : current));
 
       if (progress < 1) return;
       window.clearInterval(intervalId);
-      const results = getMockResults(graphData);
+      const results = getMockResults(graphData, duration);
       if (!cancelled) void saveResults(results);
     }, SAMPLE_INTERVAL_MS);
 
@@ -129,7 +130,7 @@ export default function useMockTestRun({ testId, savedResults, onResultsSaved }:
       cancelled = true;
       window.clearInterval(intervalId);
     };
-  }, [savedResults, saveResults, testId]);
+  }, [duration, savedResults, saveResults, testId]);
 
   return { ...state, retrySave };
 }

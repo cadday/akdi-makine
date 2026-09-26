@@ -10,11 +10,23 @@ export default function useAppNotifications() {
         variant: "error",
         persist: false,
         autoHideDuration: 6000,
-        anchorOrigin: { horizontal: "center", vertical: "bottom" },
+        anchorOrigin: { horizontal: "right", vertical: "bottom" },
       });
     },
     [enqueueSnackbar],
   );
 
-  return { showError };
+  const showSuccess = useCallback(
+    (message: string) => {
+      enqueueSnackbar(message, {
+        variant: "success",
+        persist: false,
+        autoHideDuration: 6000,
+        anchorOrigin: { horizontal: "right", vertical: "bottom" },
+      });
+    },
+    [enqueueSnackbar],
+  );
+
+  return { showError, showSuccess };
 }

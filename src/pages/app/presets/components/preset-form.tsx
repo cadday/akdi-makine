@@ -17,17 +17,18 @@ import {
   Select,
   Typography,
 } from "@mui/material";
-import { ChevronDown, Gauge, PencilRuler, Save, Tag, Weight, WeightTilde, XSquare } from "lucide-react";
+import { ChevronDown, Clock3, Gauge, PencilRuler, Save, Tag, Weight, WeightTilde, XSquare } from "lucide-react";
 import type { PresetRecord, PresetType } from "@/context/db-context";
 import { PRESET_TYPES } from "@/lib/db";
 import useAppNotifications from "@/hooks/use-app-notifications";
 
 type PresetSaveInput = Omit<PresetRecord, "id" | "createdAt" | "updatedAt">;
-type PresetFormValues = Omit<PresetSaveInput, "type" | "preload" | "load" | "speed"> & {
+type PresetFormValues = Omit<PresetSaveInput, "type" | "preload" | "load" | "speed" | "duration"> & {
   type: PresetType | "";
   preload: number | "";
   load: number | "";
   speed: number | "";
+  duration: number | "";
 };
 
 interface PresetFormProps {
@@ -44,6 +45,7 @@ function getInitialValues(preset?: PresetRecord): PresetFormValues {
     preload: preset?.preload ?? "",
     load: preset?.load ?? "",
     speed: preset?.speed ?? "",
+    duration: preset?.duration ?? "",
   };
 }
 
@@ -53,6 +55,7 @@ const validationSchema = yup.object({
   preload: yup.number().typeError("Enter a number").min(0, "Must be zero or greater").required("Preload is required"),
   load: yup.number().typeError("Enter a number").min(0, "Must be zero or greater").required("Load is required"),
   speed: yup.number().typeError("Enter a number").min(0, "Must be zero or greater").required("Speed is required"),
+  duration: yup.number().typeError("Enter a number").min(0, "Must be zero or greater").required("Duration is required"),
 });
 
 export default function PresetForm({ onSave, preset, initialPreset, saveLabel = "Save" }: PresetFormProps) {
@@ -65,7 +68,7 @@ export default function PresetForm({ onSave, preset, initialPreset, saveLabel = 
     validateOnBlur: false,
     validateOnMount: false,
     onSubmit: async (values) => {
-      if (!values.type || values.preload === "" || values.load === "" || values.speed === "") return;
+      if (!values.type || values.preload === "" || values.load === "" || values.speed === "" || values.duration === "") return;
 
       try {
         await onSave({
@@ -74,6 +77,7 @@ export default function PresetForm({ onSave, preset, initialPreset, saveLabel = 
           preload: Number(values.preload),
           load: Number(values.load),
           speed: Number(values.speed),
+          duration: Number(values.duration),
         });
       } catch (error) {
         showError(`Failed to save preset: ${String(error)}`);
@@ -189,6 +193,23 @@ export default function PresetForm({ onSave, preset, initialPreset, saveLabel = 
                     endAdornment={<InputAdornment position='end'>mm/s</InputAdornment>}
                     value={formik.values.speed}
                     onChange={(event) => void formik.setFieldValue("speed", event.target.value === "" ? "" : Number(event.target.value))}
+                  />
+                </FormControl>
+              </Box>
+
+              <Box className='flex flex-row gap-2'>
+                <Clock3 className={fieldError("duration") ? "text-error!" : undefined} />
+                <FormControl className='outlined' variant='standard' size='small' fullWidth required>
+                  <FormLabel component='label' className={fieldError("duration") ? "text-error!" : undefined}>
+                    Duration
+                  </FormLabel>
+                  <Input
+                    name='duration'
+                    type='number'
+                    inputProps={{ min: 0, step: "any" }}
+                    endAdornment={<InputAdornment position='end'>s</InputAdornment>}
+                    value={formik.values.duration}
+                    onChange={(event) => void formik.setFieldValue("duration", event.target.value === "" ? "" : Number(event.target.value))}
                   />
                 </FormControl>
               </Box>

@@ -217,6 +217,7 @@ export default function Page() {
             preload: preset.preload,
             load: preset.load,
             speed: preset.speed,
+            duration: preset.duration,
           },
           customData,
         });

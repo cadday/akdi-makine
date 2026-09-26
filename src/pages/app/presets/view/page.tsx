@@ -1,7 +1,7 @@
 import { SyntheticEvent, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { Box, Breadcrumbs, Button, Card, CardContent, Grid, ListItemIcon, ListItemText, Menu, MenuItem, Tab, Tooltip, Typography } from "@mui/material";
-import { ChevronLeft, ChevronRight, Ellipsis, Gauge, Tag, Weight, WeightTilde, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Clock3, Ellipsis, Gauge, Tag, Weight, WeightTilde, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import TabContext from "@mui/lab/TabContext";
 import TabList from "@mui/lab/TabList";
@@ -197,6 +197,13 @@ export default function Page() {
                                 <Box className='flex flex-col gap-1'>
                                   <Typography variant='subtitle1'>Speed</Typography>
                                   <Typography>{preset.speed} mm/s</Typography>
+                                </Box>
+                              </Box>
+                              <Box className='flex flex-row gap-2'>
+                                <Clock3 />
+                                <Box className='flex flex-col gap-1'>
+                                  <Typography variant='subtitle1'>Duration</Typography>
+                                  <Typography>{preset.duration} s</Typography>
                                 </Box>
                               </Box>
                             </CardContent>
