@@ -102,7 +102,7 @@ export default function TestResultsMachine({ test, onResultsSaved }: TestResults
     const colors = isDarkMode ? chartColors.dark : chartColors.light;
     const option: EChartsOption = {
       animation: false,
-      grid: { top: 10, right: 10, bottom: 36, left: 10 },
+      grid: { top: 10, right: 10, bottom: 10, left: 10 },
       tooltip: {
         trigger: "axis",
         renderMode: "html",
