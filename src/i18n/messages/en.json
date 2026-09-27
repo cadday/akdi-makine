@@ -18,5 +18,20 @@
   "language": "Language",
   "search": "Search",
   "expand-fluid": "Widen",
-  "expand-boxed": "Narrow"
+  "expand-boxed": "Narrow",
+  "backup-title": "Backup and restore",
+  "backup-database-title": "Database backup",
+  "backup-description": "Export your database to a file or replace it using an existing backup.",
+  "backup-scope": "Backups include specimens, tests, presets, data fields, and their referenced images. App preferences and generated PDFs are not included.",
+  "backup-export": "Export backup",
+  "backup-import": "Restore from backup",
+  "backup-export-success": "Database backup exported successfully.",
+  "backup-import-success": "Database restored successfully.",
+  "backup-export-error": "Failed to export database backup:",
+  "backup-import-error": "Failed to restore database backup:",
+  "backup-restore-confirm-title": "Replace current database?",
+  "backup-restore-confirm-message": "This permanently replaces all current specimens, tests, presets, data fields, and uploaded images with the contents of the selected backup.",
+  "backup-record-summary": "Backup contains {{specimens}} specimens, {{tests}} tests, {{presets}} presets, {{dataFields}} data fields, and {{images}} images.",
+  "backup-restore-confirm": "Replace and restore",
+  "cancel": "Cancel"
 }

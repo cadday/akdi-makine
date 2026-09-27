@@ -112,10 +112,10 @@ function getSnapshotValue(values: Record<string, DynamicDataValue>, field: DataF
   return values[field.id] ?? values[field.name] ?? null;
 }
 
-function renderValue(value: DynamicDataValue | undefined, field?: DataFieldDefinition) {
+function renderValue(value: DynamicDataValue | undefined, field?: DataFieldDefinition, printMode = false) {
   if (value == null) return "-";
   if (field?.type === "Image" && Array.isArray(value)) {
-    return <ImageLightboxGallery images={value as UploadedImage[]} />;
+    return <ImageLightboxGallery images={value as UploadedImage[]} printMode={printMode} />;
   }
   if (typeof value === "boolean") return value ? "True" : "False";
   const text = Array.isArray(value)
@@ -185,12 +185,14 @@ function ComparisonDetails({
   testFields,
   specimenFields,
   graph,
+  printMode,
 }: {
   tests: TestRecord[];
   colors: string[];
   testFields: DataFieldDefinition[];
   specimenFields: DataFieldDefinition[];
   graph: React.ReactNode;
+  printMode: boolean;
 }) {
   return (
     <Grid container size={12} spacing={5}>
@@ -204,7 +206,7 @@ function ComparisonDetails({
               label={field.name}
               tests={tests}
               colors={colors}
-              valueForTest={(test) => renderValue(getSnapshotValue(test.specimenSnapshot.customData, field), field)}
+              valueForTest={(test) => renderValue(getSnapshotValue(test.specimenSnapshot.customData, field), field, printMode)}
             />
           ))}
         </ComparisonCard>
@@ -392,7 +394,7 @@ function ComparisonDetails({
               label={field.name}
               tests={tests}
               colors={colors}
-              valueForTest={(test) => renderValue(getSnapshotValue(test.customData, field), field)}
+              valueForTest={(test) => renderValue(getSnapshotValue(test.customData, field), field, printMode)}
             />
           ))}
           <ComparisonField icon={<CalendarPlus />} label='Created' tests={tests} colors={colors} valueForTest={(test) => formatDate(test.createdAt)} />
@@ -409,7 +411,7 @@ export default function CompareTestsPage({ printMode = false }: { printMode?: bo
   const theme = useTheme();
   const { isDarkMode } = useThemeContext();
   const { getTest, getDataFields } = useDb();
-  const { showError, showPdfSaved } = useAppNotifications();
+  const { showError, showPdfCreating, showPdfSaved } = useAppNotifications();
   const chartElementRef = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<echarts.ECharts | null>(null);
   const [tests, setTests] = useState<TestRecord[]>([]);
@@ -621,6 +623,10 @@ export default function CompareTestsPage({ printMode = false }: { printMode?: bo
                     <MenuItem
                       onClick={() => {
                         popupState.close();
+                        let hidePdfCreating: (() => void) | undefined;
+                        const removePdfCreatingListener = window.electronAPI.onPdfCreating(() => {
+                          hidePdfCreating = showPdfCreating();
+                        });
                         void window.electronAPI
                           .saveTestComparisonPdf({
                             testIds: tests.map((test) => test.id),
@@ -629,7 +635,11 @@ export default function CompareTestsPage({ printMode = false }: { printMode?: bo
                           .then((result) => {
                             if (!result.canceled && result.filePath) showPdfSaved(result.filePath);
                           })
-                          .catch((error: unknown) => showError(`Failed to save PDF: ${String(error)}`));
+                          .catch((error: unknown) => showError(`Failed to save PDF: ${String(error)}`))
+                          .finally(() => {
+                            removePdfCreatingListener();
+                            hidePdfCreating?.();
+                          });
                       }}
                     >
                       <ListItemIcon>
@@ -673,6 +683,7 @@ export default function CompareTestsPage({ printMode = false }: { printMode?: bo
                 colors={colors}
                 testFields={testFields}
                 specimenFields={specimenFields}
+                printMode={printMode}
                 graph={
                   tests.some((test) => (test.results?.graphData?.length ?? 0) > 0) ? (
                     <Box

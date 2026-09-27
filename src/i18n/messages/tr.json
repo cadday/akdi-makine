@@ -18,5 +18,20 @@
   "language": "Dil",
   "search": "Ara",
   "expand-fluid": "Genişlet",
-  "expand-boxed": "Daralt"
+  "expand-boxed": "Daralt",
+  "backup-title": "Yedekleme ve geri yükleme",
+  "backup-database-title": "Veritabanı yedeği",
+  "backup-description": "Veritabanınızı bir dosyaya aktarın veya mevcut bir yedeği kullanarak değiştirin.",
+  "backup-scope": "Yedekler numuneleri, testleri, ön tanımları, veri alanlarını ve bunlara bağlı görselleri içerir. Uygulama tercihleri ve oluşturulan PDF dosyaları dahil değildir.",
+  "backup-export": "Yedeği dışa aktar",
+  "backup-import": "Yedekten geri yükle",
+  "backup-export-success": "Veritabanı yedeği başarıyla dışa aktarıldı.",
+  "backup-import-success": "Veritabanı başarıyla geri yüklendi.",
+  "backup-export-error": "Veritabanı yedeği dışa aktarılamadı:",
+  "backup-import-error": "Veritabanı yedeği geri yüklenemedi:",
+  "backup-restore-confirm-title": "Mevcut veritabanı değiştirilsin mi?",
+  "backup-restore-confirm-message": "Bu işlem mevcut tüm numuneleri, testleri, ön tanımları, veri alanlarını ve yüklenen görselleri seçilen yedekteki verilerle kalıcı olarak değiştirir.",
+  "backup-record-summary": "Yedek {{specimens}} numune, {{tests}} test, {{presets}} ön tanım, {{dataFields}} veri alanı ve {{images}} görsel içeriyor.",
+  "backup-restore-confirm": "Değiştir ve geri yükle",
+  "cancel": "İptal"
 }

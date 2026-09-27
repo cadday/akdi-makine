@@ -27,10 +27,17 @@ function matchesImageSignature(type: string, bytes: Uint8Array) {
   return false;
 }
 
-export function registerImageStorage(getWindow: () => BrowserWindow | null) {
+export function registerImageStorage(getWindow: () => BrowserWindow | null, isTrustedReadSender: (sender: Electron.WebContents) => boolean) {
   const assertTrustedImageRequest = (sender: Electron.WebContents) => {
     const window = getWindow();
     if (!window || window.isDestroyed() || sender !== window.webContents) {
+      throw new Error("Unauthorized image request");
+    }
+  };
+
+  const assertTrustedImageRead = (sender: Electron.WebContents) => {
+    const window = getWindow();
+    if ((!window || window.isDestroyed() || sender !== window.webContents) && !isTrustedReadSender(sender)) {
       throw new Error("Unauthorized image request");
     }
   };
@@ -58,7 +65,7 @@ export function registerImageStorage(getWindow: () => BrowserWindow | null) {
   });
 
   ipcMain.handle("images:read", async (event, id: unknown) => {
-    assertTrustedImageRequest(event.sender);
+    assertTrustedImageRead(event.sender);
     try {
       const bytes = await readFile(getImagePath(id));
       return { bytes: new Uint8Array(bytes) };

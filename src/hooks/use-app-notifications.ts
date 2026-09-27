@@ -1,5 +1,5 @@
 import { createElement, Fragment, useCallback } from "react";
-import { Button } from "@mui/material";
+import { Button, CircularProgress } from "@mui/material";
 import { FolderOpen, X } from "lucide-react";
 import { useSnackbar } from "notistack";
 
@@ -31,7 +31,17 @@ export default function useAppNotifications() {
                 null,
                 createElement(
                   Button,
-                  { "aria-label": action.label, className: "icon-only", color: "grey", variant: "text", size: "tiny", onClick: action.onClick },
+                  {
+                    "aria-label": action.label,
+                    className: "icon-only",
+                    color: "grey",
+                    variant: "text",
+                    size: "tiny",
+                    onClick: () => {
+                      closeSnackbar(snackbarId);
+                      action.onClick();
+                    },
+                  },
                   createElement(FolderOpen, { className: "text-text-primary!", size: 18 }),
                 ),
                 createElement(
@@ -54,6 +64,16 @@ export default function useAppNotifications() {
     [closeSnackbar, enqueueSnackbar],
   );
 
+  const showPdfCreating = useCallback(() => {
+    const snackbarId = enqueueSnackbar("Creating PDF...", {
+      variant: "default",
+      persist: true,
+      action: createElement(CircularProgress, { "aria-label": "Creating PDF", size: 18 }),
+      anchorOrigin: { horizontal: "right", vertical: "bottom" },
+    });
+    return () => closeSnackbar(snackbarId);
+  }, [closeSnackbar, enqueueSnackbar]);
+
   const showPdfSaved = useCallback(
     (filePath: string) => {
       showSuccess("PDF saved successfully", {
@@ -66,5 +86,5 @@ export default function useAppNotifications() {
     [showError, showSuccess],
   );
 
-  return { showError, showSuccess, showPdfSaved };
+  return { showError, showSuccess, showPdfCreating, showPdfSaved };
 }

@@ -15,7 +15,9 @@ export default function SnackbarWrapper({ children }: PropsWithChildren) {
   return (
     <SnackbarProvider
       maxSnack={4}
+      disableWindowBlurListener
       iconVariant={iconVariants}
+      classes={{ containerAnchorOriginBottomRight: "snackbar-container-bottom-right" }}
       action={(snackbarId) => (
         <Button className='icon-only' color='grey' variant='text' size='tiny' aria-label='close' onClick={() => closeSnackbar(snackbarId)}>
           <X size={12} className='text-text-primary' />

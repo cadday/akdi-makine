@@ -131,7 +131,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
 
   const renderValue = (field: DataFieldDefinition, value: DynamicDataValue) => {
     if (value == null) return "-";
-    if (field.type === "Image" && Array.isArray(value)) return <ImageLightboxGallery images={value as UploadedImage[]} />;
+    if (field.type === "Image" && Array.isArray(value)) return <ImageLightboxGallery images={value as UploadedImage[]} printMode={printMode} />;
     if (typeof value === "boolean") return value ? "True" : "False";
     const displayValue = Array.isArray(value)
       ? value.map((item) => (item && typeof item === "object" && "name" in item ? item.name : String(item))).join(", ")

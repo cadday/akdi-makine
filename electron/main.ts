@@ -2,6 +2,7 @@ import { app, BrowserWindow, dialog, ipcMain, session, shell } from "electron";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { writeFile } from "node:fs/promises";
+import { registerBackupStorage } from "./backup-storage";
 import { registerImageStorage } from "./image-storage";
 import { shutdownPlcService } from "./plc-service";
 
@@ -15,7 +16,9 @@ export const RENDERER_DIST = path.join(process.env.APP_ROOT, "dist");
 
 process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, "public") : RENDERER_DIST;
 let mainWindow: BrowserWindow | null;
-registerImageStorage(() => mainWindow);
+const activePdfImageReaders = new Set<number>();
+registerImageStorage(() => mainWindow, (sender) => activePdfImageReaders.has(sender.id));
+registerBackupStorage(() => mainWindow);
 
 type PdfRecordType = "test" | "specimen" | "preset" | "data-field";
 interface PdfRecordRequest {
@@ -127,6 +130,7 @@ ipcMain.handle("pdf:save-record", async (event, input: unknown) => {
   if (canceled || !filePath) return { canceled: true };
 
   if (parentWindow.isDestroyed()) throw new Error("The main window was closed before PDF export completed");
+  event.sender.send("pdf:creating");
 
   const printWindow = new BrowserWindow({
     parent: parentWindow,
@@ -144,6 +148,7 @@ ipcMain.handle("pdf:save-record", async (event, input: unknown) => {
   });
 
   const printWindowId = printWindow.webContents.id;
+  activePdfImageReaders.add(printWindowId);
   const ready = new Promise<void>((resolve, reject) => {
     const timeout = setTimeout(() => {
       pdfReadyWaiters.delete(printWindowId);
@@ -167,6 +172,7 @@ ipcMain.handle("pdf:save-record", async (event, input: unknown) => {
 
     return { canceled: false, filePath };
   } finally {
+    activePdfImageReaders.delete(printWindowId);
     const waiter = pdfReadyWaiters.get(printWindowId);
     if (waiter) {
       clearTimeout(waiter.timeout);

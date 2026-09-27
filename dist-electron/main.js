@@ -1,7 +1,7 @@
-import { ipcMain, app, BrowserWindow, session, shell, dialog } from "electron";
+import { ipcMain, dialog, app, BrowserWindow, session, shell } from "electron";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
-import { mkdir, writeFile, readFile, rm } from "node:fs/promises";
+import { writeFile, stat, readFile, mkdir, rm } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import require$$1 from "tty";
 import require$$1$1 from "util";
@@ -9,6 +9,46 @@ import require$$0 from "os";
 import require$$0$1 from "buffer";
 import require$$0$2 from "events";
 import "net";
+const MAX_BACKUP_ARCHIVE_BYTES = 512 * 1024 * 1024;
+function registerBackupStorage(getWindow) {
+  const assertTrustedRequest = (sender) => {
+    const window2 = getWindow();
+    if (!window2 || window2.isDestroyed() || sender !== window2.webContents) {
+      throw new Error("Unauthorized backup request");
+    }
+    return window2;
+  };
+  ipcMain.handle("backup:save", async (event, input) => {
+    const window2 = assertTrustedRequest(event.sender);
+    if (!(input instanceof Uint8Array) || input.byteLength === 0 || input.byteLength > MAX_BACKUP_ARCHIVE_BYTES) {
+      throw new Error("Backup archive is invalid or exceeds the 512 MB limit");
+    }
+    const { canceled, filePath } = await dialog.showSaveDialog(window2, {
+      title: "Export Database Backup",
+      defaultPath: path.join(app.getPath("documents"), `AKDI-MAKINE-Backup-${(/* @__PURE__ */ new Date()).toISOString().slice(0, 10)}.zip`),
+      filters: [{ name: "AKDI MAKINE Backup", extensions: ["zip"] }]
+    });
+    if (canceled || !filePath) return { canceled: true };
+    await writeFile(filePath, Buffer.from(input));
+    return { canceled: false };
+  });
+  ipcMain.handle("backup:open", async (event) => {
+    const window2 = assertTrustedRequest(event.sender);
+    const { canceled, filePaths } = await dialog.showOpenDialog(window2, {
+      title: "Restore Database Backup",
+      properties: ["openFile"],
+      filters: [{ name: "AKDI MAKINE Backup", extensions: ["zip"] }]
+    });
+    if (canceled || filePaths.length === 0) return { canceled: true };
+    const filePath = filePaths[0];
+    const fileStats = await stat(filePath);
+    if (fileStats.size === 0 || fileStats.size > MAX_BACKUP_ARCHIVE_BYTES) {
+      throw new Error("Backup archive is empty or exceeds the 512 MB limit");
+    }
+    const bytes = await readFile(filePath);
+    return { canceled: false, bytes: new Uint8Array(bytes) };
+  });
+}
 const IMAGE_MAX_BYTES = 10 * 1024 * 1024;
 const IMAGE_TYPES = /* @__PURE__ */ new Set(["image/jpeg", "image/png", "image/gif", "image/webp", "image/bmp"]);
 const IMAGE_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -29,10 +69,16 @@ function matchesImageSignature(type, bytes) {
   if (type === "image/bmp") return new TextDecoder().decode(bytes.subarray(0, 2)) === "BM";
   return false;
 }
-function registerImageStorage(getWindow) {
+function registerImageStorage(getWindow, isTrustedReadSender) {
   const assertTrustedImageRequest = (sender) => {
     const window2 = getWindow();
     if (!window2 || window2.isDestroyed() || sender !== window2.webContents) {
+      throw new Error("Unauthorized image request");
+    }
+  };
+  const assertTrustedImageRead = (sender) => {
+    const window2 = getWindow();
+    if ((!window2 || window2.isDestroyed() || sender !== window2.webContents) && !isTrustedReadSender(sender)) {
       throw new Error("Unauthorized image request");
     }
   };
@@ -55,7 +101,7 @@ function registerImageStorage(getWindow) {
     return { id, name, type, size: bytes.byteLength };
   });
   ipcMain.handle("images:read", async (event, id) => {
-    assertTrustedImageRequest(event.sender);
+    assertTrustedImageRead(event.sender);
     try {
       const bytes = await readFile(getImagePath(id));
       return { bytes: new Uint8Array(bytes) };
@@ -4090,7 +4136,9 @@ const MAIN_DIST = path.join(process.env.APP_ROOT, "dist-electron");
 const RENDERER_DIST = path.join(process.env.APP_ROOT, "dist");
 process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, "public") : RENDERER_DIST;
 let mainWindow;
-registerImageStorage(() => mainWindow);
+const activePdfImageReaders = /* @__PURE__ */ new Set();
+registerImageStorage(() => mainWindow, (sender) => activePdfImageReaders.has(sender.id));
+registerBackupStorage(() => mainWindow);
 const pdfReadyWaiters = /* @__PURE__ */ new Map();
 ipcMain.handle("pdf:ready", (event, error) => {
   const waiter = pdfReadyWaiters.get(event.sender.id);
@@ -4161,6 +4209,7 @@ ipcMain.handle("pdf:save-record", async (event, input) => {
   });
   if (canceled || !filePath) return { canceled: true };
   if (parentWindow.isDestroyed()) throw new Error("The main window was closed before PDF export completed");
+  event.sender.send("pdf:creating");
   const printWindow = new BrowserWindow({
     parent: parentWindow,
     width: 750,
@@ -4176,6 +4225,7 @@ ipcMain.handle("pdf:save-record", async (event, input) => {
     }
   });
   const printWindowId = printWindow.webContents.id;
+  activePdfImageReaders.add(printWindowId);
   const ready = new Promise((resolve, reject) => {
     const timeout = setTimeout(() => {
       pdfReadyWaiters.delete(printWindowId);
@@ -4194,6 +4244,7 @@ ipcMain.handle("pdf:save-record", async (event, input) => {
     await writeFile(filePath, pdf);
     return { canceled: false, filePath };
   } finally {
+    activePdfImageReaders.delete(printWindowId);
     const waiter = pdfReadyWaiters.get(printWindowId);
     if (waiter) {
       clearTimeout(waiter.timeout);
