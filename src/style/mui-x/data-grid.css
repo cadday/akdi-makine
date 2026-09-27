@@ -39,7 +39,7 @@
   }
 
   .MuiDataGrid-columnHeaders {
-    @apply border-grey-50 border-b bg-transparent;
+    @apply border-none bg-transparent;
   }
 
   .MuiDataGrid-topContainer {
@@ -50,7 +50,7 @@
     @apply rounded-lg! bg-transparent;
 
     &:hover {
-      @apply bg-grey-25;
+      @apply bg-grey-20;
     }
 
     .MuiDataGrid-cell {

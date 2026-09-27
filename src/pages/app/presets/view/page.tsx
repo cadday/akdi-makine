@@ -3,6 +3,8 @@ import { Link, useNavigate, useParams } from "react-router";
 import { Box, Breadcrumbs, Button, Card, CardContent, Grid, ListItemIcon, ListItemText, Menu, MenuItem, Tab, Tooltip, Typography } from "@mui/material";
 import { CalendarCog, CalendarPlus, ChevronLeft, ChevronRight, Clock3, Ellipsis, Gauge, Tag, Weight, WeightTilde, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { DataGrid, type GridColDef, type GridRenderCellParams } from "@mui/x-data-grid";
+import TestDataGrid from "@/components/data-grid/test-data-grid";
 import TabContext from "@mui/lab/TabContext";
 import TabList from "@mui/lab/TabList";
 import TabPanel from "@mui/lab/TabPanel";
@@ -10,7 +12,7 @@ import ContentWrapper from "@/components/layout/containers/content-wrapper";
 import TitleWrapper from "@/components/layout/containers/title-wrapper";
 import LoadingFullScreen from "@/components/loading/loading-full-screen";
 import { LINKS } from "@/constants";
-import { useDb, type PresetRecord } from "@/context/db-context";
+import { useDb, type DataFieldDefinition, type PresetRecord, type TestRecord } from "@/context/db-context";
 import useAppNotifications from "@/hooks/use-app-notifications";
 import useDeleteConfirmation from "@/hooks/use-delete-confirmation";
 import PopupState, { bindMenu, bindTrigger } from "material-ui-popup-state";
@@ -18,14 +20,42 @@ import SaveRecordPdfMenuItem from "@/components/pdf/save-record-pdf-menu-item";
 import usePrintReadiness from "@/hooks/use-print-readiness";
 import { cn } from "@/lib/utils";
 
+const latestTestColumns: GridColDef<TestRecord>[] = [
+  {
+    field: "name",
+    headerName: "Name",
+    align: "left",
+    headerAlign: "left",
+    minWidth: 180,
+    sortable: false,
+    renderCell: (params: GridRenderCellParams<TestRecord, string>) => (
+      <Link to={`/tests/${params.row.id}`} className='text-text-primary link-primary link-underline hover:text-primary py-2 font-semibold transition-colors'>
+        {params.value}
+      </Link>
+    ),
+  },
+  {
+    field: "createdAt",
+    headerName: "Date",
+    minWidth: 120,
+    align: "right",
+    headerAlign: "right",
+    flex: 1,
+    sortable: false,
+    valueFormatter: (value) => new Date(Number(value)).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short" }),
+  },
+];
+
 export default function Page({ printMode = false }: { printMode?: boolean }) {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { getPreset, deletePreset } = useDb();
+  const { getPreset, getTestsForPreset, getDataFields, deletePreset } = useDb();
   const { showError } = useAppNotifications();
   const { requestDelete, dialog } = useDeleteConfirmation();
   const [preset, setPreset] = useState<PresetRecord | null>(null);
+  const [tests, setTests] = useState<TestRecord[]>([]);
+  const [testFields, setTestFields] = useState<DataFieldDefinition[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [tabValue, setTabValue] = useState("Overview");
@@ -50,10 +80,12 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
       }
 
       try {
-        const record = await getPreset(id);
+        const [record, presetTests, fields] = await Promise.all([getPreset(id), getTestsForPreset(id), getDataFields("Test")]);
         if (cancelled) return;
 
         setPreset(record ?? null);
+        setTests(presetTests);
+        setTestFields(fields);
         if (!record) setLoadError("Preset not found");
       } catch (error) {
         if (!cancelled) setLoadError(`Failed to load preset: ${String(error)}`);
@@ -66,11 +98,13 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
     return () => {
       cancelled = true;
     };
-  }, [getPreset, id]);
+  }, [getDataFields, getPreset, getTestsForPreset, id]);
 
   useEffect(() => {
     if (loadError) showError(loadError);
   }, [loadError, showError]);
+
+  const latestTests = tests.slice(0, 10);
 
   return (
     <>
@@ -235,7 +269,22 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                             Latest Tests
                           </Typography>
                           <Card>
-                            <CardContent></CardContent>
+                            <CardContent>
+                              <DataGrid
+                                autoHeight
+                                rows={latestTests}
+                                columns={latestTestColumns}
+                                hideFooter
+                                showToolbar={false}
+                                disableColumnMenu
+                                disableColumnSorting
+                                disableColumnFilter
+                                disableRowSelectionOnClick
+                                columnHeaderHeight={40}
+                                rowHeight={44}
+                                className='dense border-none'
+                              />
+                            </CardContent>
                           </Card>
                         </Grid>
                       </Grid>
@@ -244,7 +293,9 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                 </TabPanel>
                 <TabPanel value='Tests'>
                   <Grid size={12} container spacing={5} className='w-full'>
-                    <Grid size={12}>Tests</Grid>
+                    <Grid size={12}>
+                      <TestDataGrid tests={tests} dataFields={testFields} onTestsChange={setTests} />
+                    </Grid>
                   </Grid>
                 </TabPanel>
               </ContentWrapper>

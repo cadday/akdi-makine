@@ -5,10 +5,12 @@ import ContentWrapper from "@/components/layout/containers/content-wrapper";
 import TitleWrapper from "@/components/layout/containers/title-wrapper";
 import ImageLightboxGallery from "@/components/data-fields/image-lightbox-gallery";
 import { LINKS } from "@/constants";
-import { useDb, type DataFieldDefinition, type DynamicDataValue, type SpecimenRecord, type UploadedImage } from "@/context/db-context";
 import { Box, Breadcrumbs, Button, Card, CardContent, Grid, ListItemIcon, ListItemText, Menu, MenuItem, Tab, Tooltip, Typography } from "@mui/material";
 import { useTranslation } from "react-i18next";
+import { DataGrid, type GridColDef, type GridRenderCellParams } from "@mui/x-data-grid";
+import TestDataGrid from "@/components/data-grid/test-data-grid";
 import LoadingFullScreen from "@/components/loading/loading-full-screen";
+import { useDb, type DataFieldDefinition, type DynamicDataValue, type SpecimenRecord, type TestRecord, type UploadedImage } from "@/context/db-context";
 import useAppNotifications from "@/hooks/use-app-notifications";
 import { DynamicIcon } from "lucide-react/dynamic";
 import { CalendarCog, CalendarPlus, ChevronLeft, ChevronRight, Ellipsis, Hexagon, X } from "lucide-react";
@@ -21,13 +23,44 @@ import SaveRecordPdfMenuItem from "@/components/pdf/save-record-pdf-menu-item";
 import usePrintReadiness from "@/hooks/use-print-readiness";
 import { cn } from "@/lib/utils";
 
+const latestTestColumns: GridColDef<TestRecord>[] = [
+  {
+    field: "name",
+    headerName: "Name",
+    align: "left",
+    headerAlign: "left",
+    minWidth: 180,
+    sortable: false,
+    renderCell: (params: GridRenderCellParams<TestRecord, string>) => (
+      <Link
+        to={`/tests/${params.row.id}`}
+        className='text-text-primary link-primary link-underline hover:text-primary py-2 font-semibold transition-colors'
+      >
+        {params.value}
+      </Link>
+    ),
+  },
+  {
+    field: "createdAt",
+    headerName: "Date",
+    minWidth: 120,
+    align: "right",
+    headerAlign: "right",
+    flex: 1,
+    sortable: false,
+    valueFormatter: (value) => new Date(Number(value)).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short" }),
+  },
+];
+
 export default function Page({ printMode = false }: { printMode?: boolean }) {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { getSpecimen, getDataFields, deleteSpecimen } = useDb();
+  const { getSpecimen, getDataFields, getTestsForSpecimen, deleteSpecimen } = useDb();
   const [specimen, setSpecimen] = useState<SpecimenRecord | null>(null);
+  const [specimenTests, setSpecimenTests] = useState<TestRecord[]>([]);
   const [fields, setFields] = useState<DataFieldDefinition[]>([]);
+  const [testFields, setTestFields] = useState<DataFieldDefinition[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { showError } = useAppNotifications();
@@ -50,11 +83,18 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
       setSpecimen(null);
 
       try {
-        const [record, dataFields] = await Promise.all([getSpecimen(id), getDataFields("Specimen")]);
+        const [record, dataFields, tests, testDataFields] = await Promise.all([
+          getSpecimen(id),
+          getDataFields("Specimen"),
+          getTestsForSpecimen(id),
+          getDataFields("Test"),
+        ]);
         if (cancelled) return;
 
         setSpecimen(record ?? null);
         setFields(dataFields);
+        setSpecimenTests(tests);
+        setTestFields(testDataFields);
         if (!record) setLoadError("Specimen not found");
       } catch (error) {
         if (!cancelled) setLoadError(`Failed to load specimen: ${String(error)}`);
@@ -67,7 +107,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
     return () => {
       cancelled = true;
     };
-  }, [getDataFields, getSpecimen, id]);
+  }, [getDataFields, getSpecimen, getTestsForSpecimen, id]);
 
   useEffect(() => {
     if (loadError) showError(loadError);
@@ -83,6 +123,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
     return field.unit ? `${displayValue} ${field.unit}` : displayValue;
   };
 
+  const latestTests = specimenTests.slice(0, 10);
   const [tabValue, setTabValue] = useState("Overview");
   const handleTabChange = (_event: SyntheticEvent, newValue: string) => {
     setTabValue(newValue);
@@ -223,7 +264,22 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                             Latest Tests
                           </Typography>
                           <Card>
-                            <CardContent></CardContent>
+                            <CardContent>
+                              <DataGrid
+                                autoHeight
+                                rows={latestTests}
+                                columns={latestTestColumns}
+                                hideFooter
+                                showToolbar={false}
+                                disableColumnMenu
+                                disableColumnSorting
+                                disableColumnFilter
+                                disableRowSelectionOnClick
+                                columnHeaderHeight={40}
+                                rowHeight={44}
+                                className='dense border-none'
+                              />
+                            </CardContent>
                           </Card>
                         </Grid>
                       </Grid>
@@ -232,7 +288,9 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                 </TabPanel>
                 <TabPanel value='Tests'>
                   <Grid size={12} container spacing={5} className='w-full'>
-                    <Grid size={12}>Second Tab Content</Grid>
+                    <Grid size={12}>
+                      <TestDataGrid tests={specimenTests} dataFields={testFields} onTestsChange={setSpecimenTests} />
+                    </Grid>
                   </Grid>
                 </TabPanel>
               </ContentWrapper>

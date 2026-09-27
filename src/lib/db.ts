@@ -267,6 +267,20 @@ export async function getTests() {
   return db.tests.orderBy("createdAt").reverse().toArray();
 }
 
+export async function getTestsForSpecimen(specimenId: string) {
+  const tests = await db.tests.where("specimenId").equals(specimenId).toArray();
+  return tests.sort((first, second) => second.createdAt - first.createdAt || second.id.localeCompare(first.id));
+}
+
+export async function getTestsForPreset(presetId: string) {
+  const tests = await db.tests.where("presetId").equals(presetId).toArray();
+  return tests.sort((first, second) => second.createdAt - first.createdAt || second.id.localeCompare(first.id));
+}
+
+export async function getLatestTestsForSpecimen(specimenId: string) {
+  return (await getTestsForSpecimen(specimenId)).slice(0, 10);
+}
+
 export async function getTest(id: string) {
   return db.tests.get(id);
 }
