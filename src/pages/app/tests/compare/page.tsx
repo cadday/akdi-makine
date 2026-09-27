@@ -1,10 +1,43 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
-import { Alert, Box, Breadcrumbs, Button, Card, CardContent, CircularProgress, Grid, hslToRgb, ListItemIcon, ListItemText, Menu, MenuItem, Tooltip, Typography, useTheme } from "@mui/material";
+import {
+  Alert,
+  Box,
+  Breadcrumbs,
+  Button,
+  Card,
+  CardContent,
+  CircularProgress,
+  Grid,
+  hslToRgb,
+  ListItemIcon,
+  ListItemText,
+  Menu,
+  MenuItem,
+  Tooltip,
+  Typography,
+  useTheme,
+} from "@mui/material";
 import { renderToStaticMarkup } from "react-dom/server";
 import * as echarts from "echarts";
 import type { EChartsOption } from "echarts";
-import { CalendarCog, CalendarPlus, Clock3, Ellipsis, FileDown, Gauge, Hexagon, PencilRuler, Tag, Weight, WeightTilde } from "lucide-react";
+import {
+  ArrowUpFromLine,
+  ArrowUpToLine,
+  ArrowUpWideNarrow,
+  CalendarCog,
+  CalendarPlus,
+  Clock3,
+  Ellipsis,
+  FileDown,
+  Gauge,
+  Hexagon,
+  PencilRuler,
+  Tag,
+  Timer,
+  Weight,
+  WeightTilde,
+} from "lucide-react";
 import { DynamicIcon } from "lucide-react/dynamic";
 import PopupState, { bindMenu, bindTrigger } from "material-ui-popup-state";
 import ContentWrapper from "@/components/layout/containers/content-wrapper";
@@ -15,15 +48,8 @@ import { LINKS } from "@/constants";
 import useAppNotifications from "@/hooks/use-app-notifications";
 import usePrintReadiness from "@/hooks/use-print-readiness";
 import { useThemeContext } from "@/theme/theme-provider";
-
-const resultRows = [
-  { key: "yieldStrength", label: "Yield Strength", unit: "MPa" },
-  { key: "tensileStrength", label: "Tensile Strength", unit: "MPa" },
-  { key: "elongation", label: "Elongation", unit: "%" },
-  { key: "firstLength", label: "First Length", unit: "mm" },
-  { key: "lastLength", label: "Last Length", unit: "mm" },
-  { key: "testDuration", label: "Test Duration", unit: "s" },
-] as const;
+import { Tensile } from "@/icons/custom-lucide-icons/tensile";
+import { Yeild } from "@/icons/custom-lucide-icons/yield";
 
 interface ComparisonTooltipPoint {
   id: string;
@@ -143,7 +169,9 @@ function ComparisonField({
 function ComparisonCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <Grid size={12}>
-      <Typography variant='h6' component='h6' className='mb-3'>{title}</Typography>
+      <Typography variant='h6' component='h6' className='mb-3'>
+        {title}
+      </Typography>
       <Card>
         <CardContent className='flex flex-col gap-5'>{children}</CardContent>
       </Card>
@@ -183,44 +211,168 @@ function ComparisonDetails({
       </Grid>
       <Grid container size={{ lg: 8, xs: 12 }} spacing={5}>
         <Grid size={12}>
-          <Typography variant='h6' component='h6' className='mb-3'>Stress Strain Graph</Typography>
+          <Typography variant='h6' component='h6' className='mb-3'>
+            Stress Strain Graph
+          </Typography>
           <Card>
             <CardContent>{graph}</CardContent>
           </Card>
         </Grid>
         <Grid size={12}>
-          <Typography variant='h6' component='h6' className='mb-3'>Results</Typography>
+          <Typography variant='h6' component='h6' className='mb-3'>
+            Results
+          </Typography>
           <Grid size={12} container spacing={2.5}>
-            {resultRows.map(({ key, label, unit }) => (
-              <Grid key={key} size={{ xl: 4, md: 6, xs: 12 }}>
-                <Card>
-                  <CardContent className='flex flex-col gap-5'>
-                    <Box className='flex flex-row gap-2'>
-                      <Hexagon className='flex-none' />
-                      <Box className='flex min-w-0 flex-1 flex-col gap-1'>
-                        <Typography variant='subtitle1'>{label}</Typography>
-                        {tests.map((test, index) => {
-                          const value = test.results?.[key];
-                          return (
-                            <Box key={test.id} className='flex min-w-0 items-start gap-2'>
-                              <Box
-                                aria-label={`${test.name} comparison color`}
-                                title={test.name}
-                                className='mt-1.5 h-2.5 w-2.5 flex-none rounded-full'
-                                style={{ backgroundColor: colors[index] }}
-                              />
-                              <Typography variant='body1' color='textSecondary' component='div' className='min-w-0 flex-1'>
-                                {typeof value === "number" ? `${value} (${unit})` : "-"}
-                              </Typography>
-                            </Box>
-                          );
-                        })}
-                      </Box>
+            <Grid size={{ xl: 4, md: 6, xs: 12 }}>
+              <Card>
+                <CardContent className='flex flex-col gap-5'>
+                  <Box className='flex flex-row gap-2'>
+                    <Yeild className='flex-none' />
+                    <Box className='flex min-w-0 flex-1 flex-col gap-1'>
+                      <Typography variant='subtitle1'>Yield Strength</Typography>
+                      {tests.map((test, index) => (
+                        <Box key={test.id} className='flex min-w-0 items-start gap-2'>
+                          <Box
+                            aria-label={`${test.name} comparison color`}
+                            title={test.name}
+                            className='mt-1.5 h-2.5 w-2.5 flex-none rounded-full'
+                            style={{ backgroundColor: colors[index] }}
+                          />
+                          <Typography variant='body1' component='div' className='min-w-0 flex-1'>
+                            {typeof test.results?.yieldStrength === "number" ? `${test.results.yieldStrength} (MPa)` : "-"}
+                          </Typography>
+                        </Box>
+                      ))}
                     </Box>
-                  </CardContent>
-                </Card>
-              </Grid>
-            ))}
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid size={{ xl: 4, md: 6, xs: 12 }}>
+              <Card>
+                <CardContent className='flex flex-col gap-5'>
+                  <Box className='flex flex-row gap-2'>
+                    <Tensile className='flex-none' />
+                    <Box className='flex min-w-0 flex-1 flex-col gap-1'>
+                      <Typography variant='subtitle1'>Tensile Strength</Typography>
+                      {tests.map((test, index) => (
+                        <Box key={test.id} className='flex min-w-0 items-start gap-2'>
+                          <Box
+                            aria-label={`${test.name} comparison color`}
+                            title={test.name}
+                            className='mt-1.5 h-2.5 w-2.5 flex-none rounded-full'
+                            style={{ backgroundColor: colors[index] }}
+                          />
+                          <Typography variant='body1' component='div' className='min-w-0 flex-1'>
+                            {typeof test.results?.tensileStrength === "number" ? `${test.results.tensileStrength} (MPa)` : "-"}
+                          </Typography>
+                        </Box>
+                      ))}
+                    </Box>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid size={{ xl: 4, md: 6, xs: 12 }}>
+              <Card>
+                <CardContent className='flex flex-col gap-5'>
+                  <Box className='flex flex-row gap-2'>
+                    <ArrowUpWideNarrow className='flex-none' />
+                    <Box className='flex min-w-0 flex-1 flex-col gap-1'>
+                      <Typography variant='subtitle1'>Elongation</Typography>
+                      {tests.map((test, index) => (
+                        <Box key={test.id} className='flex min-w-0 items-start gap-2'>
+                          <Box
+                            aria-label={`${test.name} comparison color`}
+                            title={test.name}
+                            className='mt-1.5 h-2.5 w-2.5 flex-none rounded-full'
+                            style={{ backgroundColor: colors[index] }}
+                          />
+                          <Typography variant='body1' component='div' className='min-w-0 flex-1'>
+                            {typeof test.results?.elongation === "number" ? `${test.results.elongation} (%)` : "-"}
+                          </Typography>
+                        </Box>
+                      ))}
+                    </Box>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid size={{ xl: 4, md: 6, xs: 12 }}>
+              <Card>
+                <CardContent className='flex flex-col gap-5'>
+                  <Box className='flex flex-row gap-2'>
+                    <ArrowUpFromLine className='flex-none' />
+                    <Box className='flex min-w-0 flex-1 flex-col gap-1'>
+                      <Typography variant='subtitle1'>First Length</Typography>
+                      {tests.map((test, index) => (
+                        <Box key={test.id} className='flex min-w-0 items-start gap-2'>
+                          <Box
+                            aria-label={`${test.name} comparison color`}
+                            title={test.name}
+                            className='mt-1.5 h-2.5 w-2.5 flex-none rounded-full'
+                            style={{ backgroundColor: colors[index] }}
+                          />
+                          <Typography variant='body1' component='div' className='min-w-0 flex-1'>
+                            {typeof test.results?.firstLength === "number" ? `${test.results.firstLength} (mm)` : "-"}
+                          </Typography>
+                        </Box>
+                      ))}
+                    </Box>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid size={{ xl: 4, md: 6, xs: 12 }}>
+              <Card>
+                <CardContent className='flex flex-col gap-5'>
+                  <Box className='flex flex-row gap-2'>
+                    <ArrowUpToLine className='flex-none' />
+                    <Box className='flex min-w-0 flex-1 flex-col gap-1'>
+                      <Typography variant='subtitle1'>Last Length</Typography>
+                      {tests.map((test, index) => (
+                        <Box key={test.id} className='flex min-w-0 items-start gap-2'>
+                          <Box
+                            aria-label={`${test.name} comparison color`}
+                            title={test.name}
+                            className='mt-1.5 h-2.5 w-2.5 flex-none rounded-full'
+                            style={{ backgroundColor: colors[index] }}
+                          />
+                          <Typography variant='body1' component='div' className='min-w-0 flex-1'>
+                            {typeof test.results?.lastLength === "number" ? `${test.results.lastLength} (mm)` : "-"}
+                          </Typography>
+                        </Box>
+                      ))}
+                    </Box>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid size={{ xl: 4, md: 6, xs: 12 }}>
+              <Card>
+                <CardContent className='flex flex-col gap-5'>
+                  <Box className='flex flex-row gap-2'>
+                    <Timer className='flex-none' />
+                    <Box className='flex min-w-0 flex-1 flex-col gap-1'>
+                      <Typography variant='subtitle1'>Test Duration</Typography>
+                      {tests.map((test, index) => (
+                        <Box key={test.id} className='flex min-w-0 items-start gap-2'>
+                          <Box
+                            aria-label={`${test.name} comparison color`}
+                            title={test.name}
+                            className='mt-1.5 h-2.5 w-2.5 flex-none rounded-full'
+                            style={{ backgroundColor: colors[index] }}
+                          />
+                          <Typography variant='body1' component='div' className='min-w-0 flex-1'>
+                            {typeof test.results?.testDuration === "number" ? `${test.results.testDuration} (s)` : "-"}
+                          </Typography>
+                        </Box>
+                      ))}
+                    </Box>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
           </Grid>
         </Grid>
         <ComparisonCard title='Preset'>
@@ -437,10 +589,16 @@ export default function CompareTestsPage({ printMode = false }: { printMode?: bo
       <TitleWrapper>
         <Box className='flex w-full flex-wrap items-start justify-between gap-3'>
           <Box>
-            <Typography variant='h1' component='h1' className='mb-0'>Compare Tests</Typography>
+            <Typography variant='h1' component='h1' className='mb-0'>
+              Compare Tests
+            </Typography>
             <Breadcrumbs>
-              <Link color='inherit' to={LINKS.home}>Home</Link>
-              <Link color='inherit' to='/tests'>Tests</Link>
+              <Link color='inherit' to={LINKS.home}>
+                Home
+              </Link>
+              <Link color='inherit' to='/tests'>
+                Tests
+              </Link>
               <Typography variant='body2'>Compare</Typography>
             </Breadcrumbs>
           </Box>
@@ -489,22 +647,45 @@ export default function CompareTestsPage({ printMode = false }: { printMode?: bo
       <ContentWrapper>
         <Box className='flex w-full flex-col gap-4'>
           {isLoading ? (
-            <Box className='flex min-h-64 items-center justify-center'><CircularProgress /></Box>
+            <Box className='flex min-h-64 items-center justify-center'>
+              <CircularProgress />
+            </Box>
           ) : loadError ? (
-            <Alert severity='error' action={<Button color='inherit' size='small' onClick={() => navigate("/tests")}>Open Tests</Button>}>{loadError}</Alert>
+            <Alert
+              severity='error'
+              action={
+                <Button color='inherit' size='small' onClick={() => navigate("/tests")}>
+                  Open Tests
+                </Button>
+              }
+            >
+              {loadError}
+            </Alert>
           ) : (
             <>
-              {missingCount > 0 && <Alert severity='warning'>{missingCount} selected test{missingCount === 1 ? " was" : "s were"} not found and {missingCount === 1 ? "has" : "have"} been omitted.</Alert>}
+              {missingCount > 0 && (
+                <Alert severity='warning'>
+                  {missingCount} selected test{missingCount === 1 ? " was" : "s were"} not found and {missingCount === 1 ? "has" : "have"} been omitted.
+                </Alert>
+              )}
               <ComparisonDetails
                 tests={tests}
                 colors={colors}
                 testFields={testFields}
                 specimenFields={specimenFields}
-                graph={tests.some((test) => (test.results?.graphData?.length ?? 0) > 0) ? (
-                  <Box ref={chartElementRef} role='img' aria-label='Overlaid stress-strain curves for selected tests' className='h-140 w-full min-w-0' data-print-assets-loading={printMode ? "true" : undefined} />
-                ) : (
-                  <Alert severity='info'>No saved stress-strain data is available for these tests.</Alert>
-                )}
+                graph={
+                  tests.some((test) => (test.results?.graphData?.length ?? 0) > 0) ? (
+                    <Box
+                      ref={chartElementRef}
+                      role='img'
+                      aria-label='Overlaid stress-strain curves for selected tests'
+                      className='h-140 w-full min-w-0'
+                      data-print-assets-loading={printMode ? "true" : undefined}
+                    />
+                  ) : (
+                    <Alert severity='info'>No saved stress-strain data is available for these tests.</Alert>
+                  )
+                }
               />
             </>
           )}

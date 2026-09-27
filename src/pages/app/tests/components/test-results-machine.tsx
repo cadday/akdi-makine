@@ -3,28 +3,21 @@ import * as echarts from "echarts";
 import type { EChartsOption } from "echarts";
 import { renderToStaticMarkup } from "react-dom/server";
 import { useEffect, useRef } from "react";
-import { Hexagon } from "lucide-react";
+import { ArrowUpFromLine, ArrowUpToLine, ArrowUpWideNarrow, Hexagon, Timer } from "lucide-react";
 import type { TestRecord, TestResults } from "@/context/db-context";
 import { useThemeContext } from "@/theme/theme-provider";
 import useMockTestRun from "./use-mock-test-run";
 import TestProgress from "./test-progress";
 import { cn } from "@/lib/utils";
 import useAppNotifications from "@/hooks/use-app-notifications";
+import { Tensile } from "@/icons/custom-lucide-icons/tensile";
+import { Yeild } from "@/icons/custom-lucide-icons/yield";
 
 interface TestResultsMachineProps {
   test: TestRecord;
   onResultsSaved: (results: TestResults) => void;
   readOnly?: boolean;
 }
-
-const resultItems = [
-  { key: "yieldStrength", label: "Yield Strength", unit: "MPa" },
-  { key: "tensileStrength", label: "Tensile Strength", unit: "MPa" },
-  { key: "elongation", label: "Elongation", unit: "%" },
-  { key: "firstLength", label: "First Length", unit: "mm" },
-  { key: "lastLength", label: "Last Length", unit: "mm" },
-  { key: "testDuration", label: "Test Duration", unit: "s" },
-] as const;
 
 const chartColors = {
   light: {
@@ -194,24 +187,84 @@ export default function TestResultsMachine({ test, onResultsSaved, readOnly = fa
               Results
             </Typography>
             <Grid size={12} container spacing={2.5}>
-              {resultItems.map(({ key, label, unit }) => {
-                const value = results?.[key];
-                return (
-                  <Grid key={key} size={{ xl: 4, md: 6, xs: 12 }}>
-                    <Card>
-                      <CardContent className='flex flex-col gap-5'>
-                        <Box className='flex flex-row gap-2'>
-                          <Hexagon className='flex-none' />
-                          <Box className='flex flex-col gap-1 flex-1'>
-                            <Typography variant='subtitle1'>{label}</Typography>
-                            <Typography color='textSecondary'>{typeof value === "number" ? `${value} (${unit})` : <Skeleton />}</Typography>
-                          </Box>
-                        </Box>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                );
-              })}
+              <Grid size={{ xl: 4, md: 6, xs: 12 }}>
+                <Card>
+                  <CardContent className='flex flex-col gap-5'>
+                    <Box className='flex flex-row gap-2'>
+                      <Yeild className='flex-none' />
+                      <Box className='flex flex-col gap-1 flex-1'>
+                        <Typography variant='subtitle1'>Yield Strength</Typography>
+                        <Typography>{typeof results?.yieldStrength === "number" ? `${results.yieldStrength} (MPa)` : <Skeleton />}</Typography>
+                      </Box>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid size={{ xl: 4, md: 6, xs: 12 }}>
+                <Card>
+                  <CardContent className='flex flex-col gap-5'>
+                    <Box className='flex flex-row gap-2'>
+                      <Tensile className='flex-none' />
+                      <Box className='flex flex-col gap-1 flex-1'>
+                        <Typography variant='subtitle1'>Tensile Strength</Typography>
+                        <Typography>{typeof results?.tensileStrength === "number" ? `${results.tensileStrength} (MPa)` : <Skeleton />}</Typography>
+                      </Box>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid size={{ xl: 4, md: 6, xs: 12 }}>
+                <Card>
+                  <CardContent className='flex flex-col gap-5'>
+                    <Box className='flex flex-row gap-2'>
+                      <ArrowUpWideNarrow className='flex-none' />
+                      <Box className='flex flex-col gap-1 flex-1'>
+                        <Typography variant='subtitle1'>Elongation</Typography>
+                        <Typography>{typeof results?.elongation === "number" ? `${results.elongation} (%)` : <Skeleton />}</Typography>
+                      </Box>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid size={{ xl: 4, md: 6, xs: 12 }}>
+                <Card>
+                  <CardContent className='flex flex-col gap-5'>
+                    <Box className='flex flex-row gap-2'>
+                      <ArrowUpFromLine className='flex-none' />
+                      <Box className='flex flex-col gap-1 flex-1'>
+                        <Typography variant='subtitle1'>First Length</Typography>
+                        <Typography>{typeof results?.firstLength === "number" ? `${results.firstLength} (mm)` : <Skeleton />}</Typography>
+                      </Box>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid size={{ xl: 4, md: 6, xs: 12 }}>
+                <Card>
+                  <CardContent className='flex flex-col gap-5'>
+                    <Box className='flex flex-row gap-2'>
+                      <ArrowUpToLine className='flex-none' />
+                      <Box className='flex flex-col gap-1 flex-1'>
+                        <Typography variant='subtitle1'>Last Length</Typography>
+                        <Typography>{typeof results?.lastLength === "number" ? `${results.lastLength} (mm)` : <Skeleton />}</Typography>
+                      </Box>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid size={{ xl: 4, md: 6, xs: 12 }}>
+                <Card>
+                  <CardContent className='flex flex-col gap-5'>
+                    <Box className='flex flex-row gap-2'>
+                      <Timer className='flex-none' />
+                      <Box className='flex flex-col gap-1 flex-1'>
+                        <Typography variant='subtitle1'>Test Duration</Typography>
+                        <Typography>{typeof results?.testDuration === "number" ? `${results.testDuration} (s)` : <Skeleton />}</Typography>
+                      </Box>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
             </Grid>
           </Grid>
         </Grid>
