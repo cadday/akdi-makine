@@ -27,7 +27,7 @@ export function registerBackupStorage(getWindow: () => BrowserWindow | null) {
     if (canceled || !filePath) return { canceled: true };
 
     await writeFile(filePath, Buffer.from(input));
-    return { canceled: false };
+    return { canceled: false, filePath };
   });
 
   ipcMain.handle("backup:open", async (event) => {

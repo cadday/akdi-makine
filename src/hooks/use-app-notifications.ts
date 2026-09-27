@@ -74,9 +74,9 @@ export default function useAppNotifications() {
     return () => closeSnackbar(snackbarId);
   }, [closeSnackbar, enqueueSnackbar]);
 
-  const showPdfSaved = useCallback(
-    (filePath: string) => {
-      showSuccess("PDF saved successfully", {
+  const showSavedFile = useCallback(
+    (message: string, filePath: string) => {
+      showSuccess(message, {
         label: "Open folder",
         onClick: () => {
           void window.electronAPI.showPdfInFolder(filePath).catch((error: unknown) => showError(`Failed to open folder: ${String(error)}`));
@@ -86,5 +86,7 @@ export default function useAppNotifications() {
     [showError, showSuccess],
   );
 
-  return { showError, showSuccess, showPdfCreating, showPdfSaved };
+  const showPdfSaved = useCallback((filePath: string) => showSavedFile("PDF saved successfully", filePath), [showSavedFile]);
+
+  return { showError, showSuccess, showPdfCreating, showSavedFile, showPdfSaved };
 }

@@ -30,7 +30,7 @@ function registerBackupStorage(getWindow) {
     });
     if (canceled || !filePath) return { canceled: true };
     await writeFile(filePath, Buffer.from(input));
-    return { canceled: false };
+    return { canceled: false, filePath };
   });
   ipcMain.handle("backup:open", async (event) => {
     const window2 = assertTrustedRequest(event.sender);

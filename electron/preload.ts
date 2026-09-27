@@ -24,7 +24,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   saveImage: (input: { name: string; type: string; bytes: Uint8Array }) => ipcRenderer.invoke("images:save", input),
   readImage: (id: string) => ipcRenderer.invoke("images:read", id) as Promise<{ bytes: Uint8Array } | null>,
   deleteImage: (id: string) => ipcRenderer.invoke("images:delete", id) as Promise<void>,
-  saveBackupArchive: (bytes: Uint8Array) => ipcRenderer.invoke("backup:save", bytes) as Promise<{ canceled: boolean }>,
+  saveBackupArchive: (bytes: Uint8Array) => ipcRenderer.invoke("backup:save", bytes) as Promise<{ canceled: true } | { canceled: false; filePath: string }>,
   openBackupArchive: () => ipcRenderer.invoke("backup:open") as Promise<{ canceled: true } | { canceled: false; bytes: Uint8Array }>,
   saveRecordPdf: (request: { type: "test" | "specimen" | "preset" | "data-field"; id: string; name: string }) =>
     ipcRenderer.invoke("pdf:save-record", request) as Promise<{ canceled: boolean; filePath?: string }>,
