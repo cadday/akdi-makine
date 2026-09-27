@@ -196,21 +196,6 @@ function ComparisonDetails({
 }) {
   return (
     <Grid container size={12} spacing={5}>
-      <Grid container size={{ lg: 4, xs: 12 }} spacing={5}>
-        <ComparisonCard title='Specimen'>
-          <ComparisonField icon={<Hexagon />} label='Name' tests={tests} colors={colors} valueForTest={(test) => test.specimenSnapshot.name} />
-          {specimenFields.map((field) => (
-            <ComparisonField
-              key={field.id}
-              icon={field.icon ? <DynamicIcon name={field.icon} /> : <Hexagon />}
-              label={field.name}
-              tests={tests}
-              colors={colors}
-              valueForTest={(test) => renderValue(getSnapshotValue(test.specimenSnapshot.customData, field), field, printMode)}
-            />
-          ))}
-        </ComparisonCard>
-      </Grid>
       <Grid container size={{ lg: 8, xs: 12 }} spacing={5}>
         <Grid size={12}>
           <Typography variant='h6' component='h6' className='mb-3'>
@@ -399,6 +384,21 @@ function ComparisonDetails({
           ))}
           <ComparisonField icon={<CalendarPlus />} label='Created' tests={tests} colors={colors} valueForTest={(test) => formatDate(test.createdAt)} />
           <ComparisonField icon={<CalendarCog />} label='Updated' tests={tests} colors={colors} valueForTest={(test) => formatDate(test.updatedAt)} />
+        </ComparisonCard>
+      </Grid>
+      <Grid container size={{ lg: 4, xs: 12 }} spacing={5}>
+        <ComparisonCard title='Specimen'>
+          <ComparisonField icon={<Hexagon />} label='Name' tests={tests} colors={colors} valueForTest={(test) => test.specimenSnapshot.name} />
+          {specimenFields.map((field) => (
+            <ComparisonField
+              key={field.id}
+              icon={field.icon ? <DynamicIcon name={field.icon} /> : <Hexagon />}
+              label={field.name}
+              tests={tests}
+              colors={colors}
+              valueForTest={(test) => renderValue(getSnapshotValue(test.specimenSnapshot.customData, field), field, printMode)}
+            />
+          ))}
         </ComparisonCard>
       </Grid>
     </Grid>

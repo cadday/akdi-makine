@@ -232,39 +232,6 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
               <TabPanel value='Result'>
                 {!loadError && test && (
                   <Grid size={12} container spacing={5} className='w-full'>
-                    <Grid container spacing={5} size={{ lg: 4, xs: 12 }}>
-                      <Grid size={12}>
-                        <Typography variant='h6' component='h6' className='mb-3'>
-                          Specimen
-                        </Typography>
-                        <Card>
-                          <CardContent className='flex flex-col gap-5'>
-                            {specimen ? (
-                              <>
-                                <Box className='flex flex-row gap-2'>
-                                  <Hexagon />
-                                  <Box className='flex flex-col gap-1'>
-                                    <Typography variant='subtitle1'>Name</Typography>
-                                    <Typography>{specimen.name}</Typography>
-                                  </Box>
-                                </Box>
-                                {specimenFields.map((field) => (
-                                  <Box key={field.id} className='flex flex-row gap-2'>
-                                    {field.icon ? <DynamicIcon name={field.icon} /> : <Hexagon />}
-                                    <Box className='flex flex-col gap-1'>
-                                      <Typography variant='subtitle1'>{field.name}</Typography>
-                                      {renderValue(field, specimen.customData?.[field.id] ?? specimen.customData?.[field.name] ?? null)}
-                                    </Box>
-                                  </Box>
-                                ))}
-                              </>
-                            ) : (
-                              <Typography color='textSecondary'>No related specimen</Typography>
-                            )}
-                          </CardContent>
-                        </Card>
-                      </Grid>
-                    </Grid>
                     <Grid container spacing={5} size={{ lg: 8, xs: 12 }}>
                       <TestResultsMachine
                         test={test}
@@ -333,6 +300,39 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                       </Grid>
 
                       <TestDefinition test={test} fields={fields} onTestUpdated={setTest} />
+                    </Grid>
+                    <Grid container spacing={5} size={{ lg: 4, xs: 12 }}>
+                      <Grid size={12}>
+                        <Typography variant='h6' component='h6' className='mb-3'>
+                          Specimen
+                        </Typography>
+                        <Card>
+                          <CardContent className='flex flex-col gap-5'>
+                            {specimen ? (
+                              <>
+                                <Box className='flex flex-row gap-2'>
+                                  <Hexagon />
+                                  <Box className='flex flex-col gap-1'>
+                                    <Typography variant='subtitle1'>Name</Typography>
+                                    <Typography>{specimen.name}</Typography>
+                                  </Box>
+                                </Box>
+                                {specimenFields.map((field) => (
+                                  <Box key={field.id} className='flex flex-row gap-2'>
+                                    {field.icon ? <DynamicIcon name={field.icon} /> : <Hexagon />}
+                                    <Box className='flex flex-col gap-1'>
+                                      <Typography variant='subtitle1'>{field.name}</Typography>
+                                      {renderValue(field, specimen.customData?.[field.id] ?? specimen.customData?.[field.name] ?? null)}
+                                    </Box>
+                                  </Box>
+                                ))}
+                              </>
+                            ) : (
+                              <Typography color='textSecondary'>No related specimen</Typography>
+                            )}
+                          </CardContent>
+                        </Card>
+                      </Grid>
                     </Grid>
                   </Grid>
                 )}
