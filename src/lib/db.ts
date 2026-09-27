@@ -267,6 +267,10 @@ export async function getTests() {
   return db.tests.orderBy("createdAt").reverse().toArray();
 }
 
+export async function getLatestTests(limit = 5) {
+  return db.tests.orderBy("createdAt").reverse().limit(limit).toArray();
+}
+
 export async function getTestsForSpecimen(specimenId: string) {
   const tests = await db.tests.where("specimenId").equals(specimenId).toArray();
   return tests.sort((first, second) => second.createdAt - first.createdAt || second.id.localeCompare(first.id));
@@ -453,6 +457,11 @@ export async function getDataFields(container?: DataFieldContainer) {
   }
 
   return db.dataFields.orderBy("createdAt").reverse().toArray();
+}
+
+export async function getRecordCounts() {
+  const [tests, specimens, presets, dataFields] = await Promise.all([db.tests.count(), db.specimens.count(), db.presets.count(), db.dataFields.count()]);
+  return { tests, specimens, presets, dataFields };
 }
 
 export async function getDataField(id: string) {

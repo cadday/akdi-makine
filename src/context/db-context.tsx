@@ -24,7 +24,9 @@ import {
   duplicateTests,
   getDataField,
   getDataFields,
+  getRecordCounts,
   getLatestTestsForSpecimen,
+  getLatestTests,
   getPreset,
   getPresets,
   getSpecimen,
@@ -63,6 +65,7 @@ interface DbContextType {
   duplicateSpecimens: typeof duplicateSpecimens;
   createTest: typeof createTest;
   getTests: typeof getTests;
+  getLatestTests: typeof getLatestTests;
   getTestsForPreset: typeof getTestsForPreset;
   getLatestTestsForSpecimen: typeof getLatestTestsForSpecimen;
   getTestsForSpecimen: typeof getTestsForSpecimen;
@@ -83,6 +86,7 @@ interface DbContextType {
   duplicatePresets: typeof duplicatePresets;
   createDataField: typeof createDataField;
   getDataFields: typeof getDataFields;
+  getRecordCounts: typeof getRecordCounts;
   getDataField: typeof getDataField;
   updateDataField: typeof updateDataField;
   deleteDataField: typeof deleteDataField;
@@ -107,6 +111,7 @@ export function DbProvider({ children }: PropsWithChildren) {
       duplicateSpecimens,
       createTest,
       getTests,
+      getLatestTests,
       getTestsForPreset,
       getLatestTestsForSpecimen,
       getTestsForSpecimen,
@@ -127,6 +132,7 @@ export function DbProvider({ children }: PropsWithChildren) {
       duplicatePresets,
       createDataField,
       getDataFields,
+      getRecordCounts,
       getDataField,
       updateDataField,
       deleteDataField,
