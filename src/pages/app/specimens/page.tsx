@@ -17,9 +17,7 @@ import {
   Ellipsis,
   EllipsisVertical,
   EyeClosed,
-  File,
   OctagonAlert,
-  Plus,
   Repeat2,
   Send,
   Trash,
@@ -37,6 +35,7 @@ import { StoredImagePreviews } from "@/components/data-fields/image-data-field-i
 import { DataFieldDefinition, SpecimenRecord, useDb, UploadedImage } from "@/context/db-context";
 import useAppNotifications from "@/hooks/use-app-notifications";
 import useDeleteConfirmation from "@/hooks/use-delete-confirmation";
+import { NoSpecimensFound } from "../components/no-entity-found";
 
 type SpecimenGridRow = SpecimenRecord;
 
@@ -292,17 +291,7 @@ export default function Page() {
             ) : isLoading ? (
               <Box></Box>
             ) : rows.length === 0 ? (
-              <Box className='flex flex-col items-center gap-4'>
-                <Box className='flex flex-col gap-2 items-center'>
-                  <Box className='w-10 h-10 border border-dashed border-text-secondary flex items-center justify-center rounded-lg'>
-                    <File className='text-text-secondary' />
-                  </Box>
-                  <Typography>Nothing found to display!</Typography>
-                </Box>
-                <Button size='large' variant='outlined' color='grey' startIcon={<Plus />} onClick={handleAddItem}>
-                  Add
-                </Button>
-              </Box>
+              <NoSpecimensFound />
             ) : (
               <DataGridWithRowActions
                 autoHeight

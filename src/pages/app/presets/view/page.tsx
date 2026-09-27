@@ -19,6 +19,7 @@ import PopupState, { bindMenu, bindTrigger } from "material-ui-popup-state";
 import SaveRecordPdfMenuItem from "@/components/pdf/save-record-pdf-menu-item";
 import usePrintReadiness from "@/hooks/use-print-readiness";
 import { cn } from "@/lib/utils";
+import { NoTestsFound } from "../../components/no-entity-found";
 
 const latestTestColumns: GridColDef<TestRecord>[] = [
   {
@@ -270,20 +271,24 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                           </Typography>
                           <Card>
                             <CardContent>
-                              <DataGrid
-                                autoHeight
-                                rows={latestTests}
-                                columns={latestTestColumns}
-                                hideFooter
-                                showToolbar={false}
-                                disableColumnMenu
-                                disableColumnSorting
-                                disableColumnFilter
-                                disableRowSelectionOnClick
-                                columnHeaderHeight={40}
-                                rowHeight={44}
-                                className='dense border-none'
-                              />
+                              {latestTests.length === 0 ? (
+                                <NoTestsFound />
+                              ) : (
+                                <DataGrid
+                                  autoHeight
+                                  rows={latestTests}
+                                  columns={latestTestColumns}
+                                  hideFooter
+                                  showToolbar={false}
+                                  disableColumnMenu
+                                  disableColumnSorting
+                                  disableColumnFilter
+                                  disableRowSelectionOnClick
+                                  columnHeaderHeight={40}
+                                  rowHeight={44}
+                                  className='dense border-none'
+                                />
+                              )}
                             </CardContent>
                           </Card>
                         </Grid>

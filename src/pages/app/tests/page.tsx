@@ -2,12 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
 import { Box, Breadcrumbs, Button, Grid, Typography } from "@mui/material";
-import {
-  File,
-  OctagonAlert,
-  Play,
-  Repeat2,
-} from "lucide-react";
+import { OctagonAlert, Repeat2 } from "lucide-react";
 import TestDataGrid from "@/components/data-grid/test-data-grid";
 import ContentWrapper from "@/components/layout/containers/content-wrapper";
 import TitleWrapper from "@/components/layout/containers/title-wrapper";
@@ -103,22 +98,8 @@ export default function Page() {
                   Retry
                 </Button>
               </Box>
-            ) : isLoading ? (
-              <Box></Box>
-            ) : tests.length === 0 ? (
-              <Box className='flex flex-col items-center gap-4'>
-                <Box className='flex flex-col gap-2 items-center'>
-                  <Box className='w-10 h-10 border border-dashed border-text-secondary flex items-center justify-center rounded-lg'>
-                    <File className='text-text-secondary' />
-                  </Box>
-                  <Typography>Nothing found to display!</Typography>
-                </Box>
-                <Button size='large' variant='outlined' color='grey' startIcon={<Play />} onClick={handleAddItem}>
-                  Add Test
-                </Button>
-              </Box>
             ) : (
-              <TestDataGrid tests={tests} dataFields={dataFields} onTestsChange={setTests} onAddItem={handleAddItem} />
+              !isLoading && <TestDataGrid tests={tests} dataFields={dataFields} onTestsChange={setTests} onAddItem={handleAddItem} />
             )}
           </Grid>
         </Grid>

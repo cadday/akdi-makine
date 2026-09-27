@@ -17,9 +17,7 @@ import {
   Ellipsis,
   EllipsisVertical,
   EyeClosed,
-  File,
   OctagonAlert,
-  Plus,
   Repeat2,
   Send,
   Trash,
@@ -29,13 +27,7 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Box, Breadcrumbs, Button, FormControl, Grid, InputLabel, Select, Typography } from "@mui/material";
-import {
-  getGridDateOperators,
-  GridColDef,
-  GridRenderCellParams,
-  GridRowSelectionModel,
-  GridRowSpacingParams,
-} from "@mui/x-data-grid";
+import { getGridDateOperators, GridColDef, GridRenderCellParams, GridRowSelectionModel, GridRowSpacingParams } from "@mui/x-data-grid";
 import { DataFieldDefinition, useDb } from "@/context/db-context";
 import type { DataFieldContainer } from "@/context/db-context";
 import { Filter } from "lucide-react";
@@ -43,6 +35,7 @@ import Search from "@/components/layout/search/search";
 import DataGridDateTimeFilter from "@/components/data-grid/data-grid-date-time-filter";
 import useAppNotifications from "@/hooks/use-app-notifications";
 import useDeleteConfirmation from "@/hooks/use-delete-confirmation";
+import { NoDataFieldsFound } from "../components/no-entity-found";
 
 type DataFieldGridRow = DataFieldDefinition;
 
@@ -284,17 +277,7 @@ export default function Page() {
             ) : isLoading ? (
               <Box></Box>
             ) : rows.length === 0 ? (
-              <Box className='flex flex-col items-center gap-4'>
-                <Box className='flex flex-col gap-2 items-center'>
-                  <Box className='w-10 h-10 border border-dashed border-text-secondary flex items-center justify-center rounded-lg'>
-                    <File className='text-text-secondary' />
-                  </Box>
-                  <Typography>Nothing found to display!</Typography>
-                </Box>
-                <Button size='large' variant='outlined' color='grey' startIcon={<Plus />} onClick={handleAddItem}>
-                  Add
-                </Button>
-              </Box>
+              <NoDataFieldsFound />
             ) : (
               <DataGridWithRowActions
                 autoHeight

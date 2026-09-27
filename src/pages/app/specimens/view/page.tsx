@@ -22,6 +22,7 @@ import useDeleteConfirmation from "@/hooks/use-delete-confirmation";
 import SaveRecordPdfMenuItem from "@/components/pdf/save-record-pdf-menu-item";
 import usePrintReadiness from "@/hooks/use-print-readiness";
 import { cn } from "@/lib/utils";
+import { NoTestsFound } from "../../components/no-entity-found";
 
 const latestTestColumns: GridColDef<TestRecord>[] = [
   {
@@ -32,10 +33,7 @@ const latestTestColumns: GridColDef<TestRecord>[] = [
     minWidth: 180,
     sortable: false,
     renderCell: (params: GridRenderCellParams<TestRecord, string>) => (
-      <Link
-        to={`/tests/${params.row.id}`}
-        className='text-text-primary link-primary link-underline hover:text-primary py-2 font-semibold transition-colors'
-      >
+      <Link to={`/tests/${params.row.id}`} className='text-text-primary link-primary link-underline hover:text-primary py-2 font-semibold transition-colors'>
         {params.value}
       </Link>
     ),
@@ -265,20 +263,24 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                           </Typography>
                           <Card>
                             <CardContent>
-                              <DataGrid
-                                autoHeight
-                                rows={latestTests}
-                                columns={latestTestColumns}
-                                hideFooter
-                                showToolbar={false}
-                                disableColumnMenu
-                                disableColumnSorting
-                                disableColumnFilter
-                                disableRowSelectionOnClick
-                                columnHeaderHeight={40}
-                                rowHeight={44}
-                                className='dense border-none'
-                              />
+                              {latestTests.length === 0 ? (
+                                <NoTestsFound />
+                              ) : (
+                                <DataGrid
+                                  autoHeight
+                                  rows={latestTests}
+                                  columns={latestTestColumns}
+                                  hideFooter
+                                  showToolbar={false}
+                                  disableColumnMenu
+                                  disableColumnSorting
+                                  disableColumnFilter
+                                  disableRowSelectionOnClick
+                                  columnHeaderHeight={40}
+                                  rowHeight={44}
+                                  className='dense border-none'
+                                />
+                              )}
                             </CardContent>
                           </Card>
                         </Grid>

@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import { Link, useNavigate } from "react-router";
-import { Button, FormControl, InputLabel, Select } from "@mui/material";
+import {  Button, FormControl, InputLabel, Select } from "@mui/material";
 import {
   ArrowDown,
   ArrowUp,
@@ -28,6 +28,7 @@ import DataGridDateTimeFilter from "@/components/data-grid/data-grid-date-time-f
 import { useDb, type DataFieldDefinition, type TestRecord, type UploadedImage } from "@/context/db-context";
 import useAppNotifications from "@/hooks/use-app-notifications";
 import useDeleteConfirmation from "@/hooks/use-delete-confirmation";
+import { NoTestsFound } from "@/pages/app/components/no-entity-found";
 
 type TestGridRow = TestRecord & { specimenName: string; presetName: string };
 
@@ -95,7 +96,10 @@ export default function TestDataGrid({ tests, dataFields, onTestsChange, onAddIt
     ],
     [deleteRow, duplicateRow, navigate],
   );
-  const rows = useMemo<TestGridRow[]>(() => tests.map((test) => ({ ...test, specimenName: test.specimenSnapshot.name, presetName: test.presetSnapshot.name })), [tests]);
+  const rows = useMemo<TestGridRow[]>(
+    () => tests.map((test) => ({ ...test, specimenName: test.specimenSnapshot.name, presetName: test.presetSnapshot.name })),
+    [tests],
+  );
   const columns = useMemo<GridColDef<TestGridRow>[]>(
     () => [
       { field: "id", headerName: "ID", width: 90, filterable: false },
@@ -104,7 +108,10 @@ export default function TestDataGrid({ tests, dataFields, onTestsChange, onAddIt
         headerName: "Name",
         minWidth: 220,
         renderCell: (params: GridRenderCellParams<TestGridRow, string>) => (
-          <Link to={`/tests/${params.row.id}`} className='text-text-primary link-primary link-underline hover:text-primary py-2 font-semibold transition-colors'>
+          <Link
+            to={`/tests/${params.row.id}`}
+            className='text-text-primary link-primary link-underline hover:text-primary py-2 font-semibold transition-colors'
+          >
             {params.value}
           </Link>
         ),
@@ -133,7 +140,9 @@ export default function TestDataGrid({ tests, dataFields, onTestsChange, onAddIt
             }
             if (typeof value === "boolean") return value ? "True" : "False";
             const displayValue = Array.isArray(value)
-              ? value.map((item) => (typeof item === "string" ? item : item && typeof item === "object" && "name" in item ? item.name : String(item))).join(", ")
+              ? value
+                  .map((item) => (typeof item === "string" ? item : item && typeof item === "object" && "name" in item ? item.name : String(item)))
+                  .join(", ")
               : String(value);
             return dataField.unit ? `${displayValue} ${dataField.unit}` : displayValue;
           },
@@ -160,66 +169,70 @@ export default function TestDataGrid({ tests, dataFields, onTestsChange, onAddIt
   return (
     <>
       {dialog}
-      <DataGridWithRowActions
-        autoHeight
-        rows={rows}
-        columns={columns}
-        initialState={{
-          columns: { columnVisibilityModel: { id: false, createdAt: false } },
-          pagination: { paginationModel: { pageSize: 10 } },
-        }}
-        getRowSpacing={getRowSpacing}
-        columnHeaderHeight={40}
-        checkboxSelection
-        disableRowSelectionOnClick
-        rowSelectionModel={rowSelectionModel}
-        pageSizeOptions={[10, 20, 50, 100]}
-        disableRowSelectionExcludeModel
-        onRowSelectionModelChange={setRowSelectionModel}
-        hideFooterSelectedRowCount
-        className='full-page dense border-none'
-        pagination
-        showToolbar
-        slotProps={{
-          panel: { className: "mt-1!" },
-          toolbar: {
-            rowSelectionModel,
-            deleteRows,
-            duplicateRows,
-            onCompare: handleCompare,
-            ...(onAddItem ? { onAddItem, addLabel: "Add Test", addIcon: <Play /> } : {}),
-          },
-        }}
-        classes={{ main: "overflow-visible" }}
-        slots={{
-          basePagination: DataGridPaginationFullPage,
-          columnSortedDescendingIcon: () => <ArrowDown size={16} />,
-          columnSortedAscendingIcon: () => <ArrowUp size={16} />,
-          columnFilteredIcon: () => <Filter size={18} />,
-          columnReorderIcon: () => <ChevronLeft />,
-          columnMenuIcon: () => <EllipsisVertical size={16} />,
-          columnMenuSortAscendingIcon: ArrowUp,
-          columnMenuSortDescendingIcon: ArrowDown,
-          columnMenuFilterIcon: Filter,
-          columnMenuHideIcon: EyeClosed,
-          columnMenuClearIcon: X,
-          columnMenuManageColumnsIcon: Columns,
-          filterPanelDeleteIcon: X,
-          filterPanelRemoveAllIcon: Trash,
-          baseSelect: (props: any) => (
-            <FormControl size='small' variant='outlined'>
-              <InputLabel>{props.label}</InputLabel>
-              <Select {...props} IconComponent={ChevronDown} MenuProps={{ className: "outlined" }} />
-            </FormControl>
-          ),
-          quickFilterIcon: () => <Search />,
-          quickFilterClearIcon: () => <X />,
-          baseButton: (props) => <Button {...props} variant='pastel' color='grey'></Button>,
-          moreActionsIcon: () => <Ellipsis size={16} />,
-          toolbar: DataGridListingToolbar,
-        }}
-        getRowActions={getRowActions}
-      />
+      {tests.length === 0 ? (
+        <NoTestsFound />
+      ) : (
+        <DataGridWithRowActions
+          autoHeight
+          rows={rows}
+          columns={columns}
+          initialState={{
+            columns: { columnVisibilityModel: { id: false, createdAt: false } },
+            pagination: { paginationModel: { pageSize: 10 } },
+          }}
+          getRowSpacing={getRowSpacing}
+          columnHeaderHeight={40}
+          checkboxSelection
+          disableRowSelectionOnClick
+          rowSelectionModel={rowSelectionModel}
+          pageSizeOptions={[10, 20, 50, 100]}
+          disableRowSelectionExcludeModel
+          onRowSelectionModelChange={setRowSelectionModel}
+          hideFooterSelectedRowCount
+          className='full-page dense border-none'
+          pagination
+          showToolbar
+          slotProps={{
+            panel: { className: "mt-1!" },
+            toolbar: {
+              rowSelectionModel,
+              deleteRows,
+              duplicateRows,
+              onCompare: handleCompare,
+              ...(onAddItem ? { onAddItem, addLabel: "Add Test", addIcon: <Play /> } : {}),
+            },
+          }}
+          classes={{ main: "overflow-visible" }}
+          slots={{
+            basePagination: DataGridPaginationFullPage,
+            columnSortedDescendingIcon: () => <ArrowDown size={16} />,
+            columnSortedAscendingIcon: () => <ArrowUp size={16} />,
+            columnFilteredIcon: () => <Filter size={18} />,
+            columnReorderIcon: () => <ChevronLeft />,
+            columnMenuIcon: () => <EllipsisVertical size={16} />,
+            columnMenuSortAscendingIcon: ArrowUp,
+            columnMenuSortDescendingIcon: ArrowDown,
+            columnMenuFilterIcon: Filter,
+            columnMenuHideIcon: EyeClosed,
+            columnMenuClearIcon: X,
+            columnMenuManageColumnsIcon: Columns,
+            filterPanelDeleteIcon: X,
+            filterPanelRemoveAllIcon: Trash,
+            baseSelect: (props: any) => (
+              <FormControl size='small' variant='outlined'>
+                <InputLabel>{props.label}</InputLabel>
+                <Select {...props} IconComponent={ChevronDown} MenuProps={{ className: "outlined" }} />
+              </FormControl>
+            ),
+            quickFilterIcon: () => <Search />,
+            quickFilterClearIcon: () => <X />,
+            baseButton: (props) => <Button {...props} variant='pastel' color='grey'></Button>,
+            moreActionsIcon: () => <Ellipsis size={16} />,
+            toolbar: DataGridListingToolbar,
+          }}
+          getRowActions={getRowActions}
+        />
+      )}
     </>
   );
 }
