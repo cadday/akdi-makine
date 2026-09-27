@@ -10,7 +10,7 @@ interface SaveRecordPdfMenuItemProps {
 }
 
 export default function SaveRecordPdfMenuItem({ type, id, name, closeMenu }: SaveRecordPdfMenuItemProps) {
-  const { showError, showSuccess } = useAppNotifications();
+  const { showError, showPdfSaved } = useAppNotifications();
 
   return (
     <MenuItem
@@ -20,7 +20,7 @@ export default function SaveRecordPdfMenuItem({ type, id, name, closeMenu }: Sav
         void window.electronAPI
           .saveRecordPdf({ type, id, name })
           .then((result) => {
-            if (!result.canceled) showSuccess("PDF saved successfully");
+            if (!result.canceled && result.filePath) showPdfSaved(result.filePath);
           })
           .catch((error: unknown) => showError(`Failed to save PDF: ${String(error)}`));
       }}

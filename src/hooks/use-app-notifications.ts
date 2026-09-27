@@ -1,8 +1,10 @@
-import { useCallback } from "react";
+import { createElement, Fragment, useCallback } from "react";
+import { Button } from "@mui/material";
+import { FolderOpen, X } from "lucide-react";
 import { useSnackbar } from "notistack";
 
 export default function useAppNotifications() {
-  const { enqueueSnackbar } = useSnackbar();
+  const { closeSnackbar, enqueueSnackbar } = useSnackbar();
 
   const showError = useCallback(
     (message: string) => {
@@ -17,16 +19,52 @@ export default function useAppNotifications() {
   );
 
   const showSuccess = useCallback(
-    (message: string) => {
+    (message: string, action?: { label: string; onClick: () => void }) => {
       enqueueSnackbar(message, {
         variant: "success",
         persist: false,
-        autoHideDuration: 6000,
+        autoHideDuration: action ? 10000 : 6000,
+        action: action
+          ? (snackbarId) =>
+              createElement(
+                Fragment,
+                null,
+                createElement(
+                  Button,
+                  { "aria-label": action.label, className: "icon-only", color: "grey", variant: "text", size: "tiny", onClick: action.onClick },
+                  createElement(FolderOpen, { className: "text-text-secondary!", size: 18 }),
+                ),
+                createElement(
+                  Button,
+                  {
+                    "aria-label": "close",
+                    className: "icon-only",
+                    color: "grey",
+                    variant: "text",
+                    size: "tiny",
+                    onClick: () => closeSnackbar(snackbarId),
+                  },
+                  createElement(X, { className: "text-text-secondary", size: 12 }),
+                ),
+              )
+          : undefined,
         anchorOrigin: { horizontal: "right", vertical: "bottom" },
       });
     },
-    [enqueueSnackbar],
+    [closeSnackbar, enqueueSnackbar],
   );
 
-  return { showError, showSuccess };
+  const showPdfSaved = useCallback(
+    (filePath: string) => {
+      showSuccess("PDF saved successfully", {
+        label: "Open folder",
+        onClick: () => {
+          void window.electronAPI.showPdfInFolder(filePath).catch((error: unknown) => showError(`Failed to open folder: ${String(error)}`));
+        },
+      });
+    },
+    [showError, showSuccess],
+  );
+
+  return { showError, showSuccess, showPdfSaved };
 }

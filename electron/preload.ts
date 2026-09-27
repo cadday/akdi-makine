@@ -28,6 +28,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
     ipcRenderer.invoke("pdf:save-record", request) as Promise<{ canceled: boolean; filePath?: string }>,
   saveTestComparisonPdf: (request: { testIds: string[]; name: string }) =>
     ipcRenderer.invoke("pdf:save-record", { ...request, type: "test-comparison" }) as Promise<{ canceled: boolean; filePath?: string }>,
+  showPdfInFolder: (filePath: string) => ipcRenderer.invoke("pdf:show-in-folder", filePath) as Promise<void>,
   notifyPdfReady: (error?: string) => ipcRenderer.invoke("pdf:ready", error) as Promise<boolean>,
   isMaximized: () => ipcRenderer.invoke("window:is-maximized"),
   onMaximizedStateChange: (callback: (isMaximized: boolean) => void) => {

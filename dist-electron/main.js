@@ -4101,6 +4101,13 @@ ipcMain.handle("pdf:ready", (event, error) => {
   else waiter.resolve();
   return true;
 });
+ipcMain.handle("pdf:show-in-folder", (event, filePath) => {
+  if (!mainWindow || mainWindow.isDestroyed() || event.sender !== mainWindow.webContents) {
+    throw new Error("Unauthorized PDF request");
+  }
+  if (typeof filePath !== "string" || !filePath.trim()) throw new Error("Invalid PDF path");
+  shell.showItemInFolder(filePath);
+});
 ipcMain.handle("window:minimize", () => {
   mainWindow == null ? void 0 : mainWindow.minimize();
 });

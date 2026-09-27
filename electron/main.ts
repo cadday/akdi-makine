@@ -42,6 +42,14 @@ ipcMain.handle("pdf:ready", (event, error?: unknown) => {
   return true;
 });
 
+ipcMain.handle("pdf:show-in-folder", (event, filePath: unknown) => {
+  if (!mainWindow || mainWindow.isDestroyed() || event.sender !== mainWindow.webContents) {
+    throw new Error("Unauthorized PDF request");
+  }
+  if (typeof filePath !== "string" || !filePath.trim()) throw new Error("Invalid PDF path");
+  shell.showItemInFolder(filePath);
+});
+
 ipcMain.handle("window:minimize", () => {
   mainWindow?.minimize();
 });

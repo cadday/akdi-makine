@@ -24,6 +24,7 @@ electron.contextBridge.exposeInMainWorld("electronAPI", {
   deleteImage: (id) => electron.ipcRenderer.invoke("images:delete", id),
   saveRecordPdf: (request) => electron.ipcRenderer.invoke("pdf:save-record", request),
   saveTestComparisonPdf: (request) => electron.ipcRenderer.invoke("pdf:save-record", { ...request, type: "test-comparison" }),
+  showPdfInFolder: (filePath) => electron.ipcRenderer.invoke("pdf:show-in-folder", filePath),
   notifyPdfReady: (error) => electron.ipcRenderer.invoke("pdf:ready", error),
   isMaximized: () => electron.ipcRenderer.invoke("window:is-maximized"),
   onMaximizedStateChange: (callback) => {

@@ -409,7 +409,7 @@ export default function CompareTestsPage({ printMode = false }: { printMode?: bo
   const theme = useTheme();
   const { isDarkMode } = useThemeContext();
   const { getTest, getDataFields } = useDb();
-  const { showError, showSuccess } = useAppNotifications();
+  const { showError, showPdfSaved } = useAppNotifications();
   const chartElementRef = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<echarts.ECharts | null>(null);
   const [tests, setTests] = useState<TestRecord[]>([]);
@@ -627,7 +627,7 @@ export default function CompareTestsPage({ printMode = false }: { printMode?: bo
                             name: `Test Comparison ${tests.length} Tests`,
                           })
                           .then((result) => {
-                            if (!result.canceled) showSuccess("PDF saved successfully");
+                            if (!result.canceled && result.filePath) showPdfSaved(result.filePath);
                           })
                           .catch((error: unknown) => showError(`Failed to save PDF: ${String(error)}`));
                       }}
