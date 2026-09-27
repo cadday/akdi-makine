@@ -30,12 +30,13 @@ export interface TestGraphPoint {
 }
 
 export interface TestResults {
-  yieldStrength?: number;
-  tensileStrength?: number;
-  elongation?: number;
-  firstLength?: number;
-  lastLength?: number;
-  testDuration?: number;
+  finalized?: boolean;
+  yieldStrength?: number | null;
+  tensileStrength?: number | null;
+  elongation?: number | null;
+  firstLength?: number | null;
+  lastLength?: number | null;
+  testDuration?: number | null;
   graphData?: TestGraphPoint[];
 }
 

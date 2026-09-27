@@ -18,7 +18,6 @@ import {
 import {
   ColumnsPanelTrigger,
   ExportCsv,
-  ExportPrint,
   FilterPanelTrigger,
   QuickFilter,
   QuickFilterClear,
@@ -26,7 +25,7 @@ import {
   Toolbar,
   GridRowSelectionModel,
 } from "@mui/x-data-grid";
-import { ChevronRight, Columns, Copy, Download, FileText, Filter, GitCompareArrows, Plus, Printer, Search, X } from "lucide-react";
+import { ChevronRight, Columns, Copy, Download, FileText, Filter, GitCompareArrows, Plus, Search, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -213,24 +212,13 @@ export const DataGridListingToolbar = ({
             onClose={handleCloseExport}
             className='mt-1'
           >
-            <ExportPrint
-              render={
-                <MenuItem>
-                  <ListItemIcon>
-                    <Printer size={16} />
-                  </ListItemIcon>
-                  <ListItemText>Print</ListItemText>
-                </MenuItem>
-              }
-              onClick={handleCloseExport}
-            />
             <ExportCsv
               render={
                 <MenuItem>
                   <ListItemIcon>
                     <FileText size={16} />
                   </ListItemIcon>
-                  <ListItemText>Export CSV</ListItemText>
+                  <ListItemText>Save as CSV</ListItemText>
                 </MenuItem>
               }
               onClick={handleCloseExport}

@@ -7,7 +7,7 @@ import { Box, Button, Fade, Typography, useMediaQuery, useTheme } from "@mui/mat
 
 import { useLayoutContext } from "@/components/layout/layout-context";
 import Logo from "@/components/logo/logo";
-import { ArrowUpDown, ListChevronsUpDown, Menu, OctagonX } from "lucide-react";
+import { ArrowUpDown, ListChevronsUpDown, Menu, OctagonX, Play } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MenuShowState } from "@/types/types";
 import { usePlcData } from "@/context/plc-context";
@@ -83,8 +83,22 @@ export default function Header() {
           </Box>
         </Box>
 
-        <Fade in={!rightButtonsVisibleMobile || !isMobile}>
-          <Box component={Link} to={"#"} className='bg-grey-75 flex flex-row gap-5 rounded-lg py-2.5 px-4 transition-all! hover:bg-grey-200 no-drag'>
+        <Box className='flex flex-row gap-1  no-drag'>
+          <Button
+            size='large'
+            variant='pastel'
+            color='grey'
+            component={Link}
+            to={"/tests/add"}
+            startIcon={
+              <Box className='w-6 h-6 flex items-center justify-center '>
+                <Play />
+              </Box>
+            }
+          >
+            Add Test
+          </Button>
+          <Box component={Link} to={"#"} className='bg-grey-25 flex flex-row gap-5 rounded-lg py-2.5 px-4 transition-all! hover:bg-grey-50'>
             <Box className='flex flex-row items-center gap-2'>
               {connectionStatus.isError && <OctagonX className='text-error' />}
               {!connectionStatus.isError && <ArrowUpDown className='text-success' />}
@@ -96,7 +110,7 @@ export default function Header() {
               </Box>
             </Box>
           </Box>
-        </Fade>
+        </Box>
 
         <WindowControls />
       </Box>

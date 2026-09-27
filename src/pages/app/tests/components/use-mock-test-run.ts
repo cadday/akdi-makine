@@ -23,6 +23,8 @@ interface UseMockTestRunOptions {
 
 interface MockCurve {
   anchors: Array<[number, number]>;
+  yieldStrain: number;
+  tensileStrain: number;
   yieldStrength: number;
   tensileStrength: number;
   elongation: number;
@@ -30,18 +32,19 @@ interface MockCurve {
   lastLength: number;
 }
 
-function hasCompleteResults(results?: TestResults): results is TestResults & Required<Omit<TestResults, "graphData">> & { graphData: TestGraphPoint[] } {
+function hasFinalizedResults(results?: TestResults): results is TestResults & { graphData: TestGraphPoint[] } {
   return Boolean(
     results &&
       Array.isArray(results.graphData) &&
     results.graphData.length > 0 &&
     results.graphData.every((point) => Number.isFinite(point.x) && Number.isFinite(point.y)) &&
-    Number.isFinite(results.yieldStrength) &&
-    Number.isFinite(results.tensileStrength) &&
-    Number.isFinite(results.elongation) &&
-    Number.isFinite(results.firstLength) &&
-    Number.isFinite(results.lastLength) &&
-    Number.isFinite(results.testDuration),
+      (results.finalized === true ||
+        (Number.isFinite(results.yieldStrength) &&
+          Number.isFinite(results.tensileStrength) &&
+          Number.isFinite(results.elongation) &&
+          Number.isFinite(results.firstLength) &&
+          Number.isFinite(results.lastLength) &&
+          Number.isFinite(results.testDuration))),
   );
 }
 
@@ -76,6 +79,8 @@ function createMockCurve(testId: string): MockCurve {
       [tensileStrain, tensileStrength],
       [elongation, tensileStrength * between(0.82, 0.94)],
     ],
+    yieldStrain,
+    tensileStrain,
     yieldStrength,
     tensileStrength,
     elongation,
@@ -102,6 +107,7 @@ function getMockPoint(progress: number, curve: MockCurve): TestGraphPoint {
 
 function getMockResults(graphData: TestGraphPoint[], duration: number, curve: MockCurve): TestResults {
   return {
+    finalized: true,
     yieldStrength: Number(curve.yieldStrength.toFixed(2)),
     tensileStrength: Number(curve.tensileStrength.toFixed(2)),
     elongation: Number(curve.elongation.toFixed(2)),
@@ -112,17 +118,32 @@ function getMockResults(graphData: TestGraphPoint[], duration: number, curve: Mo
   };
 }
 
+function getPartialMockResults(graphData: TestGraphPoint[]): TestResults {
+  return {
+    finalized: true,
+    yieldStrength: null,
+    tensileStrength: null,
+    elongation: null,
+    firstLength: null,
+    lastLength: null,
+    testDuration: null,
+    graphData,
+  };
+}
+
 export default function useMockTestRun({ testId, duration, savedResults, onResultsSaved, readOnly = false }: UseMockTestRunOptions) {
   const { updateTestResults } = useDb();
   const curve = useMemo(() => createMockCurve(testId), [testId]);
   const [state, setState] = useState<TestRunState>(() => {
     if (readOnly) return { status: "done", progress: 1, graphData: savedResults?.graphData ?? [], results: savedResults ?? null, error: null };
-    if (hasCompleteResults(savedResults)) {
+    if (hasFinalizedResults(savedResults)) {
       return { status: "done", progress: 1, graphData: savedResults.graphData, results: savedResults, error: null };
     }
     return { status: "in-progress", progress: 0, graphData: [getMockPoint(0, curve)], results: null, error: null };
   });
   const pendingResultsRef = useRef<TestResults | null>(null);
+  const intervalRef = useRef<number | null>(null);
+  const graphDataRef = useRef<TestGraphPoint[]>([]);
   const onResultsSavedRef = useRef(onResultsSaved);
   onResultsSavedRef.current = onResultsSaved;
 
@@ -147,12 +168,19 @@ export default function useMockTestRun({ testId, duration, savedResults, onResul
     if (pendingResultsRef.current) void saveResults(pendingResultsRef.current);
   }, [saveResults]);
 
+  const stopTest = useCallback(() => {
+    if (intervalRef.current === null) return;
+    window.clearInterval(intervalRef.current);
+    intervalRef.current = null;
+    void saveResults(getPartialMockResults(graphDataRef.current));
+  }, [saveResults]);
+
   useEffect(() => {
     if (readOnly) {
       setState({ status: "done", progress: 1, graphData: savedResults?.graphData ?? [], results: savedResults ?? null, error: null });
       return;
     }
-    if (hasCompleteResults(savedResults)) {
+    if (hasFinalizedResults(savedResults)) {
       pendingResultsRef.current = null;
       setState({ status: "done", progress: 1, graphData: savedResults.graphData, results: savedResults, error: null });
       return;
@@ -161,24 +189,28 @@ export default function useMockTestRun({ testId, duration, savedResults, onResul
     let cancelled = false;
     let graphData = [getMockPoint(0, curve)];
     const startTime = performance.now();
+    graphDataRef.current = graphData;
     setState({ status: "in-progress", progress: 0, graphData, results: null, error: null });
 
-    const intervalId = window.setInterval(() => {
+    intervalRef.current = window.setInterval(() => {
       const progress = duration <= 0 ? 1 : Math.min((performance.now() - startTime) / (duration * 1000), 1);
       graphData = [...graphData, getMockPoint(progress, curve)];
+      graphDataRef.current = graphData;
       setState((current) => (current.status === "in-progress" ? { ...current, progress, graphData } : current));
 
       if (progress < 1) return;
-      window.clearInterval(intervalId);
+      if (intervalRef.current !== null) window.clearInterval(intervalRef.current);
+      intervalRef.current = null;
       const results = getMockResults(graphData, duration, curve);
       if (!cancelled) void saveResults(results);
     }, SAMPLE_INTERVAL_MS);
 
     return () => {
       cancelled = true;
-      window.clearInterval(intervalId);
+      if (intervalRef.current !== null) window.clearInterval(intervalRef.current);
+      intervalRef.current = null;
     };
   }, [curve, duration, readOnly, savedResults, saveResults, testId]);
 
-  return { ...state, retrySave };
+  return { ...state, retrySave, stopTest };
 }

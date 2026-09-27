@@ -32,7 +32,7 @@ export default function useAppNotifications() {
                 createElement(
                   Button,
                   { "aria-label": action.label, className: "icon-only", color: "grey", variant: "text", size: "tiny", onClick: action.onClick },
-                  createElement(FolderOpen, { className: "text-text-secondary!", size: 18 }),
+                  createElement(FolderOpen, { className: "text-text-primary!", size: 18 }),
                 ),
                 createElement(
                   Button,
@@ -44,7 +44,7 @@ export default function useAppNotifications() {
                     size: "tiny",
                     onClick: () => closeSnackbar(snackbarId),
                   },
-                  createElement(X, { className: "text-text-secondary", size: 12 }),
+                  createElement(X, { className: "text-text-primary", size: 12 }),
                 ),
               )
           : undefined,

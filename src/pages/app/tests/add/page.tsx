@@ -240,7 +240,7 @@ export default function Page() {
         <Grid size={12} container spacing={2.5}>
           <Grid size={{ xs: 12, md: "grow" }}>
             <Typography variant='h1' component='h1' className='mb-0'>
-              Run Test
+              Add Test
             </Typography>
             <Breadcrumbs>
               <Link color='inherit' to={LINKS.home}>
@@ -249,7 +249,7 @@ export default function Page() {
               <Link color='inherit' to='/tests'>
                 {t("menu-tests")}
               </Link>
-              <Typography variant='body2'>Run Test</Typography>
+              <Typography variant='body2'>Add Test</Typography>
             </Breadcrumbs>
           </Grid>
         </Grid>
@@ -464,7 +464,7 @@ export default function Page() {
                 className='surface-standard'
                 startIcon={<Play />}
               >
-                Run
+                Start
               </Button>
             </Grid>
           </Grid>
