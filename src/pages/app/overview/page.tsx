@@ -275,9 +275,7 @@ export default function Page() {
                       <Box className='flex flex-col gap-4'>
                         <FlaskConical className='group-hover:text-primary transition-colors' />
                         <Box className='flex flex-col gap-0'>
-                          <Typography className='group-hover:text-primary transition-colors' variant='subtitle1'>
-                            Tests
-                          </Typography>
+                          <Typography className='group-hover:text-primary transition-colors text-text-secondary'>Tests</Typography>
                           <Typography className='group-hover:text-primary transition-colors' variant='h6'>
                             {counts.tests.toLocaleString()}
                           </Typography>
@@ -292,9 +290,7 @@ export default function Page() {
                       <Box className='flex flex-col gap-4'>
                         <DraftingCompass className='group-hover:text-primary transition-colors' />
                         <Box className='flex flex-col gap-0'>
-                          <Typography className='group-hover:text-primary transition-colors' variant='subtitle1'>
-                            Specimens
-                          </Typography>
+                          <Typography className='group-hover:text-primary transition-colors text-text-secondary'>Specimens</Typography>
                           <Typography className='group-hover:text-primary transition-colors' variant='h6'>
                             {counts.specimens.toLocaleString()}
                           </Typography>
@@ -309,9 +305,7 @@ export default function Page() {
                       <Box className='flex flex-col gap-4'>
                         <SlidersVertical className='group-hover:text-primary transition-colors' />
                         <Box className='flex flex-col gap-0'>
-                          <Typography className='group-hover:text-primary transition-colors' variant='subtitle1'>
-                            Presets
-                          </Typography>
+                          <Typography className='group-hover:text-primary transition-colors text-text-secondary'>Presets</Typography>
                           <Typography className='group-hover:text-primary transition-colors' variant='h6'>
                             {counts.presets.toLocaleString()}
                           </Typography>
@@ -326,9 +320,7 @@ export default function Page() {
                       <Box className='flex flex-col gap-4'>
                         <Network className='group-hover:text-primary transition-colors' />
                         <Box className='flex flex-col gap-0'>
-                          <Typography className='group-hover:text-primary transition-colors' variant='subtitle1'>
-                            Data Fields
-                          </Typography>
+                          <Typography className='group-hover:text-primary transition-colors text-text-secondary'>Data Fields</Typography>
                           <Typography className='group-hover:text-primary transition-colors' variant='h6'>
                             {counts.dataFields.toLocaleString()}
                           </Typography>

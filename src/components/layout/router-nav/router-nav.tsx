@@ -30,37 +30,41 @@ export default function RouterNav() {
 
   return (
     <Box className='flex flex-row gap-1'>
-      <Tooltip title={"Backward"} placement='bottom'>
-        <Button
-          variant='text'
-          size='large'
-          color='text-primary'
-          aria-label='Backward'
-          disabled={!canGoBack}
-          className={cn("icon-only [&.active]:text-primary hover:bg-grey-75")}
-          onClick={() => navigate(-1)}
-          startIcon={
-            <Box className='w-6 h-6 flex items-center justify-center '>
-              <ChevronLeft size={16} />
-            </Box>
-          }
-        />
+      <Tooltip title={"Back"} placement='bottom'>
+        <span>
+          <Button
+            variant='text'
+            size='large'
+            color='text-primary'
+            aria-label='Backward'
+            disabled={!canGoBack}
+            className={cn("icon-only [&.active]:text-primary hover:bg-grey-75")}
+            onClick={() => navigate(-1)}
+            startIcon={
+              <Box className='w-6 h-6 flex items-center justify-center '>
+                <ChevronLeft size={16} />
+              </Box>
+            }
+          />
+        </span>
       </Tooltip>
       <Tooltip title={"Forward"} placement='bottom'>
-        <Button
-          variant='text'
-          size='large'
-          color='text-primary'
-          aria-label='Forward'
-          disabled={!canGoForward}
-          className={cn("icon-only [&.active]:text-primary hover:bg-grey-75")}
-          onClick={() => navigate(1)}
-          startIcon={
-            <Box className='w-6 h-6 flex items-center justify-center '>
-              <ChevronRight size={16} />
-            </Box>
-          }
-        />
+        <span>
+          <Button
+            variant='text'
+            size='large'
+            color='text-primary'
+            aria-label='Forward'
+            disabled={!canGoForward}
+            className={cn("icon-only [&.active]:text-primary hover:bg-grey-75")}
+            onClick={() => navigate(1)}
+            startIcon={
+              <Box className='w-6 h-6 flex items-center justify-center '>
+                <ChevronRight size={16} />
+              </Box>
+            }
+          />
+        </span>
       </Tooltip>
     </Box>
   );

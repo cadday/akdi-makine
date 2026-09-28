@@ -17,7 +17,7 @@ import {
   Select,
   Typography,
 } from "@mui/material";
-import { ChevronDown, Clock3, Gauge, PencilRuler, Save, Tag, Weight, WeightTilde, XSquare } from "lucide-react";
+import { Bookmark, ChevronDown, Clock3, Gauge, PencilRuler, Save, Weight, WeightTilde, XSquare } from "lucide-react";
 import type { PresetRecord, PresetType } from "@/context/db-context";
 import { PRESET_TYPES } from "@/lib/db";
 import useAppNotifications from "@/hooks/use-app-notifications";
@@ -107,7 +107,7 @@ export default function PresetForm({ onSave, preset, initialPreset, saveLabel = 
           <Card>
             <CardContent className='-mb-4'>
               <Box className='flex flex-row gap-2'>
-                <Tag className={fieldError("name") ? "text-error!" : undefined} />
+                <Bookmark className={fieldError("name") ? "text-error!" : undefined} />
                 <FormControl className='outlined' variant='standard' size='small' fullWidth required>
                   <FormLabel component='label' className={fieldError("name") ? "text-error!" : undefined}>
                     Name

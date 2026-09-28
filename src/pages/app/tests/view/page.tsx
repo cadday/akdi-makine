@@ -9,6 +9,7 @@ import TabPanel from "@mui/lab/TabPanel";
 import {
   ArrowDown,
   ArrowUp,
+  Bookmark,
   ChevronLeft,
   ChevronRight,
   Clock3,
@@ -20,7 +21,6 @@ import {
   Gauge,
   Hexagon,
   PencilRuler,
-  Tag,
   Trash,
   Weight,
   WeightTilde,
@@ -250,7 +250,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                             {preset ? (
                               <>
                                 <Box className='flex flex-row gap-2'>
-                                  <Tag />
+                                  <Bookmark />
                                   <Box className='flex flex-col gap-1'>
                                     <Typography variant='subtitle1'>Name</Typography>
                                     <Typography>{preset.name}</Typography>

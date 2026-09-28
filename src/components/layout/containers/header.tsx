@@ -1,13 +1,12 @@
 import Mode from "../mode/mode";
 import Search from "../search/search";
-import { useState } from "react";
 import { Link } from "react-router";
 
-import { Box, Button, Fade, Typography, useMediaQuery, useTheme } from "@mui/material";
+import { Box, Button, Typography } from "@mui/material";
 
 import { useLayoutContext } from "@/components/layout/layout-context";
 import Logo from "@/components/logo/logo";
-import { ArrowUpDown, ListChevronsUpDown, Menu, OctagonX, Play } from "lucide-react";
+import { ArrowUpDown, Menu, OctagonX, Play } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MenuShowState } from "@/types/types";
 import { usePlcData } from "@/context/plc-context";
@@ -16,16 +15,9 @@ import { LINKS } from "@/constants";
 import Expand from "../expand/expand";
 import RouterNav from "../router-nav/router-nav";
 
-export default function Header() {
+export default function Header({ minimal = false }: { minimal?: boolean }) {
   const { showLeftInMobile, showLeftMobileButton, leftPrimaryCurrent, leftShowBackdrop } = useLayoutContext();
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
-  const [rightButtonsVisibleMobile, setRightButtonsVisibleMobile] = useState(false);
   const { connectionStatus } = usePlcData();
-
-  const handleRightButtonsMobileToggle = () => {
-    setRightButtonsVisibleMobile((prevValue) => !prevValue);
-  };
 
   return (
     <Box
@@ -59,59 +51,47 @@ export default function Header() {
           </Link>
 
           <Box className='flex flex-row sm:gap-1 no-drag'>
-            <Fade in={rightButtonsVisibleMobile || !isMobile}>
-              <Box className={cn("hidden flex-row sm:flex! sm:gap-1", rightButtonsVisibleMobile ? "flex" : "hidden")}>
-                <RouterNav />
+            <RouterNav />
+            {!minimal && (
+              <>
                 <Expand />
                 <Mode />
                 <Search />
-              </Box>
-            </Fade>
-
-            {/* The button to turn on and off the mobile version of the right buttons and version select */}
-            <Button
-              variant='text'
-              size='large'
-              color='text-primary'
-              className={cn(
-                "icon-only hover-icon-shrink [&.active]:text-primary hover:bg-grey-75 [&.active]:bg-grey-75 ms-1 sm:hidden",
-                rightButtonsVisibleMobile && "active",
-              )}
-              onClick={handleRightButtonsMobileToggle}
-              startIcon={<ListChevronsUpDown />}
-            />
+              </>
+            )}
           </Box>
         </Box>
 
-        <Box className='flex flex-row gap-1  no-drag'>
-          <Button
-            size='large'
-            variant='pastel'
-            color='grey'
-            component={Link}
-            to={"/tests/add"}
-            startIcon={
-              <Box className='w-6 h-6 flex items-center justify-center '>
-                <Play />
-              </Box>
-            }
-          >
-            Add Test
-          </Button>
-          <Box component={Link} to={"#"} className='bg-grey-25 flex flex-row gap-5 rounded-lg py-2.5 px-4 transition-all! hover:bg-grey-50'>
-            <Box className='flex flex-row items-center gap-2'>
-              {connectionStatus.isError && <OctagonX className='text-error' />}
-              {!connectionStatus.isError && <ArrowUpDown className='text-success' />}
+        {!minimal && (
+          <Box className='flex flex-row gap-1  no-drag'>
+            <Button
+              size='large'
+              variant='pastel'
+              color='grey'
+              component={Link}
+              to={"/tests/add"}
+              startIcon={
+                <Box className='w-6 h-6 flex items-center justify-center '>
+                  <Play />
+                </Box>
+              }
+            >
+              Add Test
+            </Button>
+            <Box component={Link} to={"#"} className='bg-grey-25 flex flex-row gap-5 rounded-lg py-2.5 px-4 transition-all! hover:bg-grey-50'>
+              <Box className='flex flex-row items-center gap-2'>
+                {connectionStatus.isError && <OctagonX className='text-error' />}
+                {!connectionStatus.isError && <ArrowUpDown className='text-success' />}
 
-              <Box className='flex flex-row gap-1'>
-                <Typography variant='subtitle1' className='leading-1'>
-                  {connectionStatus.text}
-                </Typography>
+                <Box className='flex flex-row gap-1'>
+                  <Typography variant='subtitle1' className='leading-1'>
+                    {connectionStatus.text}
+                  </Typography>
+                </Box>
               </Box>
             </Box>
           </Box>
-        </Box>
-
+        )}
         <WindowControls />
       </Box>
     </Box>

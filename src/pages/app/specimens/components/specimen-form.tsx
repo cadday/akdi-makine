@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useFormik } from "formik";
 import * as yup from "yup";
 import { Alert, AlertTitle, Box, Button, capitalize, Card, CardContent, FormControl, FormLabel, Grid, Input, Typography } from "@mui/material";
-import { Save, Tag, XSquare } from "lucide-react";
+import { Bookmark, Save, XSquare } from "lucide-react";
 import DataFieldInput from "@/components/data-fields/data-field-input";
 import { type DataFieldDefinition, type DynamicDataValue, type SpecimenRecord, type UploadedImage } from "@/context/db-context";
 import useAppNotifications from "@/hooks/use-app-notifications";
@@ -45,8 +45,14 @@ function buildSpecimenValidationSchema(fields: DataFieldDefinition[]) {
       }
       case "Select": {
         let schema = field.multipleSelection
-          ? yup.array().of(yup.string().oneOf(field.options ?? [])).nullable()
-          : yup.string().nullable().oneOf(field.options ?? [], `${field.name} must be one of its configured options`);
+          ? yup
+              .array()
+              .of(yup.string().oneOf(field.options ?? []))
+              .nullable()
+          : yup
+              .string()
+              .nullable()
+              .oneOf(field.options ?? [], `${field.name} must be one of its configured options`);
         if (field.mandatory) {
           schema = field.multipleSelection
             ? schema.required(`${field.name} is required`).min(1, `${field.name} is required`)
@@ -181,7 +187,7 @@ export default function SpecimenForm({ fields, isLoadingFields = false, loadErro
           <Card>
             <CardContent className='-mb-4'>
               <Box className='flex flex-row gap-2'>
-                <Tag className={cn(formik.touched.name && formik.errors.name && submitted && "text-error!")} />
+                <Bookmark className={cn(formik.touched.name && formik.errors.name && submitted && "text-error!")} />
                 <FormControl className='outlined' variant='standard' size='small' fullWidth required>
                   <FormLabel component='label' className={cn(formik.touched.name && formik.errors.name && submitted && "text-error!")}>
                     Name

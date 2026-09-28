@@ -25,6 +25,7 @@ import {
   ArrowUpFromLine,
   ArrowUpToLine,
   ArrowUpWideNarrow,
+  Bookmark,
   CalendarCog,
   CalendarPlus,
   Clock3,
@@ -33,7 +34,6 @@ import {
   Gauge,
   Hexagon,
   PencilRuler,
-  Tag,
   Timer,
   Weight,
   WeightTilde,
@@ -363,7 +363,7 @@ function ComparisonDetails({
           </Grid>
         </Grid>
         <ComparisonCard title='Preset'>
-          <ComparisonField icon={<Tag />} label='Name' tests={tests} colors={colors} valueForTest={(test) => test.presetSnapshot.name} />
+          <ComparisonField icon={<Bookmark />} label='Name' tests={tests} colors={colors} valueForTest={(test) => test.presetSnapshot.name} />
           <ComparisonField icon={<PencilRuler />} label='Type' tests={tests} colors={colors} valueForTest={(test) => test.presetSnapshot.type} />
           <ComparisonField icon={<WeightTilde />} label='Preload' tests={tests} colors={colors} valueForTest={(test) => `${test.presetSnapshot.preload} N`} />
           <ComparisonField icon={<Weight />} label='Load' tests={tests} colors={colors} valueForTest={(test) => `${test.presetSnapshot.load} N`} />
@@ -371,7 +371,7 @@ function ComparisonDetails({
           <ComparisonField icon={<Clock3 />} label='Duration' tests={tests} colors={colors} valueForTest={(test) => `${test.presetSnapshot.duration} s`} />
         </ComparisonCard>
         <ComparisonCard title='Definition'>
-          <ComparisonField icon={<Tag />} label='Name' tests={tests} colors={colors} valueForTest={(test) => test.name} />
+          <ComparisonField icon={<Bookmark />} label='Name' tests={tests} colors={colors} valueForTest={(test) => test.name} />
           {testFields.map((field) => (
             <ComparisonField
               key={field.id}

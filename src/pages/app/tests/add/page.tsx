@@ -20,7 +20,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { ChevronDown, DraftingCompass, Play, SlidersVertical, Tag, X, XSquare } from "lucide-react";
+import { Bookmark, ChevronDown, DraftingCompass, Play, SlidersVertical, X, XSquare } from "lucide-react";
 import DataFieldInput from "@/components/data-fields/data-field-input";
 import ContentWrapper from "@/components/layout/containers/content-wrapper";
 import TitleWrapper from "@/components/layout/containers/title-wrapper";
@@ -387,7 +387,7 @@ export default function Page() {
               <Card>
                 <CardContent className='flex flex-col -mb-4'>
                   <Box className='flex flex-row gap-2'>
-                    <Tag className={cn(submitted && formik.errors.name && "text-error!")} />
+                    <Bookmark className={cn(submitted && formik.errors.name && "text-error!")} />
                     <FormControl className='outlined' variant='standard' size='small' fullWidth required>
                       <FormLabel component='label' className={cn(submitted && formik.errors.name && "text-error!")}>
                         Name

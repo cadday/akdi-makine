@@ -1,7 +1,6 @@
 import React from "react";
 import { Navigate, Route, Routes } from "react-router";
 
-import { LINKS } from "@/constants";
 import { leftMenuBottomItems, leftMenuItems } from "@/menu-items";
 import AppLayout from "@/pages/app/layout";
 import Loading from "@/pages/loading.tsx";
@@ -67,8 +66,8 @@ const PrintComparisonPage = React.lazy(() => import("@/pages/print/comparison-vi
 const AppRoutes = () => {
   return (
     <Routes>
-      {/* Landing page route */}
-      <Route path='/' element={<Navigate to={LINKS.home} replace />} />
+      <Route path='/' element={lazyLoad("/landing")} />
+      <Route path='/terms-and-conditions' element={lazyLoad("/terms-and-conditions")} />
       {/* App routes with AppLayout */}
       <Route element={<AppLayout />}>
         {/* Routes generated from menu items */}

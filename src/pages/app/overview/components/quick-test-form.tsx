@@ -16,7 +16,7 @@ import {
   Typography,
   createFilterOptions,
 } from "@mui/material";
-import { ChevronDown, DraftingCompass, Play, SlidersVertical, Tag, X, XSquare } from "lucide-react";
+import { Bookmark, ChevronDown, DraftingCompass, Play, SlidersVertical, X, XSquare } from "lucide-react";
 import { useDb, type PresetRecord, type SpecimenRecord } from "@/context/db-context";
 import useAppNotifications from "@/hooks/use-app-notifications";
 import { cn } from "@/lib/utils";
@@ -134,10 +134,10 @@ export default function QuickTestForm() {
       className='flex flex-col'
     >
       <Box className='flex flex-row gap-2'>
-        <Tag className={cn(submitted && formik.errors.name && "text-error!")} />
+        <Bookmark className={cn(submitted && formik.errors.name && "text-error!")} />
         <FormControl className='outlined' variant='standard' size='small' fullWidth required>
           <FormLabel component='label' className={cn(submitted && formik.errors.name && "text-error!")}>
-            Test Name
+            Name
           </FormLabel>
           <Input name='name' value={formik.values.name} onChange={formik.handleChange} onBlur={formik.handleBlur} />
         </FormControl>
@@ -233,7 +233,7 @@ export default function QuickTestForm() {
         type='submit'
         variant='pastel'
         color='grey'
-        size="large"
+        size='large'
         className='self-start'
         startIcon={<Play />}
       >

@@ -1,7 +1,7 @@
 import { SyntheticEvent, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { Box, Breadcrumbs, Button, Card, CardContent, Grid, ListItemIcon, ListItemText, Menu, MenuItem, Tab, Tooltip, Typography } from "@mui/material";
-import { CalendarCog, CalendarPlus, ChevronLeft, ChevronRight, Clock3, Ellipsis, Gauge, Tag, Weight, WeightTilde, X } from "lucide-react";
+import { CalendarCog, CalendarPlus, ChevronLeft, ChevronRight, Clock3, Ellipsis, Gauge, SlidersVertical, Weight, WeightTilde, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { DataGrid, type GridColDef, type GridRenderCellParams } from "@mui/x-data-grid";
 import TestDataGrid from "@/components/data-grid/test-data-grid";
@@ -212,7 +212,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                           <Card>
                             <CardContent className='flex flex-col gap-5'>
                               <Box className='flex flex-row gap-2'>
-                                <Tag />
+                                <SlidersVertical />
                                 <Box className='flex flex-col gap-1'>
                                   <Typography variant='subtitle1'>Type</Typography>
                                   <Typography>{preset.type}</Typography>

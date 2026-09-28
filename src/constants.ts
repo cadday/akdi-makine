@@ -21,6 +21,7 @@ export const LOCAL_STORAGE_KEYS = {
   themeMode: `${storagePrefix}-theme-mode`,
   leftMenuType: `${storagePrefix}-left-menu-type`,
   contentType: `${storagePrefix}-content-type`,
+  startupChoice: `${storagePrefix}-startup-choice`,
 };
 
 export const LINKS = {

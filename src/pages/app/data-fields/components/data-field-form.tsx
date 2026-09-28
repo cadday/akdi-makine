@@ -26,6 +26,7 @@ import {
   Typography,
 } from "@mui/material";
 import {
+  Bookmark,
   ChevronDown,
   CopyCheck,
   File,
@@ -38,7 +39,6 @@ import {
   Scroll,
   Signpost,
   SquaresSubtract,
-  Tag,
   TriangleAlert,
   X,
   XSquare,
@@ -247,7 +247,7 @@ export default function DataFieldForm({ dataField, initialDataField, onSave, sav
           <Card>
             <CardContent className='-mb-4'>
               <Box className='flex flex-row gap-2'>
-                <Tag className={cn(hasFieldError("name") && submitted && "text-error!")} />
+                <Bookmark className={cn(hasFieldError("name") && submitted && "text-error!")} />
                 <FormControl className='outlined' variant='standard' size='small' fullWidth required>
                   <FormLabel component='label' className={cn(hasFieldError("name") && submitted && "text-error!")}>
                     Name
@@ -402,7 +402,10 @@ export default function DataFieldForm({ dataField, initialDataField, onSave, sav
                         >
                           {IMAGE_ACCEPT_OPTIONS.map((type) => (
                             <MenuItem key={type} value={type}>
-                              <FormControlLabel control={<Checkbox checked={formik.values.accept.split(",").includes(type)} />} label={capitalize(type.replace("image/", ""))} />
+                              <FormControlLabel
+                                control={<Checkbox checked={formik.values.accept.split(",").includes(type)} />}
+                                label={capitalize(type.replace("image/", ""))}
+                              />
                             </MenuItem>
                           ))}
                         </Select>

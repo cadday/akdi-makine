@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useFormik } from "formik";
 import * as yup from "yup";
 import { Alert, AlertTitle, Box, Button, capitalize, Card, CardContent, FormControl, FormLabel, Grid, Input, Typography } from "@mui/material";
-import { CalendarCog, CalendarPlus, Hexagon, Pen, Save, Tag, X, XSquare } from "lucide-react";
+import { Bookmark, CalendarCog, CalendarPlus, Hexagon, Pen, Save, X, XSquare } from "lucide-react";
 import { DynamicIcon } from "lucide-react/dynamic";
 import DataFieldInput from "@/components/data-fields/data-field-input";
 import ImageLightboxGallery from "@/components/data-fields/image-lightbox-gallery";
@@ -232,7 +232,7 @@ export default function TestDefinition({ test, fields, onTestUpdated }: TestDefi
               className='flex flex-col'
             >
               <Box className='flex flex-row gap-2'>
-                <Tag className={cn(submitted && formik.errors.name && "text-error!")} />
+                <Bookmark className={cn(submitted && formik.errors.name && "text-error!")} />
                 <FormControl className='outlined' variant='standard' size='small' fullWidth required>
                   <FormLabel component='label' className={cn(submitted && formik.errors.name && "text-error!")}>
                     Name
@@ -286,7 +286,7 @@ export default function TestDefinition({ test, fields, onTestUpdated }: TestDefi
           ) : (
             <>
               <Box className='flex flex-row gap-2'>
-                <Tag />
+                <Bookmark />
                 <Box className='flex flex-col gap-1'>
                   <Typography variant='subtitle1'>Name</Typography>
                   <Typography>{test.name}</Typography>
