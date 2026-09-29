@@ -9,14 +9,14 @@ export function NoWayToTest() {
         <Box className='w-10 h-10 border border-dashed border-text-secondary flex items-center justify-center rounded-lg'>
           <File className='text-text-secondary' />
         </Box>
-        <Typography className="text-center">To run tests make sure you added at least one specimen and preset!</Typography>
+        <Typography className="text-center">Running tests requires that you have added at least one specimen and preset!</Typography>
       </Box>
       <Box className='flex flex-row gap-1'>
-        <Button size='large' variant='outlined' color='grey' startIcon={<Plus />} component={Link} to={`/specimens/add`}>
-          Specimen
+        <Button size='large' variant='text' color='grey' className='px-4' component={Link} to={`/specimens/add`}>
+          Add Specimen
         </Button>
-        <Button size='large' variant='outlined' color='grey' startIcon={<Plus />} component={Link} to={`/presets/add`}>
-          Preset
+        <Button size='large' variant='text' color='grey' className='px-4' component={Link} to={`/presets/add`}>
+          Add Preset
         </Button>
       </Box>
     </Box>

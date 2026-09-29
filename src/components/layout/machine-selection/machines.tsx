@@ -211,7 +211,7 @@ export default function Machines() {
         <List className='max-h-72 overflow-auto'>
           {machines.map((machine) => (
             <ListItem key={machine.id} className='py-0 px-0 relative items-center'>
-              <ListItemButton onClick={() => void handleSelectMachine(machine.id)} classes={{ root: "group items-center py-3! hover:bg-transparent cursor-default" }}>
+              <ListItemButton onClick={() => void handleSelectMachine(machine.id)} classes={{ root: "group items-center py-3! cursor-default" }}>
                 <ListItemAvatar className='me-2'>
                   {machine.connected ? <CheckCircle2 className='text-success' /> : <XCircle className='text-text-disabled' />}
                 </ListItemAvatar>

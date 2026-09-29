@@ -1,4 +1,5 @@
 import { app, BrowserWindow, dialog, ipcMain, session, shell } from "electron";
+import { autoUpdater } from "electron-updater";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { writeFile } from "node:fs/promises";
@@ -33,6 +34,37 @@ interface PdfComparisonRequest {
 }
 
 const pdfReadyWaiters = new Map<number, { resolve: () => void; reject: (error: Error) => void; timeout: ReturnType<typeof setTimeout> }>();
+
+function startAutoUpdates() {
+  if (!app.isPackaged || process.platform !== "win32") return;
+
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = false;
+
+  autoUpdater.on("checking-for-update", () => console.info("Checking for application updates"));
+  autoUpdater.on("update-available", (info) => console.info(`Application update ${info.version} is available`));
+  autoUpdater.on("update-not-available", () => console.info("Application is up to date"));
+  autoUpdater.on("error", (error) => console.error("Application update failed:", error));
+  autoUpdater.on("update-downloaded", (info) => {
+    const options = {
+      type: "info" as const,
+      title: "Update ready to install",
+      message: `Version ${info.version} has been downloaded. Restart the app now to install it?`,
+      buttons: ["Restart now", "Later"],
+      defaultId: 0,
+      cancelId: 1,
+      noLink: true,
+    };
+    const prompt = mainWindow && !mainWindow.isDestroyed() ? dialog.showMessageBox(mainWindow, options) : dialog.showMessageBox(options);
+    void prompt
+      .then(({ response }) => {
+        if (response === 0) autoUpdater.quitAndInstall();
+      })
+      .catch((error: unknown) => console.error("Could not show update installation prompt:", error));
+  });
+
+  void autoUpdater.checkForUpdates().catch((error: unknown) => console.error("Could not check for application updates:", error));
+}
 
 ipcMain.handle("pdf:ready", (event, error?: unknown) => {
   const waiter = pdfReadyWaiters.get(event.sender.id);
@@ -248,4 +280,5 @@ app.whenReady().then(() => {
     callback(false);
   });
   createWindow();
+  startAutoUpdates();
 });

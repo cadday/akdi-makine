@@ -1,12 +1,18 @@
 // @see - https://www.electron.build/configuration/configuration
 {
   "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
-  "appId": "YourAppID",
+  "appId": "com.akdimakine.AKDI-MAKINE",
   "asar": true,
   "productName": "AKDIMAKINE",
   "directories": {
     "output": "release/${version}"
   },
+  "publish": [
+    {
+      "provider": "generic",
+      "url": "https://akdimakine.com/test-machine/"
+    }
+  ],
   "files": [
     "dist",
     "dist-electron"
