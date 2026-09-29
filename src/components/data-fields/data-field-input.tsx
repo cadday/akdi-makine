@@ -21,7 +21,7 @@ function isUploadedImage(value: unknown): value is UploadedImage {
 }
 
 export default function DataFieldInput({ field, value, onChange, error, pendingFiles, previewOnly, editableImages, onPendingFilesChange }: DataFieldInputProps) {
-  const fieldIcon = field.icon ? <DynamicIcon name={field.icon} className={cn(error && "text-error!")} /> : <Hexagon className={cn(error && "text-error!")} />;
+  const fieldIcon = field.icon ? <DynamicIcon name={field.icon} className={cn("flex-none", error && "text-error!")} /> : <Hexagon className={cn("flex-none", error && "text-error!")} />;
   const label = field.name;
   const labelClassName = cn(error && "text-error!");
   const ImageInput = editableImages ? ImageDataFieldInputEdit : ImageDataFieldInput;

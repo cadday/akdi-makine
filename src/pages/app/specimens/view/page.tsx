@@ -231,7 +231,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                             <CardContent className='flex flex-col gap-5'>
                               {fields.map((field) => (
                                 <Box key={field.id} className='flex flex-row gap-2'>
-                                  {field.icon ? <DynamicIcon name={field.icon} /> : <Hexagon />}
+                                  {field.icon ? <DynamicIcon name={field.icon} className='flex-none' /> : <Hexagon className='flex-none' />}
                                   <Box className='flex flex-col gap-1'>
                                     <Typography variant='subtitle1'>{field.name}</Typography>
                                     {renderValue(field, specimen.customData?.[field.id] ?? specimen.customData?.[field.name] ?? null)}
@@ -239,14 +239,14 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                                 </Box>
                               ))}
                               <Box className='flex flex-row gap-2'>
-                                <CalendarPlus />
+                                <CalendarPlus className='flex-none' />
                                 <Box className='flex flex-col gap-1'>
                                   <Typography variant='subtitle1'>Created</Typography>
                                   <Typography>{new Date(specimen.createdAt).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short" })}</Typography>
                                 </Box>
                               </Box>
                               <Box className='flex flex-row gap-2'>
-                                <CalendarCog />
+                                <CalendarCog className='flex-none' />
                                 <Box className='flex flex-col gap-1'>
                                   <Typography variant='subtitle1'>Updated</Typography>
                                   <Typography>{new Date(specimen.updatedAt).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short" })}</Typography>

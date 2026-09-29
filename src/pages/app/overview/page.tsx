@@ -35,9 +35,9 @@ const latestTestColumns: GridColDef<LatestTestRow>[] = [
       </Link>
     ),
   },
-  { field: "presetName", headerName: "Preset", minWidth: 180, flex: 1 },
-  { field: "specimenName", headerName: "Specimen", minWidth: 180, flex: 1 },
-  { field: "machineIP", headerName: "Machine IP", minWidth: 150, valueFormatter: (value) => value || "-" },
+  { field: "presetName", headerName: "Preset", minWidth: 120, flex: 1 },
+  { field: "specimenName", headerName: "Specimen", minWidth: 120, flex: 1 },
+  { field: "machineIP", headerName: "Machine IP", minWidth: 120, valueFormatter: (value) => value || "-" },
   {
     field: "createdAt",
     headerName: "Created",

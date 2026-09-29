@@ -233,7 +233,7 @@ export default function TestDefinition({ test, fields, onTestUpdated }: TestDefi
               className='flex flex-col'
             >
               <Box className='flex flex-row gap-2'>
-                <Bookmark className={cn(submitted && formik.errors.name && "text-error!")} />
+                <Bookmark className={cn("flex-none", submitted && formik.errors.name && "text-error!")} />
                 <FormControl className='outlined' variant='standard' size='small' fullWidth required>
                   <FormLabel component='label' className={cn(submitted && formik.errors.name && "text-error!")}>
                     Name
@@ -287,7 +287,7 @@ export default function TestDefinition({ test, fields, onTestUpdated }: TestDefi
           ) : (
             <>
               <Box className='flex flex-row gap-2'>
-                <Bookmark />
+                <Bookmark className='flex-none' />
                 <Box className='flex flex-col gap-1'>
                   <Typography variant='subtitle1'>Name</Typography>
                   <Typography>{test.name}</Typography>
@@ -295,7 +295,7 @@ export default function TestDefinition({ test, fields, onTestUpdated }: TestDefi
               </Box>
               {fields.map((field) => (
                 <Box key={field.id} className='flex flex-row gap-2'>
-                  {field.icon ? <DynamicIcon name={field.icon} /> : <Hexagon />}
+                  {field.icon ? <DynamicIcon name={field.icon} className='flex-none' /> : <Hexagon className='flex-none' />}
                   <Box className='flex flex-col gap-1'>
                     <Typography variant='subtitle1'>{field.name}</Typography>
                     {renderValue(field, test.customData?.[field.id] ?? test.customData?.[field.name] ?? null)}
@@ -303,14 +303,14 @@ export default function TestDefinition({ test, fields, onTestUpdated }: TestDefi
                 </Box>
               ))}
               <Box className='flex flex-row gap-2'>
-                <CalendarPlus />
+                <CalendarPlus className='flex-none' />
                 <Box className='flex flex-col gap-1'>
                   <Typography variant='subtitle1'>Created</Typography>
                   <Typography>{new Date(test.createdAt).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short" })}</Typography>
                 </Box>
               </Box>
               <Box className='flex flex-row gap-2'>
-                <CalendarCog />
+                <CalendarCog className='flex-none' />
                 <Box className='flex flex-col gap-1'>
                   <Typography variant='subtitle1'>Updated</Typography>
                   <Typography>{new Date(test.updatedAt).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short" })}</Typography>

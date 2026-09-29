@@ -187,7 +187,7 @@ export default function SpecimenForm({ fields, isLoadingFields = false, loadErro
           <Card>
             <CardContent className='-mb-4'>
               <Box className='flex flex-row gap-2'>
-                <Bookmark className={cn(formik.touched.name && formik.errors.name && submitted && "text-error!")} />
+                <Bookmark className={cn("flex-none", formik.touched.name && formik.errors.name && submitted && "text-error!")} />
                 <FormControl className='outlined' variant='standard' size='small' fullWidth required>
                   <FormLabel component='label' className={cn(formik.touched.name && formik.errors.name && submitted && "text-error!")}>
                     Name

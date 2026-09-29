@@ -1,7 +1,7 @@
 import { SyntheticEvent, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { Box, Breadcrumbs, Button, Card, CardContent, Grid, ListItemIcon, ListItemText, Menu, MenuItem, Tab, Tooltip, Typography } from "@mui/material";
-import { CalendarCog, CalendarPlus, ChevronLeft, ChevronRight, Clock3, Ellipsis, Gauge, SlidersVertical, Weight, WeightTilde, X } from "lucide-react";
+import { CalendarCog, CalendarPlus, ChevronLeft, ChevronRight, Clock3, Ellipsis, Gauge, PencilRuler, Weight, WeightTilde, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { DataGrid, type GridColDef, type GridRenderCellParams } from "@mui/x-data-grid";
 import TestDataGrid from "@/components/data-grid/test-data-grid";
@@ -212,49 +212,49 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                           <Card>
                             <CardContent className='flex flex-col gap-5'>
                               <Box className='flex flex-row gap-2'>
-                                <SlidersVertical />
+                                <PencilRuler className='flex-none' />
                                 <Box className='flex flex-col gap-1'>
                                   <Typography variant='subtitle1'>Type</Typography>
                                   <Typography>{preset.type}</Typography>
                                 </Box>
                               </Box>
                               <Box className='flex flex-row gap-2'>
-                                <WeightTilde />
+                                <WeightTilde className='flex-none' />
                                 <Box className='flex flex-col gap-1'>
                                   <Typography variant='subtitle1'>Preload</Typography>
                                   <Typography>{preset.preload} N</Typography>
                                 </Box>
                               </Box>
                               <Box className='flex flex-row gap-2'>
-                                <Weight />
+                                <Weight className='flex-none' />
                                 <Box className='flex flex-col gap-1'>
                                   <Typography variant='subtitle1'>Load</Typography>
                                   <Typography>{preset.load} N</Typography>
                                 </Box>
                               </Box>
                               <Box className='flex flex-row gap-2'>
-                                <Gauge />
+                                <Gauge className='flex-none' />
                                 <Box className='flex flex-col gap-1'>
                                   <Typography variant='subtitle1'>Speed</Typography>
                                   <Typography>{preset.speed} mm/s</Typography>
                                 </Box>
                               </Box>
                               <Box className='flex flex-row gap-2'>
-                                <Clock3 />
+                                <Clock3 className='flex-none' />
                                 <Box className='flex flex-col gap-1'>
                                   <Typography variant='subtitle1'>Duration</Typography>
                                   <Typography>{preset.duration} s</Typography>
                                 </Box>
                               </Box>
                               <Box className='flex flex-row gap-2'>
-                                <CalendarPlus />
+                                <CalendarPlus className='flex-none' />
                                 <Box className='flex flex-col gap-1'>
                                   <Typography variant='subtitle1'>Created</Typography>
                                   <Typography>{new Date(preset.createdAt).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short" })}</Typography>
                                 </Box>
                               </Box>
                               <Box className='flex flex-row gap-2'>
-                                <CalendarCog />
+                                <CalendarCog className='flex-none' />
                                 <Box className='flex flex-col gap-1'>
                                   <Typography variant='subtitle1'>Updated</Typography>
                                   <Typography>{new Date(preset.updatedAt).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short" })}</Typography>

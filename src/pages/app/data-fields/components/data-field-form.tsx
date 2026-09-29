@@ -34,10 +34,10 @@ import {
   Images,
   ListTree,
   Package2,
+  PencilRuler,
   Ruler,
   Save,
   Scroll,
-  Signpost,
   SquaresSubtract,
   TriangleAlert,
   X,
@@ -185,7 +185,7 @@ export default function DataFieldForm({ dataField, initialDataField, onSave, sav
           <Card>
             <CardContent className='-mb-4'>
               <Box className='flex flex-row gap-2'>
-                <Signpost className={cn(hasFieldError("type") && submitted && "text-error!")} />
+                <PencilRuler className={cn("flex-none", hasFieldError("type") && submitted && "text-error!")} />
                 <FormControl fullWidth size='small' variant='standard' className='outlined' required>
                   <FormLabel component='label' className={cn(hasFieldError("type") && submitted && "text-error!")}>
                     Type
@@ -216,7 +216,7 @@ export default function DataFieldForm({ dataField, initialDataField, onSave, sav
               </Box>
 
               <Box className='flex flex-row gap-2'>
-                <Package2 className={cn(hasFieldError("container") && submitted && "text-error!")} />
+                <Package2 className={cn("flex-none", hasFieldError("container") && submitted && "text-error!")} />
                 <FormControl fullWidth size='small' variant='standard' className='outlined' required>
                   <FormLabel component='label' className={cn(hasFieldError("container") && submitted && "text-error!")}>
                     Container
@@ -247,7 +247,7 @@ export default function DataFieldForm({ dataField, initialDataField, onSave, sav
           <Card>
             <CardContent className='-mb-4'>
               <Box className='flex flex-row gap-2'>
-                <Bookmark className={cn(hasFieldError("name") && submitted && "text-error!")} />
+                <Bookmark className={cn("flex-none", hasFieldError("name") && submitted && "text-error!")} />
                 <FormControl className='outlined' variant='standard' size='small' fullWidth required>
                   <FormLabel component='label' className={cn(hasFieldError("name") && submitted && "text-error!")}>
                     Name
@@ -257,7 +257,7 @@ export default function DataFieldForm({ dataField, initialDataField, onSave, sav
               </Box>
 
               <Box className='flex flex-row gap-2'>
-                <Scroll />
+                <Scroll className='flex-none' />
                 <FormControl className='MuiTextField-root outlined' fullWidth>
                   <FormLabel component='label'>Description</FormLabel>
                   <TextareaAutosize
@@ -272,7 +272,7 @@ export default function DataFieldForm({ dataField, initialDataField, onSave, sav
               </Box>
 
               <Box className='flex flex-row gap-2'>
-                <TriangleAlert />
+                <TriangleAlert className='flex-none' />
                 <FormControl fullWidth size='small' variant='standard' className='outlined'>
                   <FormLabel component='label'>Mandatory</FormLabel>
                   <Select<string>
@@ -288,7 +288,7 @@ export default function DataFieldForm({ dataField, initialDataField, onSave, sav
               </Box>
 
               <Box className='flex flex-row gap-2'>
-                <SquaresSubtract />
+                <SquaresSubtract className='flex-none' />
                 <FormControl fullWidth>
                   <FormLabel component='label'>Icon</FormLabel>
                   <Autocomplete<DataFieldIcon, false, false, false>
@@ -349,7 +349,7 @@ export default function DataFieldForm({ dataField, initialDataField, onSave, sav
                 {formik.values.type === "Select" && (
                   <>
                     <Box className='flex flex-row gap-2'>
-                      <ListTree className={cn(hasFieldError("options") && submitted && "text-error!")} />
+                      <ListTree className={cn("flex-none", hasFieldError("options") && submitted && "text-error!")} />
                       <FormControl className='MuiTextField-root outlined' fullWidth required>
                         <FormLabel component='label' className={cn(hasFieldError("options") && submitted && "text-error!")}>
                           Options
@@ -366,7 +366,7 @@ export default function DataFieldForm({ dataField, initialDataField, onSave, sav
                       </FormControl>
                     </Box>
                     <Box className='flex flex-row gap-2'>
-                      <CopyCheck />
+                      <CopyCheck className='flex-none' />
                       <FormGroup className='flex flex-col'>
                         <FormLabel component='label'>Multiple Choices</FormLabel>
                         <FormControlLabel
@@ -386,7 +386,7 @@ export default function DataFieldForm({ dataField, initialDataField, onSave, sav
                 {formik.values.type === "Image" && (
                   <>
                     <Box className='flex flex-row gap-2'>
-                      <Image />
+                      <Image className='flex-none' />
                       <FormControl fullWidth size='small' variant='standard' className='outlined'>
                         <FormLabel component='label'>Accepted image types</FormLabel>
                         <Select<string[]>
@@ -412,7 +412,7 @@ export default function DataFieldForm({ dataField, initialDataField, onSave, sav
                       </FormControl>
                     </Box>
                     <Box className='flex flex-row gap-2'>
-                      <Images />
+                      <Images className='flex-none' />
                       <FormGroup className='flex flex-col'>
                         <FormLabel component='label'>Multiple Images</FormLabel>
                         <FormControlLabel
@@ -428,7 +428,7 @@ export default function DataFieldForm({ dataField, initialDataField, onSave, sav
 
                 {(formik.values.type === "Text" || formik.values.type === "Number") && (
                   <Box className='flex flex-row gap-2'>
-                    <Ruler />
+                    <Ruler className='flex-none' />
                     <FormControl className='outlined' variant='standard' size='small' fullWidth>
                       <FormLabel component='label'>Unit</FormLabel>
                       <Input name='unit' value={formik.values.unit} onChange={formik.handleChange} />

@@ -250,42 +250,42 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                             {preset ? (
                               <>
                                 <Box className='flex flex-row gap-2'>
-                                  <Bookmark />
+                                  <Bookmark className='flex-none' />
                                   <Box className='flex flex-col gap-1'>
                                     <Typography variant='subtitle1'>Name</Typography>
                                     <Typography>{preset.name}</Typography>
                                   </Box>
                                 </Box>
                                 <Box className='flex flex-row gap-2'>
-                                  <PencilRuler />
+                                  <PencilRuler className='flex-none' />
                                   <Box className='flex flex-col gap-1'>
                                     <Typography variant='subtitle1'>Type</Typography>
                                     <Typography>{preset.type}</Typography>
                                   </Box>
                                 </Box>
                                 <Box className='flex flex-row gap-2'>
-                                  <WeightTilde />
+                                  <WeightTilde className='flex-none' />
                                   <Box className='flex flex-col gap-1'>
                                     <Typography variant='subtitle1'>Preload</Typography>
                                     <Typography>{preset.preload} N</Typography>
                                   </Box>
                                 </Box>
                                 <Box className='flex flex-row gap-2'>
-                                  <Weight />
+                                  <Weight className='flex-none' />
                                   <Box className='flex flex-col gap-1'>
                                     <Typography variant='subtitle1'>Load</Typography>
                                     <Typography>{preset.load} N</Typography>
                                   </Box>
                                 </Box>
                                 <Box className='flex flex-row gap-2'>
-                                  <Gauge />
+                                  <Gauge className='flex-none' />
                                   <Box className='flex flex-col gap-1'>
                                     <Typography variant='subtitle1'>Speed</Typography>
                                     <Typography>{preset.speed} mm/s</Typography>
                                   </Box>
                                 </Box>
                                 <Box className='flex flex-row gap-2'>
-                                  <Clock3 />
+                                  <Clock3 className='flex-none' />
                                   <Box className='flex flex-col gap-1'>
                                     <Typography variant='subtitle1'>Duration</Typography>
                                     <Typography>{preset.duration} s</Typography>
@@ -311,7 +311,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                             {specimen ? (
                               <>
                                 <Box className='flex flex-row gap-2'>
-                                  <Hexagon />
+                                  <Hexagon className='flex-none' />
                                   <Box className='flex flex-col gap-1'>
                                     <Typography variant='subtitle1'>Name</Typography>
                                     <Typography>{specimen.name}</Typography>
@@ -319,7 +319,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                                 </Box>
                                 {specimenFields.map((field) => (
                                   <Box key={field.id} className='flex flex-row gap-2'>
-                                    {field.icon ? <DynamicIcon name={field.icon} /> : <Hexagon />}
+                                    {field.icon ? <DynamicIcon name={field.icon} className='flex-none' /> : <Hexagon className='flex-none' />}
                                     <Box className='flex flex-col gap-1'>
                                       <Typography variant='subtitle1'>{field.name}</Typography>
                                       {renderValue(field, specimen.customData?.[field.id] ?? specimen.customData?.[field.name] ?? null)}

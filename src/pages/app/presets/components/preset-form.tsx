@@ -21,6 +21,7 @@ import { Bookmark, ChevronDown, Clock3, Gauge, PencilRuler, Save, Weight, Weight
 import type { PresetRecord, PresetType } from "@/context/db-context";
 import { PRESET_TYPES } from "@/lib/db";
 import useAppNotifications from "@/hooks/use-app-notifications";
+import { cn } from "@/lib/utils";
 
 type PresetSaveInput = Omit<PresetRecord, "id" | "createdAt" | "updatedAt">;
 type PresetFormValues = Omit<PresetSaveInput, "type" | "preload" | "load" | "speed" | "duration"> & {
@@ -107,7 +108,7 @@ export default function PresetForm({ onSave, preset, initialPreset, saveLabel = 
           <Card>
             <CardContent className='-mb-4'>
               <Box className='flex flex-row gap-2'>
-                <Bookmark className={fieldError("name") ? "text-error!" : undefined} />
+                <Bookmark className={cn("flex-none", fieldError("name") && "text-error!")} />
                 <FormControl className='outlined' variant='standard' size='small' fullWidth required>
                   <FormLabel component='label' className={fieldError("name") ? "text-error!" : undefined}>
                     Name
@@ -117,7 +118,7 @@ export default function PresetForm({ onSave, preset, initialPreset, saveLabel = 
               </Box>
 
               <Box className='flex flex-row gap-2'>
-                <PencilRuler className={fieldError("type") ? "text-error!" : undefined} />
+                <PencilRuler className={cn("flex-none", fieldError("type") && "text-error!")} />
                 <FormControl fullWidth size='small' variant='standard' className='outlined' required>
                   <FormLabel component='label' className={fieldError("type") ? "text-error!" : undefined}>
                     Type
@@ -147,7 +148,7 @@ export default function PresetForm({ onSave, preset, initialPreset, saveLabel = 
           <Card>
             <CardContent className='-mb-4'>
               <Box className='flex flex-row gap-2'>
-                <WeightTilde className={fieldError("preload") ? "text-error!" : undefined} />
+                <WeightTilde className={cn("flex-none", fieldError("preload") && "text-error!")} />
                 <FormControl className='outlined' variant='standard' size='small' fullWidth required>
                   <FormLabel component='label' className={fieldError("preload") ? "text-error!" : undefined}>
                     Preload
@@ -164,7 +165,7 @@ export default function PresetForm({ onSave, preset, initialPreset, saveLabel = 
               </Box>
 
               <Box className='flex flex-row gap-2'>
-                <Weight className={fieldError("load") ? "text-error!" : undefined} />
+                <Weight className={cn("flex-none", fieldError("load") && "text-error!")} />
                 <FormControl className='outlined' variant='standard' size='small' fullWidth required>
                   <FormLabel component='label' className={fieldError("load") ? "text-error!" : undefined}>
                     Load
@@ -181,7 +182,7 @@ export default function PresetForm({ onSave, preset, initialPreset, saveLabel = 
               </Box>
 
               <Box className='flex flex-row gap-2'>
-                <Gauge className={fieldError("speed") ? "text-error!" : undefined} />
+                <Gauge className={cn("flex-none", fieldError("speed") && "text-error!")} />
                 <FormControl className='outlined' variant='standard' size='small' fullWidth required>
                   <FormLabel component='label' className={fieldError("speed") ? "text-error!" : undefined}>
                     Speed
@@ -198,7 +199,7 @@ export default function PresetForm({ onSave, preset, initialPreset, saveLabel = 
               </Box>
 
               <Box className='flex flex-row gap-2'>
-                <Clock3 className={fieldError("duration") ? "text-error!" : undefined} />
+                <Clock3 className={cn("flex-none", fieldError("duration") && "text-error!")} />
                 <FormControl className='outlined' variant='standard' size='small' fullWidth required>
                   <FormLabel component='label' className={fieldError("duration") ? "text-error!" : undefined}>
                     Duration

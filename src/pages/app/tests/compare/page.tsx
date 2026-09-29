@@ -364,37 +364,37 @@ function ComparisonDetails({
           </Grid>
         </Grid>
         <ComparisonCard title='Preset'>
-          <ComparisonField icon={<Bookmark />} label='Name' tests={tests} colors={colors} valueForTest={(test) => test.presetSnapshot.name} />
-          <ComparisonField icon={<PencilRuler />} label='Type' tests={tests} colors={colors} valueForTest={(test) => test.presetSnapshot.type} />
-          <ComparisonField icon={<WeightTilde />} label='Preload' tests={tests} colors={colors} valueForTest={(test) => `${test.presetSnapshot.preload} N`} />
-          <ComparisonField icon={<Weight />} label='Load' tests={tests} colors={colors} valueForTest={(test) => `${test.presetSnapshot.load} N`} />
-          <ComparisonField icon={<Gauge />} label='Speed' tests={tests} colors={colors} valueForTest={(test) => `${test.presetSnapshot.speed} mm/s`} />
-          <ComparisonField icon={<Clock3 />} label='Duration' tests={tests} colors={colors} valueForTest={(test) => `${test.presetSnapshot.duration} s`} />
+          <ComparisonField icon={<Bookmark className='flex-none' />} label='Name' tests={tests} colors={colors} valueForTest={(test) => test.presetSnapshot.name} />
+          <ComparisonField icon={<PencilRuler className='flex-none' />} label='Type' tests={tests} colors={colors} valueForTest={(test) => test.presetSnapshot.type} />
+          <ComparisonField icon={<WeightTilde className='flex-none' />} label='Preload' tests={tests} colors={colors} valueForTest={(test) => `${test.presetSnapshot.preload} N`} />
+          <ComparisonField icon={<Weight className='flex-none' />} label='Load' tests={tests} colors={colors} valueForTest={(test) => `${test.presetSnapshot.load} N`} />
+          <ComparisonField icon={<Gauge className='flex-none' />} label='Speed' tests={tests} colors={colors} valueForTest={(test) => `${test.presetSnapshot.speed} mm/s`} />
+          <ComparisonField icon={<Clock3 className='flex-none' />} label='Duration' tests={tests} colors={colors} valueForTest={(test) => `${test.presetSnapshot.duration} s`} />
         </ComparisonCard>
         <ComparisonCard title='Definition'>
-          <ComparisonField icon={<Bookmark />} label='Name' tests={tests} colors={colors} valueForTest={(test) => test.name} />
-          <ComparisonField icon={<Machine />} label='Machine IP' tests={tests} colors={colors} valueForTest={(test) => test.machineIP ?? "-"} />
+          <ComparisonField icon={<Bookmark className='flex-none' />} label='Name' tests={tests} colors={colors} valueForTest={(test) => test.name} />
+          <ComparisonField icon={<Machine className='flex-none' />} label='Machine IP' tests={tests} colors={colors} valueForTest={(test) => test.machineIP ?? "-"} />
           {testFields.map((field) => (
             <ComparisonField
               key={field.id}
-              icon={field.icon ? <DynamicIcon name={field.icon} /> : <Hexagon />}
+              icon={field.icon ? <DynamicIcon name={field.icon} className='flex-none' /> : <Hexagon className='flex-none' />}
               label={field.name}
               tests={tests}
               colors={colors}
               valueForTest={(test) => renderValue(getSnapshotValue(test.customData, field), field, printMode)}
             />
           ))}
-          <ComparisonField icon={<CalendarPlus />} label='Created' tests={tests} colors={colors} valueForTest={(test) => formatDate(test.createdAt)} />
-          <ComparisonField icon={<CalendarCog />} label='Updated' tests={tests} colors={colors} valueForTest={(test) => formatDate(test.updatedAt)} />
+          <ComparisonField icon={<CalendarPlus className='flex-none' />} label='Created' tests={tests} colors={colors} valueForTest={(test) => formatDate(test.createdAt)} />
+          <ComparisonField icon={<CalendarCog className='flex-none' />} label='Updated' tests={tests} colors={colors} valueForTest={(test) => formatDate(test.updatedAt)} />
         </ComparisonCard>
       </Grid>
       <Grid container size={{ lg: 4, xs: 12 }} spacing={5}>
         <ComparisonCard title='Specimen'>
-          <ComparisonField icon={<Hexagon />} label='Name' tests={tests} colors={colors} valueForTest={(test) => test.specimenSnapshot.name} />
+          <ComparisonField icon={<Hexagon className='flex-none' />} label='Name' tests={tests} colors={colors} valueForTest={(test) => test.specimenSnapshot.name} />
           {specimenFields.map((field) => (
             <ComparisonField
               key={field.id}
-              icon={field.icon ? <DynamicIcon name={field.icon} /> : <Hexagon />}
+              icon={field.icon ? <DynamicIcon name={field.icon} className='flex-none' /> : <Hexagon className='flex-none' />}
               label={field.name}
               tests={tests}
               colors={colors}

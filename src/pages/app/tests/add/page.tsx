@@ -290,7 +290,7 @@ export default function Page() {
               <Card>
                 <CardContent className='-mb-4'>
                   <Box className='flex flex-row gap-2'>
-                    <DraftingCompass className={cn(specimenError && "text-error!")} />
+                    <DraftingCompass className={cn("flex-none", specimenError && "text-error!")} />
                     <FormControl fullWidth required>
                       <FormLabel component='label' className={cn(specimenError && "text-error!")}>
                         Specimen
@@ -345,7 +345,7 @@ export default function Page() {
               <Card>
                 <CardContent className='-mb-4'>
                   <Box className='flex flex-row gap-2'>
-                    <SlidersVertical className={cn(presetError && "text-error!")} />
+                    <SlidersVertical className={cn("flex-none", presetError && "text-error!")} />
                     <FormControl fullWidth required>
                       <FormLabel component='label' className={cn(presetError && "text-error!")}>
                         Preset
@@ -389,7 +389,7 @@ export default function Page() {
               <Card>
                 <CardContent className='flex flex-col -mb-4'>
                   <Box className='flex flex-row gap-2'>
-                    <Bookmark className={cn(submitted && formik.errors.name && "text-error!")} />
+                    <Bookmark className={cn("flex-none", submitted && formik.errors.name && "text-error!")} />
                     <FormControl className='outlined' variant='standard' size='small' fullWidth required>
                       <FormLabel component='label' className={cn(submitted && formik.errors.name && "text-error!")}>
                         Name

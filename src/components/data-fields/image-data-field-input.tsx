@@ -191,7 +191,7 @@ function ImageDataFieldInputBase({
 
   return (
     <Box className='flex flex-row gap-2'>
-      <ImagePlus className={error ? "text-error!" : undefined} />
+      <ImagePlus className={cn("flex-none", error && "text-error!")} />
       <FormControl className='outlined' variant='standard' size='small' fullWidth required={mandatory}>
         <FormLabel component='label' className={error ? "text-error!" : undefined}>
           {name}
