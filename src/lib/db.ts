@@ -169,24 +169,79 @@ function createId() {
 
 export const db = new AkdiMakineDatabase();
 
-export async function addMachine(input: Omit<MachineRecord, "id" | "createdAt" | "updatedAt">) {
-  const now = Date.now();
+function normalizeIpAddress(ipAddress: string) {
+  return ipAddress
+    .trim()
+    .split(".")
+    .map((octet) => String(Number(octet)))
+    .join(".");
+}
 
-  return db.machines.add({
-    id: createId(),
-    ...input,
-    createdAt: now,
-    updatedAt: now,
+export async function addMachine(input: Omit<MachineRecord, "id" | "createdAt" | "updatedAt">) {
+  return db.transaction("rw", db.machines, async () => {
+    const normalizedIpAddress = normalizeIpAddress(input.ipAddress);
+    const machines = await db.machines.toArray();
+    if (machines.some((machine) => normalizeIpAddress(machine.ipAddress) === normalizedIpAddress)) {
+      throw new Error("A machine with this IP address already exists.");
+    }
+
+    const now = Date.now();
+    if (input.connected) {
+      await db.machines.toCollection().modify((machine) => {
+        if (machine.connected) {
+          machine.connected = false;
+          machine.updatedAt = now;
+        }
+      });
+    }
+
+    return db.machines.add({
+      id: createId(),
+      ...input,
+      ipAddress: normalizedIpAddress,
+      createdAt: now,
+      updatedAt: now,
+    });
   });
 }
 
 export async function getMachines() {
-  return db.machines.orderBy("createdAt").reverse().toArray();
+  const machines = await db.machines.orderBy("createdAt").reverse().toArray();
+  const connectedMachines = machines.filter((machine) => machine.connected);
+  if (connectedMachines.length > 1) {
+    await setConnectedMachine(connectedMachines[0].id);
+    return db.machines.orderBy("createdAt").reverse().toArray();
+  }
+  return machines;
+}
+
+export async function getMachineByIp(ipAddress: string) {
+  const normalizedIpAddress = normalizeIpAddress(ipAddress);
+  const machines = await db.machines.toArray();
+  return machines.find((machine) => normalizeIpAddress(machine.ipAddress) === normalizedIpAddress) ?? null;
 }
 
 export async function getConnectedMachine() {
   const machines = await getMachines();
   return machines.find((machine) => machine.connected) ?? null;
+}
+
+export async function setConnectedMachine(id: string | null) {
+  return db.transaction("rw", db.machines, async () => {
+    const machines = await db.machines.toArray();
+    if (id !== null && !machines.some((machine) => machine.id === id)) {
+      throw new Error("Machine not found.");
+    }
+
+    const now = Date.now();
+    await db.machines.toCollection().modify((machine) => {
+      const connected = machine.id === id;
+      if (machine.connected !== connected) {
+        machine.connected = connected;
+        machine.updatedAt = now;
+      }
+    });
+  });
 }
 
 export async function deleteMachine(id: string) {

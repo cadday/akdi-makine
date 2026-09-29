@@ -2,22 +2,21 @@ import Mode from "../mode/mode";
 import Search from "../search/search";
 import { Link } from "react-router";
 
-import { Box, Button, Typography } from "@mui/material";
+import { Box, Button } from "@mui/material";
 
 import { useLayoutContext } from "@/components/layout/layout-context";
 import Logo from "@/components/logo/logo";
-import { ArrowUpDown, Menu, OctagonX, Play } from "lucide-react";
+import { Menu, Play } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MenuShowState } from "@/types/types";
-import { usePlcData } from "@/context/plc-context";
 import WindowControls from "./window-controls";
 import { LINKS } from "@/constants";
 import Expand from "../expand/expand";
 import RouterNav from "../router-nav/router-nav";
+import Machines from "../machine-selection/machines";
 
 export default function Header({ minimal = false }: { minimal?: boolean }) {
   const { showLeftInMobile, showLeftMobileButton, leftPrimaryCurrent, leftShowBackdrop } = useLayoutContext();
-  const { connectionStatus } = usePlcData();
 
   return (
     <Box
@@ -78,18 +77,8 @@ export default function Header({ minimal = false }: { minimal?: boolean }) {
             >
               Add Test
             </Button>
-            <Box component={Link} to={"#"} className='bg-grey-25 flex flex-row gap-5 rounded-lg py-2.5 px-4 transition-all! hover:bg-grey-50'>
-              <Box className='flex flex-row items-center gap-2'>
-                {connectionStatus.isError && <OctagonX className='text-error' />}
-                {!connectionStatus.isError && <ArrowUpDown className='text-success' />}
 
-                <Box className='flex flex-row gap-1'>
-                  <Typography variant='subtitle1' className='leading-1'>
-                    {connectionStatus.text}
-                  </Typography>
-                </Box>
-              </Box>
-            </Box>
+            <Machines />
           </Box>
         )}
         <WindowControls />

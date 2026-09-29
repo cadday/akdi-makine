@@ -27,6 +27,7 @@ import {
   getDataField,
   getDataFields,
   getConnectedMachine,
+  getMachineByIp,
   getMachines,
   getRecordCounts,
   getLatestTestsForSpecimen,
@@ -40,6 +41,7 @@ import {
   getTestsForPreset,
   getTestsForSpecimen,
   updateDataField,
+  setConnectedMachine,
   updatePreset,
   updateSpecimen,
   updateTest,
@@ -62,7 +64,9 @@ interface DbContextType {
   db: typeof db;
   addMachine: typeof addMachine;
   getMachines: typeof getMachines;
+  getMachineByIp: typeof getMachineByIp;
   getConnectedMachine: typeof getConnectedMachine;
+  setConnectedMachine: typeof setConnectedMachine;
   deleteMachine: typeof deleteMachine;
   createSpecimen: typeof createSpecimen;
   getSpecimens: typeof getSpecimens;
@@ -112,7 +116,9 @@ export function DbProvider({ children }: PropsWithChildren) {
       db,
       addMachine,
       getMachines,
+      getMachineByIp,
       getConnectedMachine,
+      setConnectedMachine,
       deleteMachine,
       createSpecimen,
       getSpecimens,
