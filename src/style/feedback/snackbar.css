@@ -12,7 +12,7 @@
   }
 
   .notistack-Snackbar .notistack-MuiContent {
-    @apply border-grey-100 border-2 bg-background-paper! font-body text-text-primary! shadow-darker-sm! rounded-lg! border border-solid text-base px-6! py-4!;
+    @apply border-grey-100 border-2 bg-background-paper! font-body text-text-primary! shadow-darker-sm! rounded-lg! border-solid text-base px-6! py-4!;
   }
 
   .notistack-Snackbar .notistack-MuiContent-success {

@@ -174,7 +174,7 @@
 
   /* Outline label and its transform */
   .MuiInputLabel-outlined {
-    @apply font-body text-text-secondary start-0 left-[unset] text-base leading-5;
+    @apply font-body text-text-secondary inset-s-0 left-[unset] text-base leading-5;
     transform: translate(1rem, 0.75rem) scale(1);
 
     &.MuiInputLabel-shrink {
@@ -254,7 +254,7 @@
 
   /* Filled input label and its transform */
   .MuiInputLabel-filled {
-    @apply font-body text-text-secondary start-0 left-[unset] text-base leading-5;
+    @apply font-body text-text-secondary inset-s-0 left-[unset] text-base leading-5;
 
     transform: translate(1rem, 0.875rem) scale(1);
     &.MuiInputLabel-shrink {

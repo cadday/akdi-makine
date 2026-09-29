@@ -90,9 +90,6 @@
 /* --------- Plugins --------- */
 @import "./plugins/lightbox-yarl.css";
 
-/* --------- Landing Page --------- */
-@import "./landing-page/landing-page.css";
-
 @layer base {
   *,
   ::after,

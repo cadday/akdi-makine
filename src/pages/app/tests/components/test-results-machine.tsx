@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowUpFromLine, ArrowUpToLine, ArrowUpWideNarrow, Hexagon, Timer } from "lucide-react";
 import type { TestRecord, TestResults } from "@/context/db-context";
 import { useThemeContext } from "@/theme/theme-provider";
-import useMockTestRun from "./use-mock-test-run";
+import useMockTestRun from "@/mock/use-mock-test-run";
 import TestProgress from "./test-progress";
 import { cn } from "@/lib/utils";
 import useAppNotifications from "@/hooks/use-app-notifications";
