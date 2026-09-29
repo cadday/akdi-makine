@@ -158,6 +158,7 @@ export default function DataFieldInput({ field, value, onChange, error, pendingF
       return (
         <ImageInput
           name={label}
+          icon={field.icon}
           accept={field.accept}
           multiple={field.multiple}
           mandatory={field.mandatory}

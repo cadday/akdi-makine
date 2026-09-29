@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useDropzone, type Accept } from "react-dropzone";
 import { Alert, Box, Button, FormControl, FormLabel, Typography } from "@mui/material";
 import { ImagePlus, Trash2 } from "lucide-react";
+import { DynamicIcon, type IconName } from "lucide-react/dynamic";
 import type { UploadedImage } from "@/context/db-context";
 import { cn } from "@/lib/utils";
 
@@ -116,6 +117,7 @@ function EditableStoredImagePreviews({ images, onRemove }: EditableStoredImagePr
 
 interface ImageDataFieldInputProps {
   name: string;
+  icon?: IconName;
   accept?: string;
   multiple?: boolean;
   mandatory?: boolean;
@@ -145,6 +147,7 @@ function parseAccept(value?: string): Accept {
 
 function ImageDataFieldInputBase({
   name,
+  icon,
   accept,
   multiple = false,
   mandatory,
@@ -191,7 +194,7 @@ function ImageDataFieldInputBase({
 
   return (
     <Box className='flex flex-row gap-2'>
-      <ImagePlus className={cn("flex-none", error && "text-error!")} />
+      {icon ? <DynamicIcon name={icon} className={cn("flex-none", error && "text-error!")} /> : <ImagePlus className={cn("flex-none", error && "text-error!")} />}
       <FormControl className='outlined' variant='standard' size='small' fullWidth required={mandatory}>
         <FormLabel component='label' className={error ? "text-error!" : undefined}>
           {name}
