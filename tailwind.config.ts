@@ -56,7 +56,7 @@ const config: Config = {
         1.75: "0.4375rem",
       },
       opacity: {
-        disabled: "0.4",
+        disabled: "0.6",
       },
       svgOpacity: {
         10: "0.1",

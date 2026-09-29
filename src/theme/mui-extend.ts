@@ -521,8 +521,3 @@ declare module "@mui/material/IconButton" {
   }
 }
 
-declare module "@mui/x-charts" {
-  interface ChartsTooltipContainerProps {
-    hideTitle?: boolean;
-  }
-}

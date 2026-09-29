@@ -50,6 +50,7 @@ import usePrintReadiness from "@/hooks/use-print-readiness";
 import { useThemeContext } from "@/theme/theme-provider";
 import { Tensile } from "@/icons/custom-lucide-icons/tensile";
 import { Yeild } from "@/icons/custom-lucide-icons/yield";
+import { Machine } from "@/icons/custom-lucide-icons/machine";
 
 interface ComparisonTooltipPoint {
   id: string;
@@ -372,6 +373,7 @@ function ComparisonDetails({
         </ComparisonCard>
         <ComparisonCard title='Definition'>
           <ComparisonField icon={<Bookmark />} label='Name' tests={tests} colors={colors} valueForTest={(test) => test.name} />
+          <ComparisonField icon={<Machine />} label='Machine IP' tests={tests} colors={colors} valueForTest={(test) => test.machineIP ?? "-"} />
           {testFields.map((field) => (
             <ComparisonField
               key={field.id}

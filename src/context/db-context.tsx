@@ -2,12 +2,14 @@
 import { createContext, type PropsWithChildren, useContext, useMemo } from "react";
 import {
   createDataField,
+  addMachine,
   createPreset,
   createSpecimen,
   createTest,
   db,
   deleteDataField,
   deleteDataFields,
+  deleteMachine,
   deletePreset,
   deletePresets,
   deleteSpecimen,
@@ -24,6 +26,8 @@ import {
   duplicateTests,
   getDataField,
   getDataFields,
+  getConnectedMachine,
+  getMachines,
   getRecordCounts,
   getLatestTestsForSpecimen,
   getLatestTests,
@@ -44,6 +48,7 @@ import {
   type DataFieldDefinition,
   type DataFieldType,
   type DynamicDataValue,
+  type MachineRecord,
   type PresetRecord,
   type PresetType,
   type SpecimenRecord,
@@ -55,6 +60,10 @@ import {
 
 interface DbContextType {
   db: typeof db;
+  addMachine: typeof addMachine;
+  getMachines: typeof getMachines;
+  getConnectedMachine: typeof getConnectedMachine;
+  deleteMachine: typeof deleteMachine;
   createSpecimen: typeof createSpecimen;
   getSpecimens: typeof getSpecimens;
   getSpecimen: typeof getSpecimen;
@@ -101,6 +110,10 @@ export function DbProvider({ children }: PropsWithChildren) {
   const value = useMemo<DbContextType>(
     () => ({
       db,
+      addMachine,
+      getMachines,
+      getConnectedMachine,
+      deleteMachine,
       createSpecimen,
       getSpecimens,
       getSpecimen,
@@ -161,6 +174,7 @@ export type {
   DataFieldDefinition,
   DataFieldType,
   DynamicDataValue,
+  MachineRecord,
   PresetRecord,
   PresetType,
   SpecimenRecord,

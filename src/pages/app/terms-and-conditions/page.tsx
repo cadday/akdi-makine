@@ -13,8 +13,8 @@ export default function Page() {
       <OverlayScrollbarsComponent defer className='h-dvh os-scrollbar-body'>
         <Header minimal />
         <Box className='bg-background flex min-h-[calc(100vh-3.5rem)] w-full items-center justify-center bg-cover bg-fixed bg-center p-4'>
-          <Paper elevation={3} className='bg-background-paper shadow-darker-xs w-2xl max-w-full rounded-4xl py-14'>
-            <Box className='flex flex-col gap-4 px-8 sm:px-14'>
+          <Paper elevation={3} className='bg-background-paper shadow-darker-xs w-2xl max-w-full rounded-4xl py-10'>
+            <Box className='flex flex-col gap-4 px-10'>
               <Box className='flex flex-col'>
                 <Box className='mb-14 flex justify-center'>
                   <LogoVertical />

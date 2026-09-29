@@ -9,6 +9,7 @@ import ImageLightboxGallery from "@/components/data-fields/image-lightbox-galler
 import { useDb, type DataFieldDefinition, type DynamicDataValue, type TestRecord, type UploadedImage } from "@/context/db-context";
 import useAppNotifications from "@/hooks/use-app-notifications";
 import { cn } from "@/lib/utils";
+import { Machine } from "@/icons/custom-lucide-icons/machine";
 
 interface TestDefinitionValues {
   name: string;
@@ -313,6 +314,13 @@ export default function TestDefinition({ test, fields, onTestUpdated }: TestDefi
                 <Box className='flex flex-col gap-1'>
                   <Typography variant='subtitle1'>Updated</Typography>
                   <Typography>{new Date(test.updatedAt).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short" })}</Typography>
+                </Box>
+              </Box>
+              <Box className='flex flex-row gap-2'>
+                <Machine className='flex-none' />
+                <Box className='flex flex-col gap-1'>
+                  <Typography variant='subtitle1'>Machine IP</Typography>
+                  <Typography>{test.machineIP ?? "-"}</Typography>
                 </Box>
               </Box>
             </>

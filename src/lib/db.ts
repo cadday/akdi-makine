@@ -24,6 +24,15 @@ export interface SpecimenRecord {
   updatedAt: number;
 }
 
+export interface MachineRecord {
+  id: string;
+  name: string;
+  ipAddress: string;
+  connected: boolean;
+  createdAt: number;
+  updatedAt: number;
+}
+
 export interface TestGraphPoint {
   x: number;
   y: number;
@@ -57,6 +66,7 @@ export interface TestPresetSnapshot {
 export interface TestRecord {
   id: string;
   name: string;
+  machineIP: string | null;
   specimenId?: string | null;
   presetId?: string | null;
   specimenSnapshot: TestSpecimenSnapshot;
@@ -98,6 +108,7 @@ export interface DataFieldDefinition {
 
 class AkdiMakineDatabase extends Dexie {
   specimens!: Table<SpecimenRecord, string>;
+  machines!: Table<MachineRecord, string>;
   tests!: Table<TestRecord, string>;
   presets!: Table<PresetRecord, string>;
   dataFields!: Table<DataFieldDefinition, string>;
@@ -127,6 +138,28 @@ class AkdiMakineDatabase extends Dexie {
           if (test.presetSnapshot) test.presetSnapshot.duration ??= 0;
         });
       });
+
+    this.version(4).stores({
+      specimens: "&id, name, createdAt, updatedAt",
+      machines: "&id, name, ipAddress, connected, createdAt, updatedAt",
+      tests: "&id, name, specimenId, presetId, createdAt, updatedAt",
+      presets: "&id, name, type, createdAt, updatedAt",
+      dataFields: "&id, container, type, name, mandatory, createdAt, updatedAt",
+    });
+
+    this.version(5)
+      .stores({
+        specimens: "&id, name, createdAt, updatedAt",
+        machines: "&id, name, ipAddress, connected, createdAt, updatedAt",
+        tests: "&id, name, machineIP, specimenId, presetId, createdAt, updatedAt",
+        presets: "&id, name, type, createdAt, updatedAt",
+        dataFields: "&id, container, type, name, mandatory, createdAt, updatedAt",
+      })
+      .upgrade(async (transaction) => {
+        await transaction.table("tests").toCollection().modify((test) => {
+          test.machineIP ??= null;
+        });
+      });
   }
 }
 
@@ -135,6 +168,30 @@ function createId() {
 }
 
 export const db = new AkdiMakineDatabase();
+
+export async function addMachine(input: Omit<MachineRecord, "id" | "createdAt" | "updatedAt">) {
+  const now = Date.now();
+
+  return db.machines.add({
+    id: createId(),
+    ...input,
+    createdAt: now,
+    updatedAt: now,
+  });
+}
+
+export async function getMachines() {
+  return db.machines.orderBy("createdAt").reverse().toArray();
+}
+
+export async function getConnectedMachine() {
+  const machines = await getMachines();
+  return machines.find((machine) => machine.connected) ?? null;
+}
+
+export async function deleteMachine(id: string) {
+  await db.machines.delete(id);
+}
 
 export async function createSpecimen(input: Omit<SpecimenRecord, "id" | "createdAt" | "updatedAt">) {
   const now = Date.now();

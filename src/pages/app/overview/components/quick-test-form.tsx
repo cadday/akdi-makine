@@ -41,7 +41,7 @@ function createDefaultTestName() {
 
 export default function QuickTestForm() {
   const navigate = useNavigate();
-  const { getSpecimens, getPresets, createTest } = useDb();
+  const { getSpecimens, getPresets, getConnectedMachine, createTest } = useDb();
   const { showError } = useAppNotifications();
   const [specimens, setSpecimens] = useState<SpecimenRecord[]>([]);
   const [presets, setPresets] = useState<PresetRecord[]>([]);
@@ -94,8 +94,10 @@ export default function QuickTestForm() {
       }
 
       try {
+        const connectedMachine = await getConnectedMachine();
         const testId = await createTest({
           name: values.name.trim(),
+          machineIP: connectedMachine?.ipAddress ?? null,
           specimenId: specimen.id,
           presetId: preset.id,
           specimenSnapshot: { name: specimen.name, customData: { ...specimen.customData } },

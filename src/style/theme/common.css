@@ -110,10 +110,6 @@
 
     --layout-duration: 0ms;
 
-    /* --------- Background --------- */
-    --bg-waves: url("/images/misc/bg-light.jpg");
-    /* --------- Background --------- */
-
     color-scheme: light;
   }
   .dark {
@@ -205,10 +201,6 @@
     /* --------- Light Line --------- */
     --line: hsl(0, 0%, 100%, 0.03);
     /* --------- Light Line --------- */
-
-    /* --------- Background --------- */
-    --bg-waves: url("/images/misc/bg-dark.jpg");
-    /* --------- Background --------- */
 
     color-scheme: dark;
   }

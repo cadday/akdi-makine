@@ -118,6 +118,7 @@ export default function TestDataGrid({ tests, dataFields, onTestsChange, onAddIt
       },
       { field: "specimenName", headerName: "Specimen", minWidth: 180 },
       { field: "presetName", headerName: "Preset", minWidth: 180 },
+      { field: "machineIP", headerName: "Machine IP", minWidth: 150, valueFormatter: (value) => value || "-" },
       ...dataFields.map(
         (dataField): GridColDef<TestGridRow> => ({
           field: dataField.id,

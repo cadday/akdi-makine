@@ -2,6 +2,7 @@ import { Unzip, UnzipInflate, UnzipPassThrough, strFromU8, strToU8, zipSync } fr
 import {
   db,
   type DataFieldDefinition,
+  type MachineRecord,
   type PresetRecord,
   type SpecimenRecord,
   type TestGraphPoint,
@@ -10,7 +11,7 @@ import {
 } from "@/lib/db";
 
 const BACKUP_FORMAT_VERSION = 1;
-const DATABASE_VERSION = 3;
+const DATABASE_VERSION = 5;
 const MAX_ARCHIVE_BYTES = 512 * 1024 * 1024;
 const MAX_UNCOMPRESSED_BYTES = 512 * 1024 * 1024;
 const MAX_RECORDS_BYTES = 256 * 1024 * 1024;
@@ -27,7 +28,7 @@ interface BackupManifest {
   formatVersion: number;
   databaseVersion: number;
   createdAt: string;
-  counts: { specimens: number; tests: number; presets: number; dataFields: number };
+  counts: { specimens: number; tests: number; presets: number; dataFields: number; machines: number };
   images: BackupImageMetadata[];
 }
 
@@ -36,6 +37,7 @@ interface BackupRecords {
   tests: TestRecord[];
   presets: PresetRecord[];
   dataFields: DataFieldDefinition[];
+  machines: MachineRecord[];
 }
 
 export interface PreparedDatabaseBackup {
@@ -201,14 +203,23 @@ function readZipEntries(bytes: Uint8Array) {
 function validateManifest(value: unknown): BackupManifest {
   if (!isObject(value)) throw new Error("Backup manifest is invalid");
   if (value.formatVersion !== BACKUP_FORMAT_VERSION) throw new Error("This backup format version is not supported");
-  if (value.databaseVersion !== DATABASE_VERSION) throw new Error("This database backup version is not supported");
+  if (value.databaseVersion !== 3 && value.databaseVersion !== 4 && value.databaseVersion !== DATABASE_VERSION) {
+    throw new Error("This database backup version is not supported");
+  }
   if (typeof value.createdAt !== "string" || !Number.isFinite(Date.parse(value.createdAt))) throw new Error("Backup timestamp is invalid");
   if (!Array.isArray(value.images) || value.images.length > MAX_IMAGE_COUNT) throw new Error("Backup image list is invalid or too large");
   if (!isObject(value.counts)) throw new Error("Backup record counts are missing");
   for (const table of ["specimens", "tests", "presets", "dataFields"] as const) {
     if (!Number.isSafeInteger(value.counts[table]) || (value.counts[table] as number) < 0) throw new Error(`Backup ${table} count is invalid`);
   }
-  return value as unknown as BackupManifest;
+  const machineCount = value.counts.machines;
+  if (value.databaseVersion >= 4 && (!Number.isSafeInteger(machineCount) || (machineCount as number) < 0)) {
+    throw new Error("Backup machines count is invalid");
+  }
+  return {
+    ...value,
+    counts: { ...value.counts, machines: Number.isSafeInteger(machineCount) && (machineCount as number) >= 0 ? (machineCount as number) : 0 },
+  } as unknown as BackupManifest;
 }
 
 function validateAndPrepare(entries: Map<string, Uint8Array>): PreparedDatabaseBackup {
@@ -217,17 +228,25 @@ function validateAndPrepare(entries: Map<string, Uint8Array>): PreparedDatabaseB
   if (!manifestBytes || !recordsBytes) throw new Error("Backup is missing its manifest or database records");
   const manifest = validateManifest(parseJson<unknown>(manifestBytes, "manifest"));
   const parsedRecords = parseJson<Partial<BackupRecords>>(recordsBytes, "records");
+  const tests = validateRecordArray<TestRecord>(parsedRecords.tests, "tests").map((test) => {
+    const machineIP = (test as TestRecord & { machineIP?: unknown }).machineIP;
+    if (manifest.databaseVersion >= 5 && machineIP !== null && typeof machineIP !== "string") {
+      throw new Error("Backup contains an invalid test machine IP");
+    }
+    return { ...test, machineIP: typeof machineIP === "string" ? machineIP : null };
+  });
   const records: BackupRecords = {
     specimens: validateRecordArray<SpecimenRecord>(parsedRecords.specimens, "specimens"),
-    tests: validateRecordArray<TestRecord>(parsedRecords.tests, "tests"),
+    tests,
     presets: validateRecordArray<PresetRecord>(parsedRecords.presets, "presets"),
     dataFields: validateRecordArray<DataFieldDefinition>(parsedRecords.dataFields, "dataFields"),
+    machines: parsedRecords.machines === undefined && manifest.databaseVersion === 3 ? [] : validateRecordArray<MachineRecord>(parsedRecords.machines, "machines"),
   };
 
-  for (const table of ["specimens", "tests", "presets", "dataFields"] as const) {
+  for (const table of ["specimens", "tests", "presets", "dataFields", "machines"] as const) {
     if (manifest.counts[table] !== records[table].length) throw new Error(`Backup ${table} count does not match its manifest`);
   }
-  const recordCount = records.specimens.length + records.tests.length + records.presets.length + records.dataFields.length;
+  const recordCount = records.specimens.length + records.tests.length + records.presets.length + records.dataFields.length + records.machines.length;
   if (recordCount > MAX_RECORD_COUNT) throw new Error("Backup contains too many records");
 
   const references = collectImageReferences(records);
@@ -267,13 +286,14 @@ function validateAndPrepare(entries: Map<string, Uint8Array>): PreparedDatabaseB
 }
 
 export async function createDatabaseBackup() {
-  const [specimens, tests, presets, dataFields] = await Promise.all([
+  const [specimens, tests, presets, dataFields, machines] = await Promise.all([
     db.specimens.toArray(),
     db.tests.toArray(),
     db.presets.toArray(),
     db.dataFields.toArray(),
+    db.machines.toArray(),
   ]);
-  const records: BackupRecords = { specimens, tests, presets, dataFields };
+  const records: BackupRecords = { specimens, tests, presets, dataFields, machines };
   const imageReferences = collectImageReferences(records);
   if (imageReferences.size > MAX_IMAGE_COUNT) throw new Error("Database has too many referenced images to back up");
 
@@ -287,6 +307,7 @@ export async function createDatabaseBackup() {
       tests: tests.length,
       presets: presets.length,
       dataFields: dataFields.length,
+      machines: machines.length,
     },
     images: [],
   };
@@ -336,6 +357,7 @@ export async function replaceDatabaseFromBackup(backup: PreparedDatabaseBackup) 
     tests: await db.tests.toArray(),
     presets: await db.presets.toArray(),
     dataFields: await db.dataFields.toArray(),
+    machines: await db.machines.toArray(),
   };
   const previousImageIds = [...collectImageReferences(currentRecords).keys()];
   const imageMap = new Map<string, UploadedImage>();
@@ -362,14 +384,16 @@ export async function replaceDatabaseFromBackup(backup: PreparedDatabaseBackup) 
       })),
       presets: backup.records.presets,
       dataFields: backup.records.dataFields,
+      machines: backup.records.machines,
     };
 
-    await db.transaction("rw", db.specimens, db.tests, db.presets, db.dataFields, async () => {
-      await Promise.all([db.specimens.clear(), db.tests.clear(), db.presets.clear(), db.dataFields.clear()]);
+    await db.transaction("rw", db.specimens, db.tests, db.presets, db.dataFields, db.machines, async () => {
+      await Promise.all([db.specimens.clear(), db.tests.clear(), db.presets.clear(), db.dataFields.clear(), db.machines.clear()]);
       if (records.specimens.length) await db.specimens.bulkAdd(records.specimens);
       if (records.tests.length) await db.tests.bulkAdd(records.tests);
       if (records.presets.length) await db.presets.bulkAdd(records.presets);
       if (records.dataFields.length) await db.dataFields.bulkAdd(records.dataFields);
+      if (records.machines.length) await db.machines.bulkAdd(records.machines);
     });
   } catch (error) {
     await Promise.allSettled(stagedImageIds.map((id) => window.electronAPI.deleteImage(id)));

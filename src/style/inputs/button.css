@@ -756,13 +756,13 @@
   .MuiButton-outlined.MuiButton-colorGrey {
     @apply border-grey-200 text-text-primary;
     &:hover {
-      @apply bg-grey-200/10 text-text-primary-dark;
+      @apply bg-grey-500/10 text-text-primary-dark;
     }
 
     &:active,
     &.active,
     &[aria-expanded="true"] {
-      @apply bg-grey-200/15 text-text-primary-dark;
+      @apply bg-grey-500/15 text-text-primary-dark;
     }
 
     &.Mui-disabled {

@@ -118,7 +118,7 @@ function collectErrorMessages(errors: unknown, prefix = ""): Array<[string, stri
 export default function Page() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { getSpecimens, getPresets, getDataFields, createTest } = useDb();
+  const { getSpecimens, getPresets, getDataFields, getConnectedMachine, createTest } = useDb();
   const { showError } = useAppNotifications();
   const [specimens, setSpecimens] = useState<SpecimenRecord[]>([]);
   const [presets, setPresets] = useState<PresetRecord[]>([]);
@@ -206,8 +206,10 @@ export default function Page() {
           if (images.length > 0) customData[field.id] = images;
         }
 
+        const connectedMachine = await getConnectedMachine();
         const testId = await createTest({
           name: values.name.trim(),
+          machineIP: connectedMachine?.ipAddress ?? null,
           specimenId: values.specimenId,
           presetId: values.presetId,
           specimenSnapshot: { name: specimen.name, customData: { ...specimen.customData } },
