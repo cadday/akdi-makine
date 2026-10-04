@@ -236,7 +236,7 @@ export default function QuickTestForm() {
         variant='pastel'
         color='grey'
         size='large'
-        className='self-start'
+        className='self-start ms-6.5 mt-2'
         startIcon={<Play />}
       >
         Start

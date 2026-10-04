@@ -12,6 +12,10 @@
     @apply hover:text-primary bg-transparent transition-none;
   }
 
+  .MuiDataGrid-toolbar {
+    @apply bg-transparent;
+  }
+
   .MuiDataGrid-columnHeader,
   .MuiDataGrid-filler,
   .MuiDataGrid-filler > * {

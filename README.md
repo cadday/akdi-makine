@@ -1,5 +1,17 @@
 # akdi-makine
 
+## Development Setup
+
+Use Node.js 22.23.3 for dependency installation and builds. Electron 30's postinstall did not complete under Node.js 24 in this Windows environment.
+
+With nvm-windows, run:
+
+```powershell
+nvm install 22.23.3
+nvm use 22.23.3
+npm ci
+```
+
 ## Windows Auto-Updates
 
 Packaged Windows x64 NSIS builds check for updates at `https://akdimakine.com/test-machine/`. The app downloads updates in the background and asks before restarting to install one. Development runs and macOS/Linux builds do not use this feed.
