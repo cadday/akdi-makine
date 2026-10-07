@@ -15,7 +15,7 @@ import QuickTestForm from "@/pages/app/overview/components/quick-test-form";
 import { LINKS } from "@/constants";
 import { useTranslation } from "react-i18next";
 import { DraftingCompass, FlaskConical, Network, SlidersVertical } from "lucide-react";
-import { useDb, type TestRecord } from "@/context/db-context";
+import { useDb, type TestGraphPoint, type TestRecord } from "@/context/db-context";
 import useAppNotifications from "@/hooks/use-app-notifications";
 import { useThemeContext } from "@/theme/theme-provider";
 import { NoTestsFound, NoWayToTest } from "../components/no-entity-found";
@@ -73,6 +73,12 @@ function getExtraSeriesColor(id: string, isDarkMode: boolean) {
   const color = hslToRgb(`hsl(${hue}, ${saturation}%, ${lightness}%)`);
   extraSeriesColors.set(key, color);
   return color;
+}
+
+function getNearestGraphPoint(points: TestGraphPoint[], strain: number) {
+  return points.reduce<TestGraphPoint | undefined>((nearest, point) =>
+    !nearest || Math.abs(point.x - strain) < Math.abs(nearest.x - strain) ? point : nearest,
+  undefined);
 }
 
 function LatestTestsGraphTooltip({ points }: { points: LatestTestTooltipPoint[] }) {
@@ -180,6 +186,15 @@ export default function Page() {
           hoverLabelBackground: hslToRgb("hsl(0, 0%, 90%)"),
           secondaryText: hslToRgb("hsl(0, 0%, 60%)"),
         };
+    const graphTests = latestTests.filter((test) => (test.results?.graphData?.length ?? 0) > 0);
+    const graphTestColors = graphTests.map((test) => colors[latestTests.findIndex((latestTest) => latestTest.id === test.id)]);
+    const getPointsAtStrain = (strain: number): LatestTestTooltipPoint[] =>
+      graphTests.flatMap((test, index) => {
+        const nearestPoint = getNearestGraphPoint(test.results?.graphData ?? [], strain);
+        return nearestPoint
+          ? [{ id: test.id, name: test.name, color: graphTestColors[index], strain: nearestPoint.x, stress: nearestPoint.y }]
+          : [];
+      });
     const option: EChartsOption = {
       animation: false,
       color: colors,
@@ -192,7 +207,7 @@ export default function Page() {
         borderWidth: 0,
         padding: 0,
         extraCssText: "box-shadow: none;",
-        axisPointer: { type: "cross", lineStyle: { type: "solid", color: chartColors.divider } },
+        axisPointer: { type: "cross", snap: false, lineStyle: { type: "solid", color: chartColors.divider } },
         position: (point, _params, _dom, _rect, size) => {
           const [viewWidth, viewHeight] = size.viewSize;
           const [contentWidth, contentHeight] = size.contentSize;
@@ -203,18 +218,10 @@ export default function Page() {
         },
         formatter: (params) => {
           if (!Array.isArray(params)) return "";
-          const hoveredPoint = params.find((param) => Array.isArray(param.value));
-          const hoveredStrain = Number(hoveredPoint?.axisValue ?? (Array.isArray(hoveredPoint?.value) ? hoveredPoint.value[0] : NaN));
-          if (!Number.isFinite(hoveredStrain)) return "";
-
-          const points = latestTests.flatMap((test, index): LatestTestTooltipPoint[] => {
-            const graphData = test.results?.graphData ?? [];
-            if (graphData.length === 0) return [];
-            const nearestPoint = graphData.reduce((nearest, point) =>
-              Math.abs(point.x - hoveredStrain) < Math.abs(nearest.x - hoveredStrain) ? point : nearest,
-            );
-            return [{ id: test.id, name: test.name, color: colors[index], strain: nearestPoint.x, stress: nearestPoint.y }];
-          });
+          const axisValue = params.find((param) => param.axisDimension === "x")?.axisValue ?? params[0]?.axisValue;
+          const strain = Number(axisValue);
+          if (!Number.isFinite(strain)) return "";
+          const points = getPointsAtStrain(strain);
           return points.length ? renderToStaticMarkup(<LatestTestsGraphTooltip points={points} />) : "";
         },
       },
@@ -249,19 +256,54 @@ export default function Page() {
         axisLine: { lineStyle: { color: chartColors.divider } },
         splitLine: { lineStyle: { color: chartColors.divider, type: "dashed" } },
       },
-      series: latestTests
-        .map((test, index) => ({
+      series: [
+        ...graphTests.map((test, index) => ({
           name: test.name,
           type: "line" as const,
           showSymbol: false,
-          emphasis: { disabled: true },
-          lineStyle: { width: 2, color: colors[index] },
-          itemStyle: { color: colors[index] },
+          symbol: "circle",
+          symbolSize: 8,
+          emphasis: { scale: true },
+          lineStyle: { width: 2, color: graphTestColors[index] },
+          itemStyle: { color: graphTestColors[index] },
           data: (test.results?.graphData ?? []).map(({ x, y }) => [x, y]),
-        }))
-        .filter((series) => series.data.length > 0),
+        })),
+        {
+          id: "hover-markers",
+          type: "scatter" as const,
+          data: [],
+          symbol: "circle",
+          symbolSize: 10,
+          silent: true,
+          tooltip: { show: false },
+          z: 10,
+        },
+      ],
     };
-    chartRef.current?.setOption(option, { notMerge: true, lazyUpdate: true });
+    const chart = chartRef.current;
+    if (!chart) return;
+    const updateMarkers = (strain: number) => {
+      const markerData = getPointsAtStrain(strain).map((point) => ({
+        value: [point.strain, point.stress],
+        itemStyle: { color: point.color, borderWidth: 0 },
+      }));
+      chart.setOption({ series: [{ id: "hover-markers", data: markerData }] });
+    };
+    const handleAxisPointer = (event: unknown) => {
+      const axesInfo = (event as { axesInfo?: Array<{ axisDim?: string; value?: unknown }> }).axesInfo;
+      const xAxis = axesInfo?.find((axis) => axis.axisDim === "x");
+      const strain = Number(xAxis?.value);
+      if (Number.isFinite(strain)) updateMarkers(strain);
+    };
+    const clearMarkers = () => chart.setOption({ series: [{ id: "hover-markers", data: [] }] });
+
+    chart.setOption(option, { notMerge: true, lazyUpdate: true });
+    chart.on("updateAxisPointer", handleAxisPointer);
+    chart.on("globalout", clearMarkers);
+    return () => {
+      chart.off("updateAxisPointer", handleAxisPointer);
+      chart.off("globalout", clearMarkers);
+    };
   }, [colors, isDarkMode, latestTests]);
 
   return isLoading ? (

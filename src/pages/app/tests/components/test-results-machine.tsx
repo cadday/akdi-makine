@@ -171,9 +171,11 @@ export default function TestResultsMachine({ test, onResultsSaved, readOnly = fa
           name: "Stress",
           type: "line",
           showSymbol: false,
-          emphasis: { disabled: true },
+          symbol: "circle",
+          symbolSize: 10,
+          emphasis: { scale: false, itemStyle: { borderWidth: 0 } },
           lineStyle: { width: 2, color: colors.primary },
-          itemStyle: { color: colors.primary },
+          itemStyle: { color: colors.primary, borderWidth: 0 },
         },
       ],
     };

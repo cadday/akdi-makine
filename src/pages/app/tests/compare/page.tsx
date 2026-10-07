@@ -135,6 +135,12 @@ function formatDate(timestamp: number) {
   return new Date(timestamp).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" });
 }
 
+function getNearestGraphPoint(points: TestGraphPoint[], strain: number) {
+  return points.reduce<TestGraphPoint | undefined>((nearest, point) =>
+    !nearest || Math.abs(point.x - strain) < Math.abs(nearest.x - strain) ? point : nearest,
+  undefined);
+}
+
 function ComparisonField({
   icon,
   label,
@@ -588,20 +594,15 @@ export default function CompareTestsPage({ printMode = false }: { printMode?: bo
         borderWidth: 0,
         padding: 0,
         extraCssText: "box-shadow: none;",
-        axisPointer: { type: "cross", lineStyle: { type: "solid", color: chartColors.divider } },
+        axisPointer: { type: "cross", snap: false, lineStyle: { type: "solid", color: chartColors.divider } },
         formatter: (params) => {
           if (!Array.isArray(params)) return "";
-          const hoveredPoint = params.find((param) => Array.isArray(param.value));
-          const hoveredStrain = Number(hoveredPoint?.axisValue ?? (Array.isArray(hoveredPoint?.value) ? hoveredPoint.value[0] : NaN));
-          if (!Number.isFinite(hoveredStrain)) return "";
-
+          const axisValue = params.find((param) => param.axisDimension === "x")?.axisValue ?? params[0]?.axisValue;
+          const strain = Number(axisValue);
+          if (!Number.isFinite(strain)) return "";
           const points = tests.flatMap((test, index): ComparisonTooltipPoint[] => {
-            const graphData = test.results?.graphData ?? [];
-            if (graphData.length === 0) return [];
-            const nearestPoint = graphData.reduce((nearest, point) =>
-              Math.abs(point.x - hoveredStrain) < Math.abs(nearest.x - hoveredStrain) ? point : nearest,
-            );
-            return [{ id: test.id, color: colors[index], strain: nearestPoint.x, stress: nearestPoint.y }];
+            const nearestPoint = getNearestGraphPoint(test.results?.graphData ?? [], strain);
+            return nearestPoint ? [{ id: test.id, color: colors[index], strain: nearestPoint.x, stress: nearestPoint.y }] : [];
           });
           return points.length ? renderToStaticMarkup(<ComparisonStressStrainTooltip points={points} />) : "";
         },
@@ -637,15 +638,29 @@ export default function CompareTestsPage({ printMode = false }: { printMode?: bo
         axisLine: { lineStyle: { color: chartColors.divider } },
         splitLine: { lineStyle: { color: chartColors.divider, type: "dashed" } },
       },
-      series: tests.map((test, index) => ({
-        name: test.name,
-        type: "line",
-        showSymbol: false,
-        emphasis: { disabled: true },
-        lineStyle: { width: 2, color: colors[index] },
-        itemStyle: { color: colors[index] },
-        data: (test.results?.graphData ?? []).map((point: TestGraphPoint) => [point.x, point.y]),
-      })),
+      series: [
+        ...tests.map((test, index) => ({
+          name: test.name,
+          type: "line" as const,
+          showSymbol: false,
+          symbol: "circle",
+          symbolSize: 8,
+          emphasis: { scale: true },
+          lineStyle: { width: 2, color: colors[index] },
+          itemStyle: { color: colors[index] },
+          data: (test.results?.graphData ?? []).map((point: TestGraphPoint) => [point.x, point.y]),
+        })),
+        {
+          id: "hover-markers",
+          type: "scatter" as const,
+          data: [],
+          symbol: "circle",
+          symbolSize: 10,
+          silent: true,
+          tooltip: { show: false },
+          z: 10,
+        },
+      ],
     };
     const chart = chartRef.current;
     const chartElement = chartElementRef.current;
@@ -659,9 +674,30 @@ export default function CompareTestsPage({ printMode = false }: { printMode?: bo
       chartElement.dataset.printAssetsLoading = "true";
       chart.on("finished", onFinished);
     }
+    const updateMarkers = (strain: number) => {
+      const markerData = tests.flatMap((test, index) => {
+        const nearestPoint = getNearestGraphPoint(test.results?.graphData ?? [], strain);
+        return nearestPoint
+          ? [{ value: [nearestPoint.x, nearestPoint.y], itemStyle: { color: colors[index], borderWidth: 0 } }]
+          : [];
+      });
+      chart.setOption({ series: [{ id: "hover-markers", data: markerData }] });
+    };
+    const handleAxisPointer = (event: unknown) => {
+      const axesInfo = (event as { axesInfo?: Array<{ axisDim?: string; value?: unknown }> }).axesInfo;
+      const xAxis = axesInfo?.find((axis) => axis.axisDim === "x");
+      const strain = Number(xAxis?.value);
+      if (Number.isFinite(strain)) updateMarkers(strain);
+    };
+    const clearMarkers = () => chart.setOption({ series: [{ id: "hover-markers", data: [] }] });
+
     chart.setOption(option, { notMerge: true, lazyUpdate: !printMode });
+    chart.on("updateAxisPointer", handleAxisPointer);
+    chart.on("globalout", clearMarkers);
     return () => {
       chart.off("finished", onFinished);
+      chart.off("updateAxisPointer", handleAxisPointer);
+      chart.off("globalout", clearMarkers);
     };
   }, [colors, isDarkMode, printMode, tests]);
 
