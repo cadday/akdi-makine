@@ -6,7 +6,7 @@ import { Box, Button } from "@mui/material";
 
 import { useLayoutContext } from "@/components/layout/layout-context";
 import Logo from "@/components/logo/logo";
-import { Menu, Play } from "lucide-react";
+import { Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MenuShowState } from "@/types/types";
 import WindowControls from "./window-controls";
@@ -63,7 +63,7 @@ export default function Header({ minimal = false }: { minimal?: boolean }) {
 
         {!minimal && (
           <Box className='flex flex-row gap-1  no-drag'>
-            <Button
+            {/* <Button
               size='large'
               variant='pastel'
               color='grey'
@@ -76,7 +76,7 @@ export default function Header({ minimal = false }: { minimal?: boolean }) {
               }
             >
               Add Test
-            </Button>
+            </Button> */}
 
             <Machines />
           </Box>
