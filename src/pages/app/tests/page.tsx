@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
 import { Box, Breadcrumbs, Button, Grid, Typography } from "@mui/material";
 import { OctagonAlert, Repeat2 } from "lucide-react";
-import TestDataGrid from "@/components/data-grid/test-data-grid";
+import TestDataGrid from "@/pages/app/tests/components/test-data-grid";
 import ContentWrapper from "@/components/layout/containers/content-wrapper";
 import TitleWrapper from "@/components/layout/containers/title-wrapper";
 import { LINKS } from "@/constants";

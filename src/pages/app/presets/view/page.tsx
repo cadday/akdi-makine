@@ -4,7 +4,7 @@ import { Box, Breadcrumbs, Button, Card, CardContent, Grid, ListItemIcon, ListIt
 import { CalendarCog, CalendarPlus, ChevronLeft, ChevronRight, Clock3, Crosshair, Ellipsis, Gauge, PencilRuler, Split, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { DataGrid, type GridColDef, type GridRenderCellParams } from "@mui/x-data-grid";
-import TestDataGrid from "@/components/data-grid/test-data-grid";
+import TestDataGrid from "@/pages/app/tests/components/test-data-grid";
 import TabContext from "@mui/lab/TabContext";
 import TabList from "@mui/lab/TabList";
 import TabPanel from "@mui/lab/TabPanel";

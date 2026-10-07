@@ -8,7 +8,7 @@ import { LINKS } from "@/constants";
 import { Box, Breadcrumbs, Button, Card, CardContent, Grid, ListItemIcon, ListItemText, Menu, MenuItem, Tab, Tooltip, Typography } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { DataGrid, type GridColDef, type GridRenderCellParams } from "@mui/x-data-grid";
-import TestDataGrid from "@/components/data-grid/test-data-grid";
+import TestDataGrid from "@/pages/app/tests/components/test-data-grid";
 import LoadingFullScreen from "@/components/loading/loading-full-screen";
 import { useDb, type DataFieldDefinition, type DynamicDataValue, type SpecimenRecord, type TestRecord, type UploadedImage } from "@/context/db-context";
 import useAppNotifications from "@/hooks/use-app-notifications";
