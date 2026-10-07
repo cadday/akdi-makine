@@ -3,7 +3,7 @@ import * as echarts from "echarts";
 import type { EChartsOption } from "echarts";
 import { renderToStaticMarkup } from "react-dom/server";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowUpFromLine, ArrowUpToLine, ArrowUpWideNarrow, Hexagon, Timer } from "lucide-react";
+import { ArrowUpFromLine, ArrowUpToLine, ArrowUpWideNarrow, TicketPercent, Timer, WeightTilde } from "lucide-react";
 import type { TestRecord, TestResults } from "@/context/db-context";
 import { useThemeContext } from "@/theme/theme-provider";
 import useMockTestRun from "@/mock/use-mock-test-run";
@@ -39,7 +39,7 @@ function StressStrainTooltip({ stress, strain }: { stress: number; strain: numbe
   return (
     <Box className='bg-background-paper shadow-darker-sm! outline-grey-50 rounded-lg p-5 outline-1 flex flex-col gap-2'>
       <Box className='flex flex-row gap-2'>
-        <Hexagon size={20} />
+        <WeightTilde size={20} />
         <Box className='flex flex-row gap-1'>
           <Typography variant='subtitle1' className='text-text-primary'>
             Stress
@@ -48,7 +48,7 @@ function StressStrainTooltip({ stress, strain }: { stress: number; strain: numbe
         </Box>
       </Box>
       <Box className='flex flex-row gap-2'>
-        <Hexagon size={20} />
+        <TicketPercent size={20} />
         <Box className='flex flex-row gap-1'>
           <Typography variant='subtitle1' className='text-text-primary'>
             Strain

@@ -39,7 +39,9 @@ import {
   RulerDimensionLine,
   Shapes,
   Split,
+  TicketPercent,
   Timer,
+  WeightTilde,
   MoveVertical,
 } from "lucide-react";
 import { DynamicIcon } from "lucide-react/dynamic";
@@ -79,7 +81,7 @@ function ComparisonStressStrainTooltip({ points }: { points: ComparisonTooltipPo
         { label: "Strain", unit: "%", value: (point: ComparisonTooltipPoint) => point.strain, digits: 3 },
       ].map(({ label, unit, value, digits }) => (
         <Box key={label} className='flex flex-row gap-2'>
-          <Hexagon size={20} />
+          {label === "Stress" ? <WeightTilde size={20} /> : <TicketPercent size={20} />}
           <Box className='flex min-w-0 flex-col gap-1'>
             <Typography variant='subtitle1' className='text-text-primary'>
               {label}

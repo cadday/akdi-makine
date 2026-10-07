@@ -6,7 +6,7 @@ import { DataGrid, type GridColDef, type GridRenderCellParams } from "@mui/x-dat
 import { renderToStaticMarkup } from "react-dom/server";
 import * as echarts from "echarts";
 import type { EChartsOption } from "echarts";
-import { Hexagon } from "lucide-react";
+import { TicketPercent, WeightTilde } from "lucide-react";
 
 import ContentWrapper from "@/components/layout/containers/content-wrapper";
 import TitleWrapper from "@/components/layout/containers/title-wrapper";
@@ -83,7 +83,7 @@ function LatestTestsGraphTooltip({ points }: { points: LatestTestTooltipPoint[] 
         { label: "Strain", unit: "%", value: (point: LatestTestTooltipPoint) => point.strain, digits: 3 },
       ].map(({ label, unit, value, digits }) => (
         <Box key={label} className='flex flex-row gap-2'>
-          <Hexagon size={20} />
+          {label === "Stress" ? <WeightTilde size={20} /> : <TicketPercent size={20} />}
           <Box className='flex min-w-0 flex-col gap-1'>
             <Typography variant='subtitle1' className='text-text-primary'>
               {label}
