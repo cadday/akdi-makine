@@ -116,8 +116,38 @@ export default function TestDataGrid({ tests, dataFields, onTestsChange, onAddIt
           </Link>
         ),
       },
-      { field: "specimenName", headerName: "Specimen", minWidth: 180 },
-      { field: "presetName", headerName: "Preset", minWidth: 180 },
+      {
+        field: "specimenName",
+        headerName: "Specimen",
+        minWidth: 180,
+        renderCell: (params: GridRenderCellParams<TestGridRow, string>) =>
+          params.row.specimenId ? (
+            <Link
+              to={`/specimens/${params.row.specimenId}`}
+              className='text-text-primary link-primary link-underline hover:text-primary py-2 font-semibold transition-colors'
+            >
+              {params.value}
+            </Link>
+          ) : (
+            params.value
+          ),
+      },
+      {
+        field: "presetName",
+        headerName: "Preset",
+        minWidth: 180,
+        renderCell: (params: GridRenderCellParams<TestGridRow, string>) =>
+          params.row.presetId ? (
+            <Link
+              to={`/presets/${params.row.presetId}`}
+              className='text-text-primary link-primary link-underline hover:text-primary py-2 font-semibold transition-colors'
+            >
+              {params.value}
+            </Link>
+          ) : (
+            params.value
+          ),
+      },
       { field: "machineIP", headerName: "Machine IP", minWidth: 150, valueFormatter: (value) => value || "-" },
       ...dataFields.map(
         (dataField): GridColDef<TestGridRow> => ({
