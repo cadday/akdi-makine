@@ -7,6 +7,8 @@ export const DATA_FIELD_CONTAINERS = ["Specimen", "Test"] as const;
 export type DataFieldContainer = (typeof DATA_FIELD_CONTAINERS)[number];
 export const PRESET_TYPES = ["Tensile", "Compression"] as const;
 export type PresetType = (typeof PRESET_TYPES)[number];
+export const SPECIMEN_GEOMETRIES = ["Not Specified", "Cylindrical", "Rectangular"] as const;
+export type SpecimenGeometry = (typeof SPECIMEN_GEOMETRIES)[number];
 export type DynamicDataValue = string | number | boolean | string[] | UploadedImage[] | null;
 
 export interface UploadedImage {
@@ -19,6 +21,11 @@ export interface UploadedImage {
 export interface SpecimenRecord {
   id: string;
   name: string;
+  geometry?: SpecimenGeometry;
+  diameter?: number;
+  side1?: number;
+  side2?: number;
+  height?: number;
   customData: Record<string, DynamicDataValue>;
   createdAt: number;
   updatedAt: number;
@@ -52,6 +59,11 @@ export interface TestResults {
 export interface TestSpecimenSnapshot {
   name: string;
   customData: Record<string, DynamicDataValue>;
+  geometry?: SpecimenGeometry;
+  diameter?: number;
+  side1?: number;
+  side2?: number;
+  height?: number;
 }
 
 export interface TestPresetSnapshot {

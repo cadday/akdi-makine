@@ -28,13 +28,17 @@ import {
   Bookmark,
   CalendarCog,
   CalendarPlus,
+  Diameter,
   Clock3,
   Ellipsis,
   FileDown,
   Gauge,
   Hexagon,
   PencilRuler,
+  RulerDimensionLine,
+  Shapes,
   Timer,
+  MoveVertical,
   Weight,
   WeightTilde,
 } from "lucide-react";
@@ -391,6 +395,49 @@ function ComparisonDetails({
       <Grid container size={{ lg: 4, xs: 12 }} spacing={5}>
         <ComparisonCard title='Specimen'>
           <ComparisonField icon={<Hexagon className='flex-none' />} label='Name' tests={tests} colors={colors} valueForTest={(test) => test.specimenSnapshot.name} />
+          <ComparisonField
+            icon={<Shapes className='flex-none' />}
+            label='Geometry'
+            tests={tests}
+            colors={colors}
+            valueForTest={(test) => test.specimenSnapshot.geometry ?? "Not Specified"}
+          />
+          <ComparisonField
+            icon={<Diameter className='flex-none' />}
+            label='Diameter'
+            tests={tests}
+            colors={colors}
+            valueForTest={(test) =>
+              test.specimenSnapshot.geometry === "Cylindrical" && test.specimenSnapshot.diameter != null ? `${test.specimenSnapshot.diameter} mm` : "-"
+            }
+          />
+          <ComparisonField
+            icon={<RulerDimensionLine className='flex-none' />}
+            label='Side 1'
+            tests={tests}
+            colors={colors}
+            valueForTest={(test) =>
+              test.specimenSnapshot.geometry === "Rectangular" && test.specimenSnapshot.side1 != null ? `${test.specimenSnapshot.side1} mm` : "-"
+            }
+          />
+          <ComparisonField
+            icon={<RulerDimensionLine className='flex-none rotate-90' />}
+            label='Side 2'
+            tests={tests}
+            colors={colors}
+            valueForTest={(test) =>
+              test.specimenSnapshot.geometry === "Rectangular" && test.specimenSnapshot.side2 != null ? `${test.specimenSnapshot.side2} mm` : "-"
+            }
+          />
+          <ComparisonField
+            icon={<MoveVertical className='flex-none' />}
+            label='Height'
+            tests={tests}
+            colors={colors}
+            valueForTest={(test) =>
+              test.specimenSnapshot.geometry !== "Not Specified" && test.specimenSnapshot.height != null ? `${test.specimenSnapshot.height} mm` : "-"
+            }
+          />
           {specimenFields.map((field) => (
             <ComparisonField
               key={field.id}

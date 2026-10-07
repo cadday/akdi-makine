@@ -35,6 +35,20 @@ interface PdfComparisonRequest {
 
 const pdfReadyWaiters = new Map<number, { resolve: () => void; reject: (error: Error) => void; timeout: ReturnType<typeof setTimeout> }>();
 
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string): Promise<T> {
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<never>((_, reject) => {
+        timeout = setTimeout(() => reject(new Error(message)), timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timeout) clearTimeout(timeout);
+  }
+}
+
 function startAutoUpdates() {
   if (!app.isPackaged || process.platform !== "win32") return;
 
@@ -185,7 +199,7 @@ ipcMain.handle("pdf:save-record", async (event, input: unknown) => {
     const timeout = setTimeout(() => {
       pdfReadyWaiters.delete(printWindowId);
       reject(new Error("Timed out waiting for the PDF report to render"));
-    }, 30_000);
+    }, 60_000);
     pdfReadyWaiters.set(printWindowId, { resolve, reject, timeout });
   });
 
@@ -195,11 +209,15 @@ ipcMain.handle("pdf:save-record", async (event, input: unknown) => {
       : printWindow.loadFile(path.join(RENDERER_DIST, "index.html"), { hash: printRoute });
     await Promise.all([load, ready]);
 
-    const pdf = await printWindow.webContents.printToPDF({
-      pageSize: "A4",
-      printBackground: true,
-      displayHeaderFooter: false,
-    });
+    const pdf = await withTimeout(
+      printWindow.webContents.printToPDF({
+        pageSize: "A4",
+        printBackground: true,
+        displayHeaderFooter: false,
+      }),
+      60_000,
+      "Timed out while generating the PDF",
+    );
     await writeFile(filePath, pdf);
 
     return { canceled: false, filePath };

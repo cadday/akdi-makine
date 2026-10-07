@@ -4,6 +4,7 @@ import { Box, Typography } from "@mui/material";
 import { useParams } from "react-router";
 import LoadingFullScreen from "@/components/loading/loading-full-screen";
 import Logo from "@/components/logo/logo";
+import PdfRenderErrorBoundary from "@/components/pdf/pdf-render-error-boundary";
 
 type PrintRecordType = "test" | "specimen" | "preset" | "data-field";
 
@@ -42,12 +43,14 @@ export default function PrintRecordView() {
         .print-view .MuiCard-root { break-inside: avoid; }
         @media print { .print-view { min-height: 0; } }
       `}</style>
-      <Suspense fallback={<LoadingFullScreen />}>
-        <Box className='flex items-center justify-center'>
-          <Logo classNameFull='flex' classNameMobile='hidden' />
-        </Box>
-        <Page printMode />
-      </Suspense>
+      <PdfRenderErrorBoundary>
+        <Suspense fallback={<LoadingFullScreen />}>
+          <Box className='flex items-center justify-center'>
+            <Logo classNameFull='flex' classNameMobile='hidden' />
+          </Box>
+          <Page printMode />
+        </Suspense>
+      </PdfRenderErrorBoundary>
     </Box>
   );
 }

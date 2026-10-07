@@ -39,7 +39,7 @@ function createDefaultTestName() {
   return `Test ${twoDigits(now.getDate())}-${twoDigits(now.getMonth() + 1)}-${String(now.getFullYear()).slice(-2)} ${twoDigits(now.getHours())}:${twoDigits(now.getMinutes())}`;
 }
 
-export default function QuickTestForm() {
+export default function QuickTestForm({ onTestCreated }: { onTestCreated?: () => void }) {
   const navigate = useNavigate();
   const { getSpecimens, getPresets, getConnectedMachine, createTest } = useDb();
   const { showError } = useAppNotifications();
@@ -100,7 +100,15 @@ export default function QuickTestForm() {
           machineIP: connectedMachine?.ipAddress ?? null,
           specimenId: specimen.id,
           presetId: preset.id,
-          specimenSnapshot: { name: specimen.name, customData: { ...specimen.customData } },
+          specimenSnapshot: {
+            name: specimen.name,
+            customData: { ...specimen.customData },
+            geometry: specimen.geometry,
+            diameter: specimen.diameter,
+            side1: specimen.side1,
+            side2: specimen.side2,
+            height: specimen.height,
+          },
           presetSnapshot: {
             name: preset.name,
             type: preset.type,
@@ -111,6 +119,7 @@ export default function QuickTestForm() {
           },
           customData: {},
         });
+        onTestCreated?.();
         navigate(`/tests/${testId}`);
       } catch (error) {
         showError(`Failed to save test: ${String(error)}`);

@@ -18813,6 +18813,19 @@ const activePdfImageReaders = /* @__PURE__ */ new Set();
 registerImageStorage(() => mainWindow, (sender) => activePdfImageReaders.has(sender.id));
 registerBackupStorage(() => mainWindow);
 const pdfReadyWaiters = /* @__PURE__ */ new Map();
+async function withTimeout(promise, timeoutMs, message) {
+  let timeout;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise((_, reject) => {
+        timeout = setTimeout(() => reject(new Error(message)), timeoutMs);
+      })
+    ]);
+  } finally {
+    if (timeout) clearTimeout(timeout);
+  }
+}
 function startAutoUpdates() {
   if (!app.isPackaged || process.platform !== "win32") return;
   main$1.autoUpdater.autoDownload = true;
@@ -18928,17 +18941,21 @@ ipcMain.handle("pdf:save-record", async (event, input) => {
     const timeout = setTimeout(() => {
       pdfReadyWaiters.delete(printWindowId);
       reject(new Error("Timed out waiting for the PDF report to render"));
-    }, 3e4);
+    }, 6e4);
     pdfReadyWaiters.set(printWindowId, { resolve, reject, timeout });
   });
   try {
     const load2 = VITE_DEV_SERVER_URL ? printWindow.loadURL(`${VITE_DEV_SERVER_URL.replace(/\/$/, "")}/#${printRoute}`) : printWindow.loadFile(path$n.join(RENDERER_DIST, "index.html"), { hash: printRoute });
     await Promise.all([load2, ready]);
-    const pdf = await printWindow.webContents.printToPDF({
-      pageSize: "A4",
-      printBackground: true,
-      displayHeaderFooter: false
-    });
+    const pdf = await withTimeout(
+      printWindow.webContents.printToPDF({
+        pageSize: "A4",
+        printBackground: true,
+        displayHeaderFooter: false
+      }),
+      6e4,
+      "Timed out while generating the PDF"
+    );
     await writeFile$1(filePath, pdf);
     return { canceled: false, filePath };
   } finally {

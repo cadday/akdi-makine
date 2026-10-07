@@ -1,18 +1,42 @@
 import { useMemo, useState } from "react";
 import { useFormik } from "formik";
 import * as yup from "yup";
-import { Alert, AlertTitle, Box, Button, capitalize, Card, CardContent, FormControl, FormLabel, Grid, Input, Typography } from "@mui/material";
-import { Bookmark, Save, XSquare } from "lucide-react";
+import {
+  Alert,
+  AlertTitle,
+  Box,
+  Button,
+  capitalize,
+  Card,
+  CardContent,
+  FormControl,
+  FormLabel,
+  Grid,
+  Input,
+  InputAdornment,
+  MenuItem,
+  Select,
+  Typography,
+} from "@mui/material";
+import { Bookmark, ChevronDown, Diameter, MoveVertical, RulerDimensionLine, Save, Shapes, XSquare } from "lucide-react";
 import DataFieldInput from "@/components/data-fields/data-field-input";
-import { type DataFieldDefinition, type DynamicDataValue, type SpecimenRecord, type UploadedImage } from "@/context/db-context";
+import { type DataFieldDefinition, type DynamicDataValue, type SpecimenGeometry, type SpecimenRecord, type UploadedImage } from "@/context/db-context";
+import { SPECIMEN_GEOMETRIES } from "@/lib/db";
 import useAppNotifications from "@/hooks/use-app-notifications";
 import { cn } from "@/lib/utils";
 
 interface SpecimenFormValues {
   name: string;
+  geometry: SpecimenGeometry;
+  diameter: number | "";
+  side1: number | "";
+  side2: number | "";
+  height: number | "";
   customData: Record<string, DynamicDataValue>;
   pendingImages: Record<string, File[]>;
 }
+
+type SpecimenSaveInput = Omit<SpecimenRecord, "id" | "createdAt" | "updatedAt">;
 
 interface SpecimenFormProps {
   fields: DataFieldDefinition[];
@@ -21,7 +45,7 @@ interface SpecimenFormProps {
   specimen?: SpecimenRecord;
   initialSpecimen?: SpecimenRecord;
   saveLabel?: string;
-  onSave: (input: { name: string; customData: Record<string, DynamicDataValue> }) => Promise<void>;
+  onSave: (input: SpecimenSaveInput) => Promise<void>;
 }
 
 function buildSpecimenValidationSchema(fields: DataFieldDefinition[]) {
@@ -77,6 +101,39 @@ function buildSpecimenValidationSchema(fields: DataFieldDefinition[]) {
   return yup
     .object({
       name: yup.string().trim().required("Specimen name is required"),
+      geometry: yup.string().oneOf(SPECIMEN_GEOMETRIES).required(),
+      diameter: yup
+        .number()
+        .transform((value, originalValue) => (originalValue === "" ? undefined : value))
+        .when("geometry", {
+          is: "Cylindrical",
+          then: (schema) => schema.typeError("Enter a number").moreThan(0, "Must be greater than zero").required("Diameter is required"),
+          otherwise: (schema) => schema.notRequired().nullable(),
+        }),
+      side1: yup
+        .number()
+        .transform((value, originalValue) => (originalValue === "" ? undefined : value))
+        .when("geometry", {
+          is: "Rectangular",
+          then: (schema) => schema.typeError("Enter a number").moreThan(0, "Must be greater than zero").required("Side 1 is required"),
+          otherwise: (schema) => schema.notRequired().nullable(),
+        }),
+      side2: yup
+        .number()
+        .transform((value, originalValue) => (originalValue === "" ? undefined : value))
+        .when("geometry", {
+          is: "Rectangular",
+          then: (schema) => schema.typeError("Enter a number").moreThan(0, "Must be greater than zero").required("Side 2 is required"),
+          otherwise: (schema) => schema.notRequired().nullable(),
+        }),
+      height: yup
+        .number()
+        .transform((value, originalValue) => (originalValue === "" ? undefined : value))
+        .when("geometry", {
+          is: (geometry: SpecimenGeometry) => geometry !== "Not Specified",
+          then: (schema) => schema.typeError("Enter a number").moreThan(0, "Must be greater than zero").required("Height is required"),
+          otherwise: (schema) => schema.notRequired().nullable(),
+        }),
       customData: yup.object().shape(customDataShape),
       pendingImages: yup.object().shape(pendingImagesShape),
     })
@@ -108,7 +165,16 @@ function getInitialValues(specimen: SpecimenRecord | undefined, fields: DataFiel
     }
   }
 
-  return { name: specimen?.name ?? "", customData, pendingImages: {} };
+  return {
+    name: specimen?.name ?? "",
+    geometry: specimen?.geometry ?? "Not Specified",
+    diameter: specimen?.diameter ?? "",
+    side1: specimen?.side1 ?? "",
+    side2: specimen?.side2 ?? "",
+    height: specimen?.height ?? "",
+    customData,
+    pendingImages: {},
+  };
 }
 
 export default function SpecimenForm({ fields, isLoadingFields = false, loadError, specimen, initialSpecimen, saveLabel = "Save", onSave }: SpecimenFormProps) {
@@ -157,13 +223,26 @@ export default function SpecimenForm({ fields, isLoadingFields = false, loadErro
           if (images.length > 0) customData[field.id] = images;
         }
 
-        await onSave({ name: values.name.trim(), customData });
+        await onSave({
+          name: values.name.trim(),
+          customData,
+          geometry: values.geometry,
+          ...(values.geometry === "Cylindrical"
+            ? { diameter: Number(values.diameter), height: Number(values.height) }
+            : values.geometry === "Rectangular"
+              ? { side1: Number(values.side1), side2: Number(values.side2), height: Number(values.height) }
+              : {}),
+        });
       } catch (error) {
         await Promise.allSettled(savedImageIds.map((imageId) => window.electronAPI.deleteImage(imageId)));
         showError(`Failed to save specimen: ${String(error)}`);
       }
     },
   });
+
+  const fieldError = (field: keyof SpecimenFormValues) => submitted && formik.errors[field];
+  const setDimensionValue = (field: "diameter" | "side1" | "side2" | "height", value: string) =>
+    void formik.setFieldValue(field, value === "" ? "" : Number(value));
 
   return (
     <Grid
@@ -195,6 +274,97 @@ export default function SpecimenForm({ fields, isLoadingFields = false, loadErro
                   <Input name='name' value={formik.values.name} onChange={formik.handleChange} onBlur={formik.handleBlur} />
                 </FormControl>
               </Box>
+              <Box className='flex flex-row gap-2'>
+                <Shapes className={cn("flex-none", fieldError("geometry") && "text-error!")} />
+                <FormControl fullWidth size='small' variant='standard' className='outlined'>
+                  <FormLabel component='label' className={fieldError("geometry") ? "text-error!" : undefined}>
+                    Geometry
+                  </FormLabel>
+                  <Select<SpecimenGeometry>
+                    value={formik.values.geometry}
+                    onChange={(event) => {
+                      const geometry = event.target.value as SpecimenGeometry;
+                      void formik.setValues((current) => ({ ...current, geometry, diameter: "", side1: "", side2: "", height: "" }));
+                    }}
+                    IconComponent={ChevronDown}
+                    MenuProps={{ className: "outlined" }}
+                  >
+                    {SPECIMEN_GEOMETRIES.map((geometry) => (
+                      <MenuItem key={geometry} value={geometry}>
+                        {geometry}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Box>
+              {formik.values.geometry === "Cylindrical" && (
+                <Box className='flex flex-row gap-2'>
+                  <Diameter className={cn("flex-none", fieldError("diameter") && "text-error!")} />
+                  <FormControl className='outlined' variant='standard' size='small' fullWidth required>
+                    <FormLabel component='label' className={fieldError("diameter") ? "text-error!" : undefined}>
+                      Diameter
+                    </FormLabel>
+                    <Input
+                      type='number'
+                      inputProps={{ min: 0, step: "any" }}
+                      endAdornment={<InputAdornment position='end'>mm</InputAdornment>}
+                      value={formik.values.diameter}
+                      onChange={(event) => setDimensionValue("diameter", event.target.value)}
+                    />
+                  </FormControl>
+                </Box>
+              )}
+              {formik.values.geometry === "Rectangular" && (
+                <>
+                  <Box className='flex flex-row gap-2'>
+                    <RulerDimensionLine className={cn("flex-none", fieldError("side1") && "text-error!")} />
+                    <FormControl className='outlined' variant='standard' size='small' fullWidth required>
+                      <FormLabel component='label' className={fieldError("side1") ? "text-error!" : undefined}>
+                        Side 1
+                      </FormLabel>
+                      <Input
+                        type='number'
+                        inputProps={{ min: 0, step: "any" }}
+                        endAdornment={<InputAdornment position='end'>mm</InputAdornment>}
+                        value={formik.values.side1}
+                        onChange={(event) => setDimensionValue("side1", event.target.value)}
+                      />
+                    </FormControl>
+                  </Box>
+                  <Box className='flex flex-row gap-2'>
+                    <RulerDimensionLine className={cn("flex-none rotate-90", fieldError("side2") && "text-error!")} />
+                    <FormControl className='outlined' variant='standard' size='small' fullWidth required>
+                      <FormLabel component='label' className={fieldError("side2") ? "text-error!" : undefined}>
+                        Side 2
+                      </FormLabel>
+                      <Input
+                        type='number'
+                        inputProps={{ min: 0, step: "any" }}
+                        endAdornment={<InputAdornment position='end'>mm</InputAdornment>}
+                        value={formik.values.side2}
+                        onChange={(event) => setDimensionValue("side2", event.target.value)}
+                      />
+                    </FormControl>
+                  </Box>
+                </>
+              )}
+              {formik.values.geometry !== "Not Specified" && (
+                <Box className='flex flex-row gap-2'>
+                  <MoveVertical className={cn("flex-none", fieldError("height") && "text-error!")} />
+                  <FormControl className='outlined' variant='standard' size='small' fullWidth required>
+                    <FormLabel component='label' className={fieldError("height") ? "text-error!" : undefined}>
+                      Height
+                    </FormLabel>
+                    <Input
+                      type='number'
+                      inputProps={{ min: 0, step: "any" }}
+                      endAdornment={<InputAdornment position='end'>mm</InputAdornment>}
+                      value={formik.values.height}
+                      onChange={(event) => setDimensionValue("height", event.target.value)}
+                    />
+                  </FormControl>
+                </Box>
+              )}
             </CardContent>
           </Card>
         </Grid>

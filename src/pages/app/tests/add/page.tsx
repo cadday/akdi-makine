@@ -126,6 +126,8 @@ export default function Page() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [machineConnectionError, setMachineConnectionError] = useState(false);
+  const [isCheckingMachine, setIsCheckingMachine] = useState(false);
   const [defaultTestName] = useState(() => {
     const now = new Date();
     const twoDigits = (value: number) => String(value).padStart(2, "0");
@@ -168,6 +170,13 @@ export default function Page() {
     validateOnBlur: false,
     validateOnChange: true,
     onSubmit: async (values) => {
+      const connectedMachine = await getConnectedMachine();
+      if (!connectedMachine) {
+        setMachineConnectionError(true);
+        return;
+      }
+
+      setMachineConnectionError(false);
       const specimen = specimens.find((item) => item.id === values.specimenId);
       const preset = presets.find((item) => item.id === values.presetId);
       if (!specimen || !preset) {
@@ -206,13 +215,20 @@ export default function Page() {
           if (images.length > 0) customData[field.id] = images;
         }
 
-        const connectedMachine = await getConnectedMachine();
         const testId = await createTest({
           name: values.name.trim(),
           machineIP: connectedMachine?.ipAddress ?? null,
           specimenId: values.specimenId,
           presetId: values.presetId,
-          specimenSnapshot: { name: specimen.name, customData: { ...specimen.customData } },
+          specimenSnapshot: {
+            name: specimen.name,
+            customData: { ...specimen.customData },
+            geometry: specimen.geometry,
+            diameter: specimen.diameter,
+            side1: specimen.side1,
+            side2: specimen.side2,
+            height: specimen.height,
+          },
           presetSnapshot: {
             name: preset.name,
             type: preset.type,
@@ -268,10 +284,41 @@ export default function Page() {
           onSubmit={(event) => {
             event.preventDefault();
             setSubmitted(true);
-            void formik.submitForm();
+            setIsCheckingMachine(true);
+            void getConnectedMachine()
+              .then((connectedMachine) => {
+                if (!connectedMachine) {
+                  setMachineConnectionError(true);
+                  return;
+                }
+
+                setMachineConnectionError(false);
+                return formik.submitForm();
+              })
+              .catch((error: unknown) => showError(`Failed to check connected machine: ${String(error)}`))
+              .finally(() => setIsCheckingMachine(false));
           }}
         >
           <Grid size={{ xs: 12 }} container spacing={5}>
+            <Grid size={12}>
+              <Typography variant='h6' component='h6' className='mb-3'>
+                Definition
+              </Typography>
+              <Card>
+                <CardContent className='flex flex-col -mb-4'>
+                  <Box className='flex flex-row gap-2'>
+                    <Bookmark className={cn("flex-none", submitted && formik.errors.name && "text-error!")} />
+                    <FormControl className='outlined' variant='standard' size='small' fullWidth required>
+                      <FormLabel component='label' className={cn(submitted && formik.errors.name && "text-error!")}>
+                        Name
+                      </FormLabel>
+                      <Input name='name' value={formik.values.name} onChange={formik.handleChange} onBlur={formik.handleBlur} />
+                    </FormControl>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+
             <Grid size={12} className='group/grid'>
               <Box className='flex flex-row items-center justify-between'>
                 <Typography variant='h6' component='h6' className='mb-3'>
@@ -382,25 +429,6 @@ export default function Page() {
               </Card>
             </Grid>
 
-            <Grid size={12}>
-              <Typography variant='h6' component='h6' className='mb-3'>
-                Definition
-              </Typography>
-              <Card>
-                <CardContent className='flex flex-col -mb-4'>
-                  <Box className='flex flex-row gap-2'>
-                    <Bookmark className={cn("flex-none", submitted && formik.errors.name && "text-error!")} />
-                    <FormControl className='outlined' variant='standard' size='small' fullWidth required>
-                      <FormLabel component='label' className={cn(submitted && formik.errors.name && "text-error!")}>
-                        Name
-                      </FormLabel>
-                      <Input name='name' value={formik.values.name} onChange={formik.handleChange} onBlur={formik.handleBlur} />
-                    </FormControl>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-
             {fields.length > 0 && (
               <Grid size={12}>
                 <Typography variant='h6' component='h6' className='mb-3'>
@@ -428,6 +456,14 @@ export default function Page() {
             )}
 
             <Grid size={12}>
+              {machineConnectionError && (
+                <Alert severity='error' icon={<XSquare />} className='neutral rounded-3xl! bg-transparent! mb-2 mt-2 p-5'>
+                  <AlertTitle variant='subtitle1' className='pt-0.5'>
+                    No machine connected
+                  </AlertTitle>
+                  <Typography className='text-text-primary'>Connect a machine before starting a test.</Typography>
+                </Alert>
+              )}
               {submitted && !formik.isValid && (
                 <Alert severity='error' icon={<XSquare />} className='neutral rounded-3xl! bg-transparent! mb-2 mt-2 p-5'>
                   <AlertTitle variant='subtitle1' className='pt-0.5'>
@@ -456,8 +492,8 @@ export default function Page() {
                 </Alert>
               )}
               <Button
-                disabled={isLoading || Boolean(loadError)}
-                loading={formik.isSubmitting}
+                disabled={isLoading || Boolean(loadError) || isCheckingMachine}
+                loading={formik.isSubmitting || isCheckingMachine}
                 loadingPosition='start'
                 type='submit'
                 size='large'

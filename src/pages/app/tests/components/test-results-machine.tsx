@@ -2,7 +2,7 @@ import { Box, Card, CardContent, Grid, hslToRgb, Skeleton, Typography } from "@m
 import * as echarts from "echarts";
 import type { EChartsOption } from "echarts";
 import { renderToStaticMarkup } from "react-dom/server";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowUpFromLine, ArrowUpToLine, ArrowUpWideNarrow, Hexagon, Timer } from "lucide-react";
 import type { TestRecord, TestResults } from "@/context/db-context";
 import { useThemeContext } from "@/theme/theme-provider";
@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import useAppNotifications from "@/hooks/use-app-notifications";
 import { Tensile } from "@/icons/custom-lucide-icons/tensile";
 import { Yeild } from "@/icons/custom-lucide-icons/yield";
+import { useTestRun } from "@/context/test-run-context";
 
 interface TestResultsMachineProps {
   test: TestRecord;
@@ -43,7 +44,7 @@ function StressStrainTooltip({ stress, strain }: { stress: number; strain: numbe
           <Typography variant='subtitle1' className='text-text-primary'>
             Stress
           </Typography>
-          <Typography className='text-text-secondary'>{stress.toFixed(2)} (MPa)</Typography>
+          <Typography className='text-text-primary'>{stress.toFixed(2)} (MPa)</Typography>
         </Box>
       </Box>
       <Box className='flex flex-row gap-2'>
@@ -52,7 +53,7 @@ function StressStrainTooltip({ stress, strain }: { stress: number; strain: numbe
           <Typography variant='subtitle1' className='text-text-primary'>
             Strain
           </Typography>
-          <Typography className='text-text-secondary'>{strain.toFixed(3)} (%)</Typography>
+          <Typography className='text-text-primary'>{strain.toFixed(3)} (%)</Typography>
         </Box>
       </Box>
     </Box>
@@ -68,6 +69,7 @@ export default function TestResultsMachine({ test, onResultsSaved, readOnly = fa
     readOnly,
   });
   const { showError, showSuccess } = useAppNotifications();
+  const { registerTestRun, unregisterTestRun } = useTestRun();
   const { isDarkMode } = useThemeContext();
   const chartElementRef = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<echarts.ECharts | null>(null);
@@ -82,10 +84,19 @@ export default function TestResultsMachine({ test, onResultsSaved, readOnly = fa
     previousStatusRef.current = status;
   }, [manuallyStoppedTestId, showError, showSuccess, status, test.id]);
 
-  const handleStop = () => {
+  const handleStop = useCallback(() => {
     setManuallyStoppedTestId(test.id);
     stopTest();
-  };
+  }, [stopTest, test.id]);
+
+  useEffect(() => {
+    if (status === "in-progress" && !readOnly) {
+      registerTestRun(test.id, handleStop);
+      return () => unregisterTestRun(test.id);
+    }
+
+    unregisterTestRun(test.id);
+  }, [handleStop, readOnly, registerTestRun, status, test.id, unregisterTestRun]);
 
   useEffect(() => {
     if (!chartElementRef.current) return;
@@ -179,7 +190,7 @@ export default function TestResultsMachine({ test, onResultsSaved, readOnly = fa
   return (
     <>
       <Grid container size={12} spacing={5} className='relative'>
-        {status === "in-progress" && <TestProgress progress={progress} onStop={handleStop} />}
+        {status === "in-progress" && <TestProgress progress={progress} />}
         <Grid container size={12} spacing={5} className={cn(status === "in-progress" && "relative z-5001")}>
           <Grid size={12}>
             <Typography variant='h6' component='h6' className='mb-3'>
@@ -203,7 +214,9 @@ export default function TestResultsMachine({ test, onResultsSaved, readOnly = fa
                       <Yeild className='flex-none' />
                       <Box className='flex flex-col gap-1 flex-1'>
                         <Typography variant='subtitle1'>Yield Strength</Typography>
-                        <Typography>{typeof results?.yieldStrength === "number" ? `${results.yieldStrength} (MPa)` : status === "in-progress" ? <Skeleton /> : "-"}</Typography>
+                        <Typography>
+                          {typeof results?.yieldStrength === "number" ? `${results.yieldStrength} (MPa)` : status === "in-progress" ? <Skeleton /> : "-"}
+                        </Typography>
                       </Box>
                     </Box>
                   </CardContent>
@@ -216,7 +229,9 @@ export default function TestResultsMachine({ test, onResultsSaved, readOnly = fa
                       <Tensile className='flex-none' />
                       <Box className='flex flex-col gap-1 flex-1'>
                         <Typography variant='subtitle1'>Tensile Strength</Typography>
-                        <Typography>{typeof results?.tensileStrength === "number" ? `${results.tensileStrength} (MPa)` : status === "in-progress" ? <Skeleton /> : "-"}</Typography>
+                        <Typography>
+                          {typeof results?.tensileStrength === "number" ? `${results.tensileStrength} (MPa)` : status === "in-progress" ? <Skeleton /> : "-"}
+                        </Typography>
                       </Box>
                     </Box>
                   </CardContent>
@@ -229,7 +244,9 @@ export default function TestResultsMachine({ test, onResultsSaved, readOnly = fa
                       <ArrowUpWideNarrow className='flex-none' />
                       <Box className='flex flex-col gap-1 flex-1'>
                         <Typography variant='subtitle1'>Elongation</Typography>
-                        <Typography>{typeof results?.elongation === "number" ? `${results.elongation} (%)` : status === "in-progress" ? <Skeleton /> : "-"}</Typography>
+                        <Typography>
+                          {typeof results?.elongation === "number" ? `${results.elongation} (%)` : status === "in-progress" ? <Skeleton /> : "-"}
+                        </Typography>
                       </Box>
                     </Box>
                   </CardContent>
@@ -242,7 +259,9 @@ export default function TestResultsMachine({ test, onResultsSaved, readOnly = fa
                       <ArrowUpFromLine className='flex-none' />
                       <Box className='flex flex-col gap-1 flex-1'>
                         <Typography variant='subtitle1'>First Length</Typography>
-                        <Typography>{typeof results?.firstLength === "number" ? `${results.firstLength} (mm)` : status === "in-progress" ? <Skeleton /> : "-"}</Typography>
+                        <Typography>
+                          {typeof results?.firstLength === "number" ? `${results.firstLength} (mm)` : status === "in-progress" ? <Skeleton /> : "-"}
+                        </Typography>
                       </Box>
                     </Box>
                   </CardContent>
@@ -255,7 +274,9 @@ export default function TestResultsMachine({ test, onResultsSaved, readOnly = fa
                       <ArrowUpToLine className='flex-none' />
                       <Box className='flex flex-col gap-1 flex-1'>
                         <Typography variant='subtitle1'>Last Length</Typography>
-                        <Typography>{typeof results?.lastLength === "number" ? `${results.lastLength} (mm)` : status === "in-progress" ? <Skeleton /> : "-"}</Typography>
+                        <Typography>
+                          {typeof results?.lastLength === "number" ? `${results.lastLength} (mm)` : status === "in-progress" ? <Skeleton /> : "-"}
+                        </Typography>
                       </Box>
                     </Box>
                   </CardContent>
@@ -268,7 +289,9 @@ export default function TestResultsMachine({ test, onResultsSaved, readOnly = fa
                       <Timer className='flex-none' />
                       <Box className='flex flex-col gap-1 flex-1'>
                         <Typography variant='subtitle1'>Test Duration</Typography>
-                        <Typography>{typeof results?.testDuration === "number" ? `${results.testDuration} (s)` : status === "in-progress" ? <Skeleton /> : "-"}</Typography>
+                        <Typography>
+                          {typeof results?.testDuration === "number" ? `${results.testDuration} (s)` : status === "in-progress" ? <Skeleton /> : "-"}
+                        </Typography>
                       </Box>
                     </Box>
                   </CardContent>

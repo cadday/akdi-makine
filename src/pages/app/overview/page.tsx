@@ -61,6 +61,20 @@ function resolveSeriesColor(color: string, cssVariables: CSSStyleDeclaration) {
   return hslComponents ? hslToRgb(`hsl(${hslComponents.replace(/\s+/g, ", ")})`) : color;
 }
 
+const extraSeriesColors = new Map<string, string>();
+
+function getExtraSeriesColor(id: string, isDarkMode: boolean) {
+  const key = `${id}:${isDarkMode ? "dark" : "light"}`;
+  const existing = extraSeriesColors.get(key);
+  if (existing) return existing;
+  const hue = Math.floor(Math.random() * 360);
+  const saturation = 65 + Math.floor(Math.random() * 20);
+  const lightness = isDarkMode ? 66 + Math.floor(Math.random() * 10) : 38 + Math.floor(Math.random() * 12);
+  const color = hslToRgb(`hsl(${hue}, ${saturation}%, ${lightness}%)`);
+  extraSeriesColors.set(key, color);
+  return color;
+}
+
 function LatestTestsGraphTooltip({ points }: { points: LatestTestTooltipPoint[] }) {
   return (
     <Box className='bg-background-paper shadow-darker-sm! outline-grey-50 rounded-lg p-5 outline-1 flex flex-col gap-2'>
@@ -77,7 +91,7 @@ function LatestTestsGraphTooltip({ points }: { points: LatestTestTooltipPoint[] 
             {points.map((point) => (
               <Box key={`${label}-${point.id}`} className='flex min-w-0 items-center gap-1.5'>
                 <Box className='h-2.5 w-2.5 flex-none rounded-full' style={{ backgroundColor: point.color }} />
-                <Typography className='text-text-secondary'>
+                <Typography className='text-text-primary'>
                   {value(point).toFixed(digits)} ({unit})
                 </Typography>
               </Box>
@@ -106,7 +120,7 @@ export default function Page() {
   );
   const colors = useMemo(() => {
     const cssVariables = getComputedStyle(document.documentElement);
-    return [
+    const fixedColors = [
       theme.palette.primary.main,
       theme.palette.secondary.main,
       theme.palette["accent-1"].main,
@@ -114,14 +128,15 @@ export default function Page() {
       theme.palette["accent-3"].main,
       theme.palette["accent-4"].main,
     ].map((color) => resolveSeriesColor(color, cssVariables));
-  }, [theme.palette]);
+    return latestTests.map((test, index) => fixedColors[index] ?? getExtraSeriesColor(test.id, isDarkMode));
+  }, [isDarkMode, latestTests, theme.palette]);
   const hasGraphData = latestTests.some((test) => (test.results?.graphData?.length ?? 0) > 0);
 
   useEffect(() => {
     let cancelled = false;
     setIsLoading(true);
     const loadOverview = async () => {
-      const [countsResult, testsResult] = await Promise.allSettled([getRecordCounts(), getLatestTests(10)]);
+      const [countsResult, testsResult] = await Promise.allSettled([getRecordCounts(), getLatestTests(5)]);
       if (cancelled) return;
 
       if (countsResult.status === "fulfilled") setCounts(countsResult.value);
@@ -178,6 +193,14 @@ export default function Page() {
         padding: 0,
         extraCssText: "box-shadow: none;",
         axisPointer: { type: "cross", lineStyle: { type: "solid", color: chartColors.divider } },
+        position: (point, _params, _dom, _rect, size) => {
+          const [viewWidth, viewHeight] = size.viewSize;
+          const [contentWidth, contentHeight] = size.contentSize;
+          return [
+            Math.min(Math.max(point[0], 0), Math.max(viewWidth - contentWidth, 0)),
+            Math.min(Math.max(point[1], 0), Math.max(viewHeight - contentHeight, 0)),
+          ];
+        },
         formatter: (params) => {
           if (!Array.isArray(params)) return "";
           const hoveredPoint = params.find((param) => Array.isArray(param.value));

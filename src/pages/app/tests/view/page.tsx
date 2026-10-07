@@ -20,7 +20,11 @@ import {
   Filter,
   Gauge,
   Hexagon,
+  Diameter,
+  MoveVertical,
   PencilRuler,
+  RulerDimensionLine,
+  Shapes,
   Trash,
   Weight,
   WeightTilde,
@@ -317,6 +321,56 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                                     <Typography>{specimen.name}</Typography>
                                   </Box>
                                 </Box>
+                                <Box className='flex flex-row gap-2'>
+                                  <Shapes className='flex-none' />
+                                  <Box className='flex flex-col gap-1'>
+                                    <Typography variant='subtitle1'>Geometry</Typography>
+                                    <Typography>{specimen.geometry ?? "Not Specified"}</Typography>
+                                  </Box>
+                                </Box>
+                                {specimen.geometry === "Cylindrical" && (
+                                  <>
+                                    <Box className='flex flex-row gap-2'>
+                                      <Diameter className='flex-none' />
+                                      <Box className='flex flex-col gap-1'>
+                                        <Typography variant='subtitle1'>Diameter</Typography>
+                                        <Typography>{specimen.diameter != null ? `${specimen.diameter} mm` : "-"}</Typography>
+                                      </Box>
+                                    </Box>
+                                    <Box className='flex flex-row gap-2'>
+                                      <MoveVertical className='flex-none' />
+                                      <Box className='flex flex-col gap-1'>
+                                        <Typography variant='subtitle1'>Height</Typography>
+                                        <Typography>{specimen.height != null ? `${specimen.height} mm` : "-"}</Typography>
+                                      </Box>
+                                    </Box>
+                                  </>
+                                )}
+                                {specimen.geometry === "Rectangular" && (
+                                  <>
+                                    <Box className='flex flex-row gap-2'>
+                                      <RulerDimensionLine className='flex-none' />
+                                      <Box className='flex flex-col gap-1'>
+                                        <Typography variant='subtitle1'>Side 1</Typography>
+                                        <Typography>{specimen.side1 != null ? `${specimen.side1} mm` : "-"}</Typography>
+                                      </Box>
+                                    </Box>
+                                    <Box className='flex flex-row gap-2'>
+                                      <RulerDimensionLine className='flex-none rotate-90' />
+                                      <Box className='flex flex-col gap-1'>
+                                        <Typography variant='subtitle1'>Side 2</Typography>
+                                        <Typography>{specimen.side2 != null ? `${specimen.side2} mm` : "-"}</Typography>
+                                      </Box>
+                                    </Box>
+                                    <Box className='flex flex-row gap-2'>
+                                      <MoveVertical className='flex-none' />
+                                      <Box className='flex flex-col gap-1'>
+                                        <Typography variant='subtitle1'>Height</Typography>
+                                        <Typography>{specimen.height != null ? `${specimen.height} mm` : "-"}</Typography>
+                                      </Box>
+                                    </Box>
+                                  </>
+                                )}
                                 {specimenFields.map((field) => (
                                   <Box key={field.id} className='flex flex-row gap-2'>
                                     {field.icon ? <DynamicIcon name={field.icon} className='flex-none' /> : <Hexagon className='flex-none' />}
