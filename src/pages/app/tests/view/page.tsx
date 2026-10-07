@@ -14,6 +14,7 @@ import {
   ChevronRight,
   Clock3,
   Columns,
+  Crosshair,
   Ellipsis,
   EllipsisVertical,
   EyeClosed,
@@ -25,9 +26,8 @@ import {
   PencilRuler,
   RulerDimensionLine,
   Shapes,
+  Split,
   Trash,
-  Weight,
-  WeightTilde,
   X,
 } from "lucide-react";
 import { DynamicIcon } from "lucide-react/dynamic";
@@ -268,30 +268,34 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                                   </Box>
                                 </Box>
                                 <Box className='flex flex-row gap-2'>
-                                  <WeightTilde className='flex-none' />
-                                  <Box className='flex flex-col gap-1'>
-                                    <Typography variant='subtitle1'>Preload</Typography>
-                                    <Typography>{preset.preload} N</Typography>
-                                  </Box>
-                                </Box>
-                                <Box className='flex flex-row gap-2'>
-                                  <Weight className='flex-none' />
-                                  <Box className='flex flex-col gap-1'>
-                                    <Typography variant='subtitle1'>Load</Typography>
-                                    <Typography>{preset.load} N</Typography>
-                                  </Box>
-                                </Box>
-                                <Box className='flex flex-row gap-2'>
                                   <Gauge className='flex-none' />
                                   <Box className='flex flex-col gap-1'>
                                     <Typography variant='subtitle1'>Speed</Typography>
-                                    <Typography>{preset.speed} mm/s</Typography>
+                                    <Typography>{typeof preset.speed === "number" ? `${preset.speed} mm/s` : "-"}</Typography>
                                   </Box>
                                 </Box>
                                 <Box className='flex flex-row gap-2'>
+                                  <Split className='flex-none' />
+                                  <Box className='flex flex-col gap-1'>
+                                    <Typography variant='subtitle1'>Base</Typography>
+                                    <Typography>{preset.base ?? "-"}</Typography>
+                                  </Box>
+                                </Box>
+                                {(preset.targets?.length ? preset.targets : [undefined]).map((target, index) => (
+                                  <Box className='flex flex-row gap-2' key={`target-${index}`}>
+                                    <Crosshair className='flex-none' />
+                                    <Box className='flex flex-col gap-1'>
+                                      <Typography variant='subtitle1'>Target {index + 1}</Typography>
+                                      <Typography>
+                                        {typeof target === "number" ? `${target} ${preset.base === "Force" ? "N" : preset.base === "Distance" ? "mm" : ""}`.trim() : "-"}
+                                      </Typography>
+                                    </Box>
+                                  </Box>
+                                ))}
+                                <Box className='flex flex-row gap-2'>
                                   <Clock3 className='flex-none' />
                                   <Box className='flex flex-col gap-1'>
-                                    <Typography variant='subtitle1'>Duration</Typography>
+                                    <Typography variant='subtitle1'>Mock Duration</Typography>
                                     <Typography>{preset.duration} s</Typography>
                                   </Box>
                                 </Box>

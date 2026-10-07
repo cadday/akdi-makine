@@ -1,7 +1,7 @@
 import { SyntheticEvent, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { Box, Breadcrumbs, Button, Card, CardContent, Grid, ListItemIcon, ListItemText, Menu, MenuItem, Tab, Tooltip, Typography } from "@mui/material";
-import { CalendarCog, CalendarPlus, ChevronLeft, ChevronRight, Clock3, Ellipsis, Gauge, PencilRuler, Weight, WeightTilde, X } from "lucide-react";
+import { CalendarCog, CalendarPlus, ChevronLeft, ChevronRight, Clock3, Crosshair, Ellipsis, Gauge, PencilRuler, Split, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { DataGrid, type GridColDef, type GridRenderCellParams } from "@mui/x-data-grid";
 import TestDataGrid from "@/components/data-grid/test-data-grid";
@@ -219,30 +219,34 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                                 </Box>
                               </Box>
                               <Box className='flex flex-row gap-2'>
-                                <WeightTilde className='flex-none' />
-                                <Box className='flex flex-col gap-1'>
-                                  <Typography variant='subtitle1'>Preload</Typography>
-                                  <Typography>{preset.preload} N</Typography>
-                                </Box>
-                              </Box>
-                              <Box className='flex flex-row gap-2'>
-                                <Weight className='flex-none' />
-                                <Box className='flex flex-col gap-1'>
-                                  <Typography variant='subtitle1'>Load</Typography>
-                                  <Typography>{preset.load} N</Typography>
-                                </Box>
-                              </Box>
-                              <Box className='flex flex-row gap-2'>
                                 <Gauge className='flex-none' />
                                 <Box className='flex flex-col gap-1'>
                                   <Typography variant='subtitle1'>Speed</Typography>
-                                  <Typography>{preset.speed} mm/s</Typography>
+                                  <Typography>{typeof preset.speed === "number" ? `${preset.speed} mm/s` : "-"}</Typography>
                                 </Box>
                               </Box>
                               <Box className='flex flex-row gap-2'>
+                                <Split className='flex-none' />
+                                <Box className='flex flex-col gap-1'>
+                                  <Typography variant='subtitle1'>Base</Typography>
+                                  <Typography>{preset.base ?? "-"}</Typography>
+                                </Box>
+                              </Box>
+                              {(preset.targets?.length ? preset.targets : [undefined]).map((target, index) => (
+                                <Box className='flex flex-row gap-2' key={`target-${index}`}>
+                                  <Crosshair className='flex-none' />
+                                  <Box className='flex flex-col gap-1'>
+                                    <Typography variant='subtitle1'>Target {index + 1}</Typography>
+                                    <Typography>
+                                      {typeof target === "number" ? `${target} ${preset.base === "Force" ? "N" : preset.base === "Distance" ? "mm" : ""}`.trim() : "-"}
+                                    </Typography>
+                                  </Box>
+                                </Box>
+                              ))}
+                              <Box className='flex flex-row gap-2'>
                                 <Clock3 className='flex-none' />
                                 <Box className='flex flex-col gap-1'>
-                                  <Typography variant='subtitle1'>Duration</Typography>
+                                  <Typography variant='subtitle1'>Mock Duration</Typography>
                                   <Typography>{preset.duration} s</Typography>
                                 </Box>
                               </Box>

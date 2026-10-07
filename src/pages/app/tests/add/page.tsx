@@ -232,10 +232,10 @@ export default function Page() {
           presetSnapshot: {
             name: preset.name,
             type: preset.type,
-            preload: preset.preload,
-            load: preset.load,
-            speed: preset.speed,
             duration: preset.duration,
+            speed: preset.speed,
+            base: preset.base,
+            targets: [...(preset.targets ?? [])],
           },
           customData,
         });

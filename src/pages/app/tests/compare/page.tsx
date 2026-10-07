@@ -28,6 +28,7 @@ import {
   Bookmark,
   CalendarCog,
   CalendarPlus,
+  Crosshair,
   Diameter,
   Clock3,
   Ellipsis,
@@ -37,10 +38,9 @@ import {
   PencilRuler,
   RulerDimensionLine,
   Shapes,
+  Split,
   Timer,
   MoveVertical,
-  Weight,
-  WeightTilde,
 } from "lucide-react";
 import { DynamicIcon } from "lucide-react/dynamic";
 import PopupState, { bindMenu, bindTrigger } from "material-ui-popup-state";
@@ -199,6 +199,8 @@ function ComparisonDetails({
   graph: React.ReactNode;
   printMode: boolean;
 }) {
+  const targetCount = Math.max(1, ...tests.map((test) => test.presetSnapshot.targets?.length ?? 0));
+
   return (
     <Grid container size={12} spacing={5}>
       <Grid container size={{ lg: 8, xs: 12 }} spacing={5}>
@@ -370,10 +372,36 @@ function ComparisonDetails({
         <ComparisonCard title='Preset'>
           <ComparisonField icon={<Bookmark className='flex-none' />} label='Name' tests={tests} colors={colors} valueForTest={(test) => test.presetSnapshot.name} />
           <ComparisonField icon={<PencilRuler className='flex-none' />} label='Type' tests={tests} colors={colors} valueForTest={(test) => test.presetSnapshot.type} />
-          <ComparisonField icon={<WeightTilde className='flex-none' />} label='Preload' tests={tests} colors={colors} valueForTest={(test) => `${test.presetSnapshot.preload} N`} />
-          <ComparisonField icon={<Weight className='flex-none' />} label='Load' tests={tests} colors={colors} valueForTest={(test) => `${test.presetSnapshot.load} N`} />
-          <ComparisonField icon={<Gauge className='flex-none' />} label='Speed' tests={tests} colors={colors} valueForTest={(test) => `${test.presetSnapshot.speed} mm/s`} />
-          <ComparisonField icon={<Clock3 className='flex-none' />} label='Duration' tests={tests} colors={colors} valueForTest={(test) => `${test.presetSnapshot.duration} s`} />
+          <ComparisonField
+            icon={<Gauge className='flex-none' />}
+            label='Speed'
+            tests={tests}
+            colors={colors}
+            valueForTest={(test) => (typeof test.presetSnapshot.speed === "number" ? `${test.presetSnapshot.speed} mm/s` : "-")}
+          />
+          <ComparisonField
+            icon={<Split className='flex-none' />}
+            label='Base'
+            tests={tests}
+            colors={colors}
+            valueForTest={(test) => test.presetSnapshot.base ?? "-"}
+          />
+          {Array.from({ length: targetCount }, (_, index) => (
+            <ComparisonField
+              key={`preset-target-${index}`}
+              icon={<Crosshair className='flex-none' />}
+              label={`Target ${index + 1}`}
+              tests={tests}
+              colors={colors}
+              valueForTest={(test) => {
+                const target = test.presetSnapshot.targets?.[index];
+                if (typeof target !== "number") return "-";
+                const unit = test.presetSnapshot.base === "Force" ? "N" : test.presetSnapshot.base === "Distance" ? "mm" : "";
+                return unit ? `${target} ${unit}` : String(target);
+              }}
+            />
+          ))}
+          <ComparisonField icon={<Clock3 className='flex-none' />} label='Mock Duration' tests={tests} colors={colors} valueForTest={(test) => `${test.presetSnapshot.duration} s`} />
         </ComparisonCard>
         <ComparisonCard title='Definition'>
           <ComparisonField icon={<Bookmark className='flex-none' />} label='Name' tests={tests} colors={colors} valueForTest={(test) => test.name} />

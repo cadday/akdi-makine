@@ -193,10 +193,15 @@ export default function Page() {
         }
       },
     },
-    { field: "preload", headerName: "Preload", minWidth: 130, type: "number" },
-    { field: "load", headerName: "Load", minWidth: 130, type: "number" },
-    { field: "speed", headerName: "Speed", minWidth: 130, type: "number" },
-    { field: "duration", headerName: "Duration (s)", minWidth: 130, type: "number" },
+    { field: "speed", headerName: "Speed (mm/s)", minWidth: 130, type: "number" },
+    { field: "base", headerName: "Base", minWidth: 130 },
+    {
+      field: "targets",
+      headerName: "Targets",
+      minWidth: 180,
+      valueGetter: (_value, row) => (row.targets ?? []).map((target) => `${target} ${row.base === "Force" ? "N" : "mm"}`).join(", "),
+    },
+    { field: "duration", headerName: "Mock Duration (s)", minWidth: 130, type: "number" },
     {
       field: "createdAt",
       headerName: "Created",
