@@ -192,6 +192,24 @@ export default function Page() {
           </Link>
         ),
       },
+      {
+        field: "geometry",
+        headerName: "Geometry",
+        minWidth: 150,
+        valueFormatter: (value) => value ?? "Not Specified",
+      },
+      ...([
+        ["side1", "Side 1"],
+        ["side2", "Side 2"],
+        ["diameter", "Diameter"],
+        ["height", "Height"],
+      ] as const).map(([field, headerName]): GridColDef<SpecimenGridRow> => ({
+        field,
+        headerName,
+        minWidth: 120,
+        type: "number",
+        valueFormatter: (value) => (typeof value === "number" ? `${value} mm` : "-"),
+      })),
       ...dataFields.map(
         (dataField): GridColDef<SpecimenGridRow> => ({
           field: dataField.id,
@@ -297,6 +315,7 @@ export default function Page() {
                 autoHeight
                 rows={rows}
                 columns={columns}
+                alignColumnsLeft
                 loading={isLoading}
                 initialState={{
                   columns: { columnVisibilityModel: { id: false, createdAt: false } },

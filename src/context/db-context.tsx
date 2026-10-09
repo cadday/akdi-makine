@@ -50,6 +50,7 @@ import {
   type DataFieldDefinition,
   type DataFieldType,
   type DynamicDataValue,
+  type LoadDisplacementPoint,
   type MachineRecord,
   type PresetRecord,
   type PresetBase,
@@ -59,6 +60,8 @@ import {
   type TestRecord,
   type TestGraphPoint,
   type TestResults,
+  type TestSpecimenSnapshot,
+  type StressStrainPoint,
   type UploadedImage,
 } from "@/lib/db";
 
@@ -182,6 +185,7 @@ export type {
   DataFieldDefinition,
   DataFieldType,
   DynamicDataValue,
+  LoadDisplacementPoint,
   MachineRecord,
   PresetRecord,
   PresetBase,
@@ -191,5 +195,7 @@ export type {
   TestGraphPoint,
   TestRecord,
   TestResults,
+  TestSpecimenSnapshot,
+  StressStrainPoint,
   UploadedImage,
 };

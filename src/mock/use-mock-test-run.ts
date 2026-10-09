@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useDb, type TestGraphPoint, type TestResults } from "@/context/db-context";
+import { useDb, type LoadDisplacementPoint, type StressStrainPoint, type TestResults, type TestSpecimenSnapshot } from "@/context/db-context";
+import { getTestGraphType } from "@/lib/db";
 
 const SAMPLE_INTERVAL_MS = 20;
 
@@ -8,7 +9,8 @@ export type TestRunStatus = "in-progress" | "done" | "error";
 interface TestRunState {
   status: TestRunStatus;
   progress: number;
-  graphData: TestGraphPoint[];
+  loadDisplacementData: LoadDisplacementPoint[];
+  stressStrainData: StressStrainPoint[];
   results: TestResults | null;
   error: string | null;
 }
@@ -16,6 +18,7 @@ interface TestRunState {
 interface UseMockTestRunOptions {
   testId: string;
   duration: number;
+  specimen: TestSpecimenSnapshot;
   savedResults?: TestResults;
   onResultsSaved?: (results: TestResults) => void;
   readOnly?: boolean;
@@ -32,12 +35,16 @@ interface MockCurve {
   lastLength: number;
 }
 
-function hasFinalizedResults(results?: TestResults): results is TestResults & { graphData: TestGraphPoint[] } {
+function hasFinalizedResults(results: TestResults | undefined, geometry: TestSpecimenSnapshot["geometry"]): results is TestResults & { loadDisplacementData: LoadDisplacementPoint[] } {
   return Boolean(
     results &&
-      Array.isArray(results.graphData) &&
-    results.graphData.length > 0 &&
-    results.graphData.every((point) => Number.isFinite(point.x) && Number.isFinite(point.y)) &&
+      Array.isArray(results.loadDisplacementData) &&
+      results.loadDisplacementData.length > 0 &&
+      results.loadDisplacementData.every((point) => Number.isFinite(point.displacement) && Number.isFinite(point.load)) &&
+      (getTestGraphType(geometry) !== "stress-strain" ||
+        (Array.isArray(results.stressStrainData) &&
+          results.stressStrainData.length === results.loadDisplacementData.length &&
+          results.stressStrainData.every((point) => Number.isFinite(point.strain) && Number.isFinite(point.stress)))) &&
       (results.finalized === true ||
         (Number.isFinite(results.yieldStrength) &&
           Number.isFinite(results.tensileStrength) &&
@@ -89,10 +96,10 @@ function createMockCurve(testId: string): MockCurve {
   };
 }
 
-function getMockPoint(progress: number, curve: MockCurve): TestGraphPoint {
+function getMockStressStrainPoint(progress: number, curve: MockCurve): StressStrainPoint {
   const strain = progress * curve.elongation;
   const nextIndex = curve.anchors.findIndex(([anchorStrain]) => anchorStrain >= strain);
-  if (nextIndex <= 0) return { x: strain, y: curve.anchors[0][1] };
+  if (nextIndex <= 0) return { strain, stress: curve.anchors[0][1] };
 
   const [startStrain, startStress] = curve.anchors[nextIndex - 1];
   const [endStrain, endStress] = curve.anchors[nextIndex];
@@ -100,12 +107,46 @@ function getMockPoint(progress: number, curve: MockCurve): TestGraphPoint {
   const easedProgress = segmentProgress * segmentProgress * (3 - 2 * segmentProgress);
 
   return {
-    x: Number(strain.toFixed(3)),
-    y: Number((startStress + (endStress - startStress) * easedProgress).toFixed(2)),
+    strain: Number(strain.toFixed(3)),
+    stress: Number((startStress + (endStress - startStress) * easedProgress).toFixed(2)),
   };
 }
 
-function getMockResults(graphData: TestGraphPoint[], duration: number, curve: MockCurve): TestResults {
+function getMockLoadDisplacementPoint(stressStrainPoint: StressStrainPoint, curve: MockCurve, specimen: TestSpecimenSnapshot): LoadDisplacementPoint {
+  const referenceHeight = specimen.height ?? curve.firstLength;
+  const crossSectionArea =
+    specimen.geometry === "Cylindrical" && specimen.diameter != null
+      ? (Math.PI * specimen.diameter ** 2) / 4
+      : specimen.geometry === "Rectangular" && specimen.side1 != null && specimen.side2 != null
+        ? specimen.side1 * specimen.side2
+        : 100;
+
+  return {
+    displacement: Number(((stressStrainPoint.strain / 100) * referenceHeight).toFixed(3)),
+    load: Number((stressStrainPoint.stress * crossSectionArea).toFixed(2)),
+  };
+}
+
+function getStressStrainPoint(point: LoadDisplacementPoint, specimen: TestSpecimenSnapshot): StressStrainPoint {
+  const crossSectionArea =
+    specimen.geometry === "Cylindrical" && specimen.diameter != null
+      ? (Math.PI * specimen.diameter ** 2) / 4
+      : specimen.geometry === "Rectangular" && specimen.side1 != null && specimen.side2 != null
+        ? specimen.side1 * specimen.side2
+        : 0;
+
+  return {
+    strain: Number(((point.displacement / (specimen.height ?? 1)) * 100).toFixed(3)),
+    stress: crossSectionArea > 0 ? Number((point.load / crossSectionArea).toFixed(2)) : 0,
+  };
+}
+
+function getMockResults(
+  loadDisplacementData: LoadDisplacementPoint[],
+  stressStrainData: StressStrainPoint[],
+  duration: number,
+  curve: MockCurve,
+): TestResults {
   return {
     finalized: true,
     yieldStrength: Number(curve.yieldStrength.toFixed(2)),
@@ -114,11 +155,15 @@ function getMockResults(graphData: TestGraphPoint[], duration: number, curve: Mo
     firstLength: Number(curve.firstLength.toFixed(2)),
     lastLength: Number(curve.lastLength.toFixed(2)),
     testDuration: duration,
-    graphData,
+    loadDisplacementData,
+    stressStrainData,
   };
 }
 
-function getPartialMockResults(graphData: TestGraphPoint[]): TestResults {
+function getPartialMockResults(
+  loadDisplacementData: LoadDisplacementPoint[],
+  stressStrainData: StressStrainPoint[],
+): TestResults {
   return {
     finalized: true,
     yieldStrength: null,
@@ -127,23 +172,35 @@ function getPartialMockResults(graphData: TestGraphPoint[]): TestResults {
     firstLength: null,
     lastLength: null,
     testDuration: null,
-    graphData,
+    loadDisplacementData,
+    stressStrainData,
   };
 }
 
-export default function useMockTestRun({ testId, duration, savedResults, onResultsSaved, readOnly = false }: UseMockTestRunOptions) {
+export default function useMockTestRun({ testId, duration, specimen, savedResults, onResultsSaved, readOnly = false }: UseMockTestRunOptions) {
   const { updateTestResults } = useDb();
   const curve = useMemo(() => createMockCurve(testId), [testId]);
   const [state, setState] = useState<TestRunState>(() => {
-    if (readOnly) return { status: "done", progress: 1, graphData: savedResults?.graphData ?? [], results: savedResults ?? null, error: null };
-    if (hasFinalizedResults(savedResults)) {
-      return { status: "done", progress: 1, graphData: savedResults.graphData, results: savedResults, error: null };
+    if (readOnly) return { status: "done", progress: 1, loadDisplacementData: savedResults?.loadDisplacementData ?? [], stressStrainData: savedResults?.stressStrainData ?? [], results: savedResults ?? null, error: null };
+    if (hasFinalizedResults(savedResults, specimen.geometry)) {
+      return { status: "done", progress: 1, loadDisplacementData: savedResults.loadDisplacementData, stressStrainData: savedResults.stressStrainData ?? [], results: savedResults, error: null };
     }
-    return { status: "in-progress", progress: 0, graphData: [getMockPoint(0, curve)], results: null, error: null };
+    const initialStressStrainPoint = getMockStressStrainPoint(0, curve);
+    const initialLoadDisplacementPoint = getMockLoadDisplacementPoint(initialStressStrainPoint, curve, specimen);
+    const initialStressStrainData = getTestGraphType(specimen.geometry) === "stress-strain" ? [getStressStrainPoint(initialLoadDisplacementPoint, specimen)] : [];
+    return {
+      status: "in-progress",
+      progress: 0,
+      loadDisplacementData: [initialLoadDisplacementPoint],
+      stressStrainData: initialStressStrainData,
+      results: null,
+      error: null,
+    };
   });
   const pendingResultsRef = useRef<TestResults | null>(null);
   const intervalRef = useRef<number | null>(null);
-  const graphDataRef = useRef<TestGraphPoint[]>([]);
+  const loadDisplacementDataRef = useRef<LoadDisplacementPoint[]>([]);
+  const stressStrainDataRef = useRef<StressStrainPoint[]>([]);
   const onResultsSavedRef = useRef(onResultsSaved);
   onResultsSavedRef.current = onResultsSaved;
 
@@ -155,7 +212,14 @@ export default function useMockTestRun({ testId, duration, savedResults, onResul
         const updatedCount = await updateTestResults(testId, results);
         if (updatedCount === 0) throw new Error("Test was not found and results could not be saved.");
         pendingResultsRef.current = null;
-        setState({ status: "done", progress: 1, graphData: results.graphData ?? [], results, error: null });
+        setState({
+          status: "done",
+          progress: 1,
+          loadDisplacementData: results.loadDisplacementData ?? [],
+          stressStrainData: results.stressStrainData ?? [],
+          results,
+          error: null,
+        });
         onResultsSavedRef.current?.(results);
       } catch (error) {
         setState((current) => ({ ...current, status: "error", error: `Failed to save test results: ${String(error)}` }));
@@ -172,36 +236,46 @@ export default function useMockTestRun({ testId, duration, savedResults, onResul
     if (intervalRef.current === null) return;
     window.clearInterval(intervalRef.current);
     intervalRef.current = null;
-    void saveResults(getPartialMockResults(graphDataRef.current));
+    void saveResults(getPartialMockResults(loadDisplacementDataRef.current, stressStrainDataRef.current));
   }, [saveResults]);
 
   useEffect(() => {
     if (readOnly) {
-      setState({ status: "done", progress: 1, graphData: savedResults?.graphData ?? [], results: savedResults ?? null, error: null });
+      setState({ status: "done", progress: 1, loadDisplacementData: savedResults?.loadDisplacementData ?? [], stressStrainData: savedResults?.stressStrainData ?? [], results: savedResults ?? null, error: null });
       return;
     }
-    if (hasFinalizedResults(savedResults)) {
+    if (hasFinalizedResults(savedResults, specimen.geometry)) {
       pendingResultsRef.current = null;
-      setState({ status: "done", progress: 1, graphData: savedResults.graphData, results: savedResults, error: null });
+      setState({ status: "done", progress: 1, loadDisplacementData: savedResults.loadDisplacementData, stressStrainData: savedResults.stressStrainData ?? [], results: savedResults, error: null });
       return;
     }
 
     let cancelled = false;
-    let graphData = [getMockPoint(0, curve)];
+    const initialStressStrainPoint = getMockStressStrainPoint(0, curve);
+    let loadDisplacementData: LoadDisplacementPoint[] = [getMockLoadDisplacementPoint(initialStressStrainPoint, curve, specimen)];
+    let stressStrainData: StressStrainPoint[] =
+      getTestGraphType(specimen.geometry) === "stress-strain" ? [getStressStrainPoint(loadDisplacementData[0], specimen)] : [];
     const startTime = performance.now();
-    graphDataRef.current = graphData;
-    setState({ status: "in-progress", progress: 0, graphData, results: null, error: null });
+    loadDisplacementDataRef.current = loadDisplacementData;
+    stressStrainDataRef.current = stressStrainData;
+    setState({ status: "in-progress", progress: 0, loadDisplacementData, stressStrainData, results: null, error: null });
 
     intervalRef.current = window.setInterval(() => {
       const progress = duration <= 0 ? 1 : Math.min((performance.now() - startTime) / (duration * 1000), 1);
-      graphData = [...graphData, getMockPoint(progress, curve)];
-      graphDataRef.current = graphData;
-      setState((current) => (current.status === "in-progress" ? { ...current, progress, graphData } : current));
+      const stressStrainPoint = getMockStressStrainPoint(progress, curve);
+      const loadDisplacementPoint = getMockLoadDisplacementPoint(stressStrainPoint, curve, specimen);
+      loadDisplacementData = [...loadDisplacementData, loadDisplacementPoint];
+      if (getTestGraphType(specimen.geometry) === "stress-strain") {
+        stressStrainData = [...stressStrainData, getStressStrainPoint(loadDisplacementPoint, specimen)];
+      }
+      loadDisplacementDataRef.current = loadDisplacementData;
+      stressStrainDataRef.current = stressStrainData;
+      setState((current) => (current.status === "in-progress" ? { ...current, progress, loadDisplacementData, stressStrainData } : current));
 
       if (progress < 1) return;
       if (intervalRef.current !== null) window.clearInterval(intervalRef.current);
       intervalRef.current = null;
-      const results = getMockResults(graphData, duration, curve);
+      const results = getMockResults(loadDisplacementData, stressStrainData, duration, curve);
       if (!cancelled) void saveResults(results);
     }, SAMPLE_INTERVAL_MS);
 
@@ -210,7 +284,7 @@ export default function useMockTestRun({ testId, duration, savedResults, onResul
       if (intervalRef.current !== null) window.clearInterval(intervalRef.current);
       intervalRef.current = null;
     };
-  }, [curve, duration, readOnly, savedResults, saveResults, testId]);
+  }, [curve, duration, readOnly, savedResults, saveResults, specimen, testId]);
 
   return { ...state, retrySave, stopTest };
 }

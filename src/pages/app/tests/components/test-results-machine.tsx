@@ -3,8 +3,9 @@ import * as echarts from "echarts";
 import type { EChartsOption } from "echarts";
 import { renderToStaticMarkup } from "react-dom/server";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowUpFromLine, ArrowUpToLine, ArrowUpWideNarrow, TicketPercent, Timer, WeightTilde } from "lucide-react";
+import { ArrowUpFromLine, ArrowUpToLine, ArrowUpWideNarrow, RulerDimensionLine, TicketPercent, Timer, WeightTilde } from "lucide-react";
 import type { TestRecord, TestResults } from "@/context/db-context";
+import { getTestGraphType } from "@/lib/db";
 import { useThemeContext } from "@/theme/theme-provider";
 import useMockTestRun from "@/mock/use-mock-test-run";
 import TestProgress from "./test-progress";
@@ -35,25 +36,26 @@ const chartColors = {
   },
 } as const;
 
-function StressStrainTooltip({ stress, strain }: { stress: number; strain: number }) {
+function TestGraphTooltip({ x, y, graphType }: { x: number; y: number; graphType: "load-displacement" | "stress-strain" }) {
+  const [xLabel, xUnit, yLabel, yUnit] = graphType === "stress-strain" ? ["Strain", "%", "Stress", "MPa"] : ["Displacement", "mm", "Load", "N"];
   return (
     <Box className='bg-background-paper shadow-darker-sm! outline-grey-50 rounded-lg p-5 outline-1 flex flex-col gap-2'>
+      <Box className='flex flex-row gap-2'>
+        {graphType === "stress-strain" ? <TicketPercent size={20} /> : <RulerDimensionLine size={20} />}
+        <Box className='flex flex-row gap-1'>
+          <Typography variant='subtitle1' className='text-text-primary'>
+            {xLabel}
+          </Typography>
+          <Typography className='text-text-primary'>{x.toFixed(graphType === "stress-strain" ? 3 : 3)} ({xUnit})</Typography>
+        </Box>
+      </Box>
       <Box className='flex flex-row gap-2'>
         <WeightTilde size={20} />
         <Box className='flex flex-row gap-1'>
           <Typography variant='subtitle1' className='text-text-primary'>
-            Stress
+            {yLabel}
           </Typography>
-          <Typography className='text-text-primary'>{stress.toFixed(2)} (MPa)</Typography>
-        </Box>
-      </Box>
-      <Box className='flex flex-row gap-2'>
-        <TicketPercent size={20} />
-        <Box className='flex flex-row gap-1'>
-          <Typography variant='subtitle1' className='text-text-primary'>
-            Strain
-          </Typography>
-          <Typography className='text-text-primary'>{strain.toFixed(3)} (%)</Typography>
+          <Typography className='text-text-primary'>{y.toFixed(2)} ({yUnit})</Typography>
         </Box>
       </Box>
     </Box>
@@ -61,9 +63,11 @@ function StressStrainTooltip({ stress, strain }: { stress: number; strain: numbe
 }
 
 export default function TestResultsMachine({ test, onResultsSaved, readOnly = false }: TestResultsMachineProps) {
-  const { graphData, progress, results, status, stopTest } = useMockTestRun({
+  const graphType = getTestGraphType(test.specimenSnapshot.geometry);
+  const { loadDisplacementData, stressStrainData, progress, results, status, stopTest } = useMockTestRun({
     testId: test.id,
     duration: test.presetSnapshot.duration,
+    specimen: test.specimenSnapshot,
     savedResults: test.results,
     onResultsSaved,
     readOnly,
@@ -75,6 +79,12 @@ export default function TestResultsMachine({ test, onResultsSaved, readOnly = fa
   const chartRef = useRef<echarts.ECharts | null>(null);
   const previousStatusRef = useRef(status);
   const [manuallyStoppedTestId, setManuallyStoppedTestId] = useState<string | null>(null);
+  const chartData =
+    graphType === "stress-strain"
+      ? stressStrainData.map(({ strain, stress }) => [strain, stress])
+      : loadDisplacementData.map(({ displacement, load }) => [displacement, load]);
+  const xAxisLabel = graphType === "stress-strain" ? "Strain (%)" : "Displacement (mm)";
+  const yAxisLabel = graphType === "stress-strain" ? "Stress (MPa)" : "Load (N)";
 
   useEffect(() => {
     if (status === "done" && previousStatusRef.current !== "done") {
@@ -131,8 +141,8 @@ export default function TestResultsMachine({ test, onResultsSaved, readOnly = fa
           const values = point?.value;
           if (!Array.isArray(values)) return "";
 
-          const [strain, stress] = values;
-          return renderToStaticMarkup(<StressStrainTooltip stress={Number(stress)} strain={Number(strain)} />);
+          const [x, y] = values;
+          return renderToStaticMarkup(<TestGraphTooltip x={Number(x)} y={Number(y)} graphType={graphType} />);
         },
       },
       dataZoom: [{ type: "inside", filterMode: "none", zoomOnMouseWheel: true, moveOnMouseMove: true, moveOnMouseWheel: false }],
@@ -143,7 +153,7 @@ export default function TestResultsMachine({ test, onResultsSaved, readOnly = fa
           lineStyle: { type: "solid", color: colors.divider },
           label: { backgroundColor: colors.hoverLabelBackground, color: colors.secondaryText },
         },
-        name: "Strain (%)",
+        name: xAxisLabel,
         nameLocation: "middle",
         nameGap: 32,
         nameTextStyle: { color: colors.secondaryText },
@@ -158,7 +168,7 @@ export default function TestResultsMachine({ test, onResultsSaved, readOnly = fa
           lineStyle: { type: "solid", color: colors.divider },
           label: { backgroundColor: colors.hoverLabelBackground, color: colors.secondaryText },
         },
-        name: "Stress (MPa)",
+        name: yAxisLabel,
         nameLocation: "middle",
         nameGap: 48,
         nameTextStyle: { color: colors.secondaryText },
@@ -168,7 +178,7 @@ export default function TestResultsMachine({ test, onResultsSaved, readOnly = fa
       },
       series: [
         {
-          name: "Stress",
+          name: yAxisLabel,
           type: "line",
           showSymbol: false,
           symbol: "circle",
@@ -181,13 +191,13 @@ export default function TestResultsMachine({ test, onResultsSaved, readOnly = fa
     };
 
     chartRef.current?.setOption(option, { lazyUpdate: true });
-  }, [isDarkMode]);
+  }, [graphType, isDarkMode, xAxisLabel, yAxisLabel]);
 
   useEffect(() => {
     chartRef.current?.setOption({
-      series: [{ type: "line", data: graphData.map(({ x, y }) => [x, y]) }],
+      series: [{ type: "line", data: chartData }],
     });
-  }, [graphData]);
+  }, [chartData]);
 
   return (
     <>
@@ -196,11 +206,11 @@ export default function TestResultsMachine({ test, onResultsSaved, readOnly = fa
         <Grid container size={12} spacing={5} className={cn(status === "in-progress" && "relative z-5001")}>
           <Grid size={12}>
             <Typography variant='h6' component='h6' className='mb-3'>
-              Stress Strain Graph
+              {graphType === "stress-strain" ? "Stress Strain Graph" : "Load Displacement Graph"}
             </Typography>
             <Card>
               <CardContent>
-                <Box ref={chartElementRef} role='img' aria-label='Live stress strain line chart' className='h-140 w-full' />
+                <Box ref={chartElementRef} role='img' aria-label={`Live ${graphType === "stress-strain" ? "stress-strain" : "load-displacement"} line chart`} className='h-140 w-full' />
               </CardContent>
             </Card>
           </Grid>

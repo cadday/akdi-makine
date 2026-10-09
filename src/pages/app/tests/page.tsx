@@ -99,7 +99,7 @@ export default function Page() {
                 </Button>
               </Box>
             ) : (
-              !isLoading && <TestDataGrid tests={tests} dataFields={dataFields} onTestsChange={setTests} onAddItem={handleAddItem} />
+              !isLoading && <TestDataGrid tests={tests} dataFields={dataFields} onTestsChange={setTests} onAddItem={handleAddItem} alignColumnsLeft />
             )}
           </Grid>
         </Grid>

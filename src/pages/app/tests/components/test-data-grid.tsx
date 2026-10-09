@@ -1,11 +1,12 @@
 import { useCallback, useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import { Link, useNavigate } from "react-router";
-import {  Button, FormControl, InputLabel, Select } from "@mui/material";
+import { Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControl, InputLabel, Select, Typography } from "@mui/material";
 import {
   ArrowDown,
   ArrowUp,
   ChevronDown,
   ChevronLeft,
+  CircleSmall,
   Columns,
   Copy,
   Ellipsis,
@@ -29,6 +30,7 @@ import { useDb, type DataFieldDefinition, type TestRecord, type UploadedImage } 
 import useAppNotifications from "@/hooks/use-app-notifications";
 import useDeleteConfirmation from "@/hooks/use-delete-confirmation";
 import { NoTestsFound } from "@/pages/app/components/no-entity-found";
+import { getTestGraphType } from "@/lib/db";
 
 type TestGridRow = TestRecord & { specimenName: string; presetName: string };
 
@@ -37,14 +39,16 @@ interface TestDataGridProps {
   dataFields: DataFieldDefinition[];
   onTestsChange: Dispatch<SetStateAction<TestRecord[]>>;
   onAddItem?: () => void;
+  alignColumnsLeft?: boolean;
 }
 
-export default function TestDataGrid({ tests, dataFields, onTestsChange, onAddItem }: TestDataGridProps) {
+export default function TestDataGrid({ tests, dataFields, onTestsChange, onAddItem, alignColumnsLeft = false }: TestDataGridProps) {
   const navigate = useNavigate();
   const { deleteTest, deleteTests, duplicateTest, duplicateTests } = useDb();
   const { showError } = useAppNotifications();
   const { requestDelete, dialog } = useDeleteConfirmation();
   const [rowSelectionModel, setRowSelectionModel] = useState<GridRowSelectionModel>({ type: "include", ids: new Set() });
+  const [incompatibleTests, setIncompatibleTests] = useState<TestRecord[] | null>(null);
 
   const duplicateRows = useCallback(
     async (ids: string[]) => {
@@ -81,11 +85,17 @@ export default function TestDataGrid({ tests, dataFields, onTestsChange, onAddIt
   const deleteRow = useCallback((testId: string) => async () => deleteRows([testId]), [deleteRows]);
   const handleCompare = useCallback(
     (ids: string[]) => {
+      const selectedTests = ids.map((id) => tests.find((test) => test.id === id)).filter((test): test is TestRecord => Boolean(test));
+      if (selectedTests.length === ids.length && new Set(selectedTests.map((test) => getTestGraphType(test.specimenSnapshot.geometry))).size > 1) {
+        setIncompatibleTests(selectedTests);
+        return;
+      }
+
       const params = new URLSearchParams();
       ids.forEach((testId) => params.append("testId", testId));
       navigate(`/tests/compare?${params.toString()}`);
     },
-    [navigate],
+    [navigate, tests],
   );
   const getRowSpacing = useCallback((params: GridRowSpacingParams) => ({ top: params.isFirstVisible ? 0 : 5, bottom: 5 }), []);
   const getRowActions = useCallback(
@@ -200,6 +210,34 @@ export default function TestDataGrid({ tests, dataFields, onTestsChange, onAddIt
   return (
     <>
       {dialog}
+      <Dialog open={Boolean(incompatibleTests)} onClose={() => setIncompatibleTests(null)}>
+        <DialogTitle>Test Incompatibility</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            A comparison requires all selected tests to have similarly defined <u>specimen geometries</u>. The selection includes:
+          </DialogContentText>
+          <Box className='mt-4 flex flex-col gap-2'>
+            {incompatibleTests?.map((test) => (
+              <Box key={test.id} className='flex min-w-0 flex-row gap-2'>
+                <CircleSmall size={12} className='text-text-secondary mt-0.75' />
+                <Box className='flex flex-col'>
+                  <Typography variant='body1' className='wrap-break-word font-semibold'>
+                    {test.name}
+                  </Typography>
+                  <Typography variant='body1' className='text-error'>
+                    {getTestGraphType(test.specimenSnapshot.geometry) === "stress-strain" ? "Stress-Strain" : "Load-Displacement"}
+                  </Typography>
+                </Box>
+              </Box>
+            ))}
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setIncompatibleTests(null)} color='grey'>
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
       {tests.length === 0 ? (
         <NoTestsFound />
       ) : (
@@ -207,6 +245,7 @@ export default function TestDataGrid({ tests, dataFields, onTestsChange, onAddIt
           autoHeight
           rows={rows}
           columns={columns}
+          alignColumnsLeft={alignColumnsLeft}
           initialState={{
             columns: { columnVisibilityModel: { id: false, createdAt: false } },
             pagination: { paginationModel: { pageSize: 10 } },

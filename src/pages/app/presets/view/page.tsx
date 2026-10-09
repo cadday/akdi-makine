@@ -303,7 +303,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                 <TabPanel value='Tests'>
                   <Grid size={12} container spacing={5} className='w-full'>
                     <Grid size={12}>
-                      <TestDataGrid tests={tests} dataFields={testFields} onTestsChange={setTests} />
+                      <TestDataGrid tests={tests} dataFields={testFields} onTestsChange={setTests} alignColumnsLeft />
                     </Grid>
                   </Grid>
                 </TabPanel>

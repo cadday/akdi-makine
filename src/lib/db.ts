@@ -47,6 +47,22 @@ export interface TestGraphPoint {
   y: number;
 }
 
+export interface LoadDisplacementPoint {
+  displacement: number;
+  load: number;
+}
+
+export interface StressStrainPoint {
+  strain: number;
+  stress: number;
+}
+
+export type TestGraphType = "load-displacement" | "stress-strain";
+
+export function getTestGraphType(geometry?: SpecimenGeometry): TestGraphType {
+  return geometry === "Cylindrical" || geometry === "Rectangular" ? "stress-strain" : "load-displacement";
+}
+
 export interface TestResults {
   finalized?: boolean;
   yieldStrength?: number | null;
@@ -55,7 +71,8 @@ export interface TestResults {
   firstLength?: number | null;
   lastLength?: number | null;
   testDuration?: number | null;
-  graphData?: TestGraphPoint[];
+  loadDisplacementData: LoadDisplacementPoint[];
+  stressStrainData: StressStrainPoint[];
 }
 
 export interface TestSpecimenSnapshot {
