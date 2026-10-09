@@ -435,15 +435,18 @@ export default function Page() {
                 </Grid>
               </Grid>
             </Grid>
-            <Grid size={12}>
+            <Grid size={12} className='group/grid'>
               <Box className='mb-3 flex flex-wrap items-center justify-between gap-2 relative'>
                 <Typography variant='h6' component='h6'>
                   {graphType === "stress-strain" ? "Latest Stress-Strain Graphs" : "Latest Load-Displacement Graphs"}
                 </Typography>
                 <FormControl
                   size='small'
-                  className='outlined min-w-44 absolute inset-e-0 mt-4 [&_.MuiInputBase-root.MuiInput-root.MuiInputBase-sizeSmall.outlined]:py-0.25! [&_.MuiInput-root]:rounded-xs!'
                   variant='standard'
+                  className={cn(
+                    "group-hover/grid:opacity-100",
+                    "transition-all opacity-0 outlined min-w-44 absolute inset-e-0 mt-4 [&_.MuiInputBase-root.MuiInput-root.MuiInputBase-sizeSmall.outlined]:py-0.25! [&_.MuiInput-root]:rounded-xs!",
+                  )}
                 >
                   <Select
                     variant='standard'
