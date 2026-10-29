@@ -1,29 +1,13 @@
 export {};
 
-export interface PlcTelemetryPayload {
-  timestamp: string;
-  d10Value: number; // 16-bit register (Address 4106)
-  d20Value: number; // 16-bit register (Address 4116)
-  m1Status: boolean; // Digital Coil status (Address 2049)
-  m2Status: boolean; // Digital Coil status (Address 2050)
-}
-
-export interface PlcStatusPayload {
-  error: string;
-}
-
 interface PlcAPI {
-  sendCoilCommand: (
-    address: number,
-    value: boolean,
-  ) => Promise<{
-    success: boolean;
-    message?: string;
-    error?: string;
-  }>;
-  onLiveData: (callback: (data: PlcTelemetryPayload) => void) => void;
-  onStatusError: (callback: (status: PlcStatusPayload) => void) => void;
-  removeListeners: () => void;
+  prepareConnection: (ipAddress: string) => Promise<{ token: string; ipAddress: string }>;
+  activateConnection: (token: string) => Promise<PlcConnectionStatus>;
+  cancelConnection: (token: string) => Promise<void>;
+  connect: (ipAddress: string) => Promise<PlcConnectionStatus>;
+  disconnect: () => Promise<PlcConnectionStatus>;
+  getStatus: () => Promise<PlcConnectionStatus>;
+  onStatusChange: (callback: (status: PlcConnectionStatus) => void) => () => void;
 }
 
 interface ElectronAPI {
@@ -45,6 +29,14 @@ interface ElectronAPI {
 }
 
 declare global {
+  interface PlcConnectionStatus {
+    state: "disconnected" | "connecting" | "online" | "offline";
+    ipAddress: string | null;
+    plcWorking?: boolean | null;
+    clearSelection?: boolean;
+    error?: string;
+  }
+
   interface Window {
     plcAPI: PlcAPI;
     electronAPI: ElectronAPI;

@@ -5,7 +5,7 @@ import path from "node:path";
 import { writeFile } from "node:fs/promises";
 import { registerBackupStorage } from "./backup-storage";
 import { registerImageStorage } from "./image-storage";
-import { shutdownPlcService } from "./plc-service";
+import { initializePlcService, shutdownPlcService } from "./plc-service";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -229,6 +229,7 @@ function createWindow() {
     frame: false,
     titleBarStyle: "hidden",
   });
+  initializePlcService(mainWindow);
 
   // mainWindow.removeMenu();
 

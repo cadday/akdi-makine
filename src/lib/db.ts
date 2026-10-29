@@ -26,7 +26,6 @@ export interface SpecimenRecord {
 
 export interface MachineRecord {
   id: string;
-  name: string;
   ipAddress: string;
   connected: boolean;
   createdAt: number;

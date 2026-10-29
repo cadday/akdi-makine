@@ -52,16 +52,18 @@ contextBridge.exposeInMainWorld("electronAPI", {
 });
 
 contextBridge.exposeInMainWorld("plcAPI", {
-  // UI Commands -> Backend Main Process
-  sendCoilCommand: (address, value) => ipcRenderer.invoke("write-plc-coil", { address, value }),
+  prepareConnection: (ipAddress: string) => ipcRenderer.invoke("plc:prepare-connection", ipAddress) as Promise<{ token: string; ipAddress: string }>,
+  activateConnection: (token: string) => ipcRenderer.invoke("plc:activate-connection", token) as Promise<PlcConnectionStatus>,
+  cancelConnection: (token: string) => ipcRenderer.invoke("plc:cancel-connection", token) as Promise<void>,
+  connect: (ipAddress: string) => ipcRenderer.invoke("plc:connect", ipAddress) as Promise<PlcConnectionStatus>,
+  disconnect: () => ipcRenderer.invoke("plc:disconnect") as Promise<PlcConnectionStatus>,
+  getStatus: () => ipcRenderer.invoke("plc:get-status") as Promise<PlcConnectionStatus>,
+  onStatusChange: (callback: (status: PlcConnectionStatus) => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, status: PlcConnectionStatus) => callback(status);
+    ipcRenderer.on("plc:status", listener);
 
-  // Backend Stream -> UI Component Listener
-  onLiveData: (callback) => ipcRenderer.on("plc-live-data", (_event, data) => callback(data)),
-  onStatusError: (callback) => ipcRenderer.on("plc-status", (_event, data) => callback(data)),
-
-  // Cleanup helper to avoid memory leaks when component unmounts
-  removeListeners: () => {
-    ipcRenderer.removeAllListeners("plc-live-data");
-    ipcRenderer.removeAllListeners("plc-status");
+    return () => {
+      ipcRenderer.removeListener("plc:status", listener);
+    };
   },
 });

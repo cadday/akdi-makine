@@ -1,50 +1,91 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { PlcTelemetryPayload } from "../../global";
+import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
+import { useDb } from "@/context/db-context";
 
-// Define what data the context will provide to components
 interface PlcContextType {
-  telemetry: PlcTelemetryPayload;
-  connectionStatus: { text: string; isError: boolean };
+  connectionStatus: PlcConnectionStatus;
 }
 
 const PlcContext = createContext<PlcContextType | undefined>(undefined);
 
 export const PlcProvider = ({ children }: { children: ReactNode }) => {
-  const [telemetry, setTelemetry] = useState<PlcTelemetryPayload>({
-    timestamp: "--:--:--",
-    d10Value: 0,
-    d20Value: 0,
-    m1Status: false,
-    m2Status: false,
-  });
-
-  const [connectionStatus, setConnectionStatus] = useState({
-    text: "Connecting...",
-    isError: false,
-  });
+  const { getConnectedMachine, setConnectedMachine } = useDb();
+  const [connectionStatus, setConnectionStatus] = useState<PlcConnectionStatus>({ state: "disconnected", ipAddress: null });
 
   useEffect(() => {
-    // 1. Establish the SINGLE active stream listener for the entire app
-    window.plcAPI.onLiveData((data: PlcTelemetryPayload) => {
-      setTelemetry(data);
-      setConnectionStatus({ text: `Online • Synced: ${data.timestamp}`, isError: false });
-    });
+    let cancelled = false;
+    const updateStatus = async (status: PlcConnectionStatus) => {
+      if (cancelled) return;
 
-    window.plcAPI.onStatusError((errUpdate) => {
-      setConnectionStatus({ text: errUpdate.error, isError: true });
-    });
+      if (status.clearSelection && status.ipAddress) {
+        try {
+          const selectedMachine = await getConnectedMachine();
+          if (!cancelled && selectedMachine?.ipAddress === status.ipAddress) {
+            await setConnectedMachine(null);
+          }
+        } catch (error) {
+          console.error("Failed to clear the selected machine after PLC communication was lost:", error);
+          if (!cancelled) {
+            setConnectionStatus({ ...status, error: `Failed to clear the disconnected machine selection: ${String(error)}` });
+          }
+          return;
+        }
+      }
 
-    // 2. Clean up when the entire app closes
-    return () => {
-      window.plcAPI.removeListeners();
+      if (!cancelled) setConnectionStatus(status);
     };
-  }, []);
+    const unsubscribe = window.plcAPI.onStatusChange((status) => {
+      void updateStatus(status);
+    });
 
-  return <PlcContext.Provider value={{ telemetry, connectionStatus }}>{children}</PlcContext.Provider>;
+    const initializeConnection = async () => {
+      try {
+        const status = await window.plcAPI.getStatus();
+        if (cancelled) return;
+        await updateStatus(status);
+      } catch (error) {
+        if (!cancelled) {
+          setConnectionStatus({ state: "offline", ipAddress: null, error: `Failed to read PLC connection status: ${String(error)}` });
+        }
+        return;
+      }
+
+      let machine;
+      try {
+        machine = await getConnectedMachine();
+      } catch (error) {
+        if (!cancelled) {
+          setConnectionStatus({ state: "offline", ipAddress: null, error: `Failed to load the selected machine: ${String(error)}` });
+        }
+        return;
+      }
+
+      if (cancelled) return;
+      try {
+        if (machine) await window.plcAPI.connect(machine.ipAddress);
+        else await window.plcAPI.disconnect();
+      } catch (error) {
+        if (!cancelled) {
+          setConnectionStatus({
+            state: "offline",
+            ipAddress: machine?.ipAddress ?? null,
+            error: `Failed to connect to the selected machine: ${String(error)}`,
+          });
+        }
+      }
+    };
+
+    void initializeConnection();
+
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
+  }, [getConnectedMachine, setConnectedMachine]);
+
+  return <PlcContext.Provider value={{ connectionStatus }}>{children}</PlcContext.Provider>;
 };
 
-// Custom hook so components can easily grab the live data
 export const usePlcData = () => {
   const context = useContext(PlcContext);
   if (!context) {

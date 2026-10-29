@@ -18,7 +18,7 @@ import path$n from "node:path";
 import { writeFile as writeFile$1, stat as stat$5, readFile as readFile$1, mkdir as mkdir$4, rm } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import require$$0$5 from "buffer";
-import "net";
+import net from "node:net";
 var commonjsGlobal = typeof globalThis !== "undefined" ? globalThis : typeof window !== "undefined" ? window : typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : {};
 var main$1 = {};
 var fs$i = {};
@@ -14917,7 +14917,7 @@ NsisUpdater$1.NsisUpdater = NsisUpdater;
 })(main$1);
 const MAX_BACKUP_ARCHIVE_BYTES = 512 * 1024 * 1024;
 function registerBackupStorage(getWindow) {
-  const assertTrustedRequest = (sender) => {
+  const assertTrustedRequest2 = (sender) => {
     const window2 = getWindow();
     if (!window2 || window2.isDestroyed() || sender !== window2.webContents) {
       throw new Error("Unauthorized backup request");
@@ -14925,7 +14925,7 @@ function registerBackupStorage(getWindow) {
     return window2;
   };
   ipcMain.handle("backup:save", async (event, input) => {
-    const window2 = assertTrustedRequest(event.sender);
+    const window2 = assertTrustedRequest2(event.sender);
     if (!(input instanceof Uint8Array) || input.byteLength === 0 || input.byteLength > MAX_BACKUP_ARCHIVE_BYTES) {
       throw new Error("Backup archive is invalid or exceeds the 512 MB limit");
     }
@@ -14939,7 +14939,7 @@ function registerBackupStorage(getWindow) {
     return { canceled: false, filePath };
   });
   ipcMain.handle("backup:open", async (event) => {
-    const window2 = assertTrustedRequest(event.sender);
+    const window2 = assertTrustedRequest2(event.sender);
     const { canceled, filePaths } = await dialog.showOpenDialog(window2, {
       title: "Restore Database Backup",
       properties: ["openFile"],
@@ -18802,6 +18802,314 @@ var user_request_1 = userRequest;
 modbus.UserRequest = user_request_1.default;
 var user_request_metrics_1 = userRequestMetrics;
 modbus.UserRequestMetrics = user_request_metrics_1.UserRequestMetrics;
+const PLC_PORT = 502;
+const CONNECTION_TIMEOUT_MS = 5e3;
+const PREPARED_CONNECTION_TIMEOUT_MS = 6e4;
+const PLC_WORKING_COIL_ADDRESS = 3048;
+const PLC_HEALTH_POLL_INTERVAL_MS = 1e3;
+let mainWindow$1 = null;
+let activeSocket = null;
+let activeClient = null;
+let activeIpAddress = null;
+let healthPollTimeout = null;
+let connectionStatus = { state: "disconnected", ipAddress: null };
+let isRegistered = false;
+const preparedConnections = /* @__PURE__ */ new Map();
+function sendStatus(status) {
+  const unchanged = connectionStatus.state === status.state && connectionStatus.ipAddress === status.ipAddress && connectionStatus.plcWorking === status.plcWorking && connectionStatus.clearSelection === status.clearSelection && connectionStatus.error === status.error;
+  connectionStatus = status;
+  if (!unchanged && mainWindow$1 && !mainWindow$1.isDestroyed()) {
+    mainWindow$1.webContents.send("plc:status", status);
+  }
+}
+function getErrorMessage(error2) {
+  if (error2 instanceof Error) return error2.message;
+  if (typeof error2 !== "object" || error2 === null) return String(error2);
+  const details = error2;
+  const response2 = details.response;
+  const responseBody2 = typeof response2 === "object" && response2 !== null ? response2.body : null;
+  const responseMessage = typeof responseBody2 === "object" && responseBody2 !== null ? responseBody2.message : null;
+  const parts = [
+    typeof details.err === "string" ? details.err : null,
+    typeof details.message === "string" ? details.message : null,
+    typeof responseMessage === "string" ? responseMessage : null
+  ].filter((part) => Boolean(part));
+  return parts.length > 0 ? parts.join(": ") : "Unknown PLC error";
+}
+function toError(error2) {
+  return error2 instanceof Error ? error2 : new Error(getErrorMessage(error2));
+}
+function assertTrustedRequest(sender) {
+  if (!mainWindow$1 || mainWindow$1.isDestroyed() || sender !== mainWindow$1.webContents) {
+    throw new Error("Unauthorized PLC request");
+  }
+}
+function normalizeIpAddress(value) {
+  if (typeof value !== "string" || !net.isIPv4(value.trim())) {
+    throw new Error("Enter a valid IPv4 address");
+  }
+  return value.trim().split(".").map((octet) => String(Number(octet))).join(".");
+}
+function clearPreparedConnection(token, closeSocket) {
+  const prepared = preparedConnections.get(token);
+  if (!prepared) return;
+  clearTimeout(prepared.timeout);
+  preparedConnections.delete(token);
+  if (closeSocket) {
+    prepared.socket.removeAllListeners();
+    prepared.socket.destroy();
+  }
+}
+function removePreparedSocket(socket) {
+  for (const [token, prepared] of preparedConnections) {
+    if (prepared.socket === socket) {
+      clearPreparedConnection(token, false);
+      return;
+    }
+  }
+}
+function stopHealthPolling() {
+  if (!healthPollTimeout) return;
+  clearTimeout(healthPollTimeout);
+  healthPollTimeout = null;
+}
+function disconnectActiveSocket(socket, error2) {
+  if (activeSocket !== socket) return;
+  const ipAddress = activeIpAddress;
+  stopHealthPolling();
+  activeSocket = null;
+  activeClient = null;
+  activeIpAddress = null;
+  socket.removeAllListeners();
+  socket.destroy();
+  sendStatus({
+    state: "offline",
+    ipAddress,
+    plcWorking: null,
+    clearSelection: true,
+    ...error2 ? { error: error2.message } : {}
+  });
+}
+function handleSocketError(socket, error2) {
+  removePreparedSocket(socket);
+  disconnectActiveSocket(socket, error2);
+}
+function handleSocketClose(socket) {
+  removePreparedSocket(socket);
+  if (activeSocket === socket) {
+    const ipAddress = activeIpAddress;
+    stopHealthPolling();
+    activeSocket = null;
+    activeClient = null;
+    activeIpAddress = null;
+    sendStatus({
+      state: "offline",
+      ipAddress,
+      plcWorking: null,
+      clearSelection: true,
+      error: "PLC connection closed unexpectedly"
+    });
+  }
+}
+function openSocket(ipAddress) {
+  return new Promise((resolve, reject) => {
+    const socket = new net.Socket();
+    const client = new modbus.client.TCP(socket, 1, CONNECTION_TIMEOUT_MS);
+    let connected = false;
+    let settled = false;
+    const timeout = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      socket.destroy();
+      reject(new Error(`Connection to ${ipAddress}:${PLC_PORT} timed out`));
+    }, CONNECTION_TIMEOUT_MS);
+    socket.on("connect", () => {
+      connected = true;
+      settled = true;
+      clearTimeout(timeout);
+      resolve({ socket, client });
+    });
+    socket.on("error", (error2) => {
+      if (!connected) {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timeout);
+        reject(new Error(`Could not connect to ${ipAddress}:${PLC_PORT}: ${error2.message}`));
+        return;
+      }
+      handleSocketError(socket, error2);
+    });
+    socket.on("close", () => {
+      if (!connected) {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timeout);
+        reject(new Error(`Connection to ${ipAddress}:${PLC_PORT} closed before it was established`));
+        return;
+      }
+      handleSocketClose(socket);
+    });
+    try {
+      socket.connect({ host: ipAddress, port: PLC_PORT });
+    } catch (error2) {
+      settled = true;
+      clearTimeout(timeout);
+      socket.removeAllListeners();
+      socket.destroy();
+      reject(toError(error2));
+    }
+  });
+}
+async function prepareConnection(value) {
+  const ipAddress = normalizeIpAddress(value);
+  const { socket, client } = await openSocket(ipAddress);
+  const token = randomUUID();
+  const timeout = setTimeout(() => clearPreparedConnection(token, true), PREPARED_CONNECTION_TIMEOUT_MS);
+  preparedConnections.set(token, { ipAddress, socket, client, timeout });
+  return { token, ipAddress };
+}
+function startHealthPolling(socket, client, ipAddress) {
+  const poll = async () => {
+    if (activeSocket !== socket || activeClient !== client) return;
+    try {
+      const response2 = await client.readCoils(PLC_WORKING_COIL_ADDRESS, 1);
+      if (activeSocket !== socket || activeClient !== client) return;
+      const coilValue = response2.response.body.valuesAsArray[0];
+      if (coilValue !== true && coilValue !== false && coilValue !== 0 && coilValue !== 1) {
+        throw new Error(`PLC returned an invalid value for coil ${PLC_WORKING_COIL_ADDRESS}`);
+      }
+      sendStatus({
+        state: "online",
+        ipAddress,
+        plcWorking: coilValue === true || coilValue === 1
+      });
+    } catch (error2) {
+      disconnectActiveSocket(socket, toError(error2));
+      return;
+    }
+    if (activeSocket === socket && activeClient === client) {
+      healthPollTimeout = setTimeout(() => {
+        healthPollTimeout = null;
+        void poll();
+      }, PLC_HEALTH_POLL_INTERVAL_MS);
+    }
+  };
+  void poll();
+}
+function activateConnection(token) {
+  if (typeof token !== "string") throw new Error("Invalid prepared PLC connection");
+  const prepared = preparedConnections.get(token);
+  if (!prepared) throw new Error("Prepared PLC connection expired or is no longer available");
+  if (prepared.socket.destroyed || !prepared.socket.writable) {
+    clearPreparedConnection(token, true);
+    throw new Error(`Connection to ${prepared.ipAddress}:${PLC_PORT} is no longer available`);
+  }
+  clearPreparedConnection(token, false);
+  stopHealthPolling();
+  const previousSocket = activeSocket;
+  activeSocket = prepared.socket;
+  activeClient = prepared.client;
+  activeIpAddress = prepared.ipAddress;
+  const status = { state: "connecting", ipAddress: prepared.ipAddress, plcWorking: null };
+  sendStatus(status);
+  if (previousSocket && previousSocket !== activeSocket) {
+    previousSocket.removeAllListeners();
+    previousSocket.destroy();
+  }
+  startHealthPolling(prepared.socket, prepared.client, prepared.ipAddress);
+  return status;
+}
+function disconnect() {
+  stopHealthPolling();
+  const previousSocket = activeSocket;
+  activeSocket = null;
+  activeClient = null;
+  activeIpAddress = null;
+  for (const token of preparedConnections.keys()) {
+    clearPreparedConnection(token, true);
+  }
+  if (previousSocket) {
+    previousSocket.removeAllListeners();
+    previousSocket.destroy();
+  }
+  const status = { state: "disconnected", ipAddress: null, plcWorking: null };
+  sendStatus(status);
+  return status;
+}
+async function connect(ipAddress) {
+  const normalizedIpAddress = normalizeIpAddress(ipAddress);
+  const previousSocket = activeSocket;
+  const previousIpAddress = activeIpAddress;
+  sendStatus({ state: "connecting", ipAddress: normalizedIpAddress });
+  let token = null;
+  try {
+    const prepared = await prepareConnection(normalizedIpAddress);
+    token = prepared.token;
+    return activateConnection(token);
+  } catch (error2) {
+    if (token) clearPreparedConnection(token, true);
+    if (previousSocket && activeSocket === previousSocket && !previousSocket.destroyed && previousSocket.writable && previousIpAddress) {
+      sendStatus({
+        state: "online",
+        ipAddress: previousIpAddress,
+        plcWorking: connectionStatus.ipAddress === previousIpAddress ? connectionStatus.plcWorking : null
+      });
+    } else {
+      sendStatus({
+        state: "offline",
+        ipAddress: normalizedIpAddress,
+        plcWorking: null,
+        error: getErrorMessage(error2)
+      });
+    }
+    throw error2;
+  }
+}
+function initializePlcService(window2) {
+  mainWindow$1 = window2;
+  if (isRegistered) return;
+  ipcMain.handle("plc:prepare-connection", async (event, ipAddress) => {
+    assertTrustedRequest(event.sender);
+    return prepareConnection(ipAddress);
+  });
+  ipcMain.handle("plc:activate-connection", (event, token) => {
+    assertTrustedRequest(event.sender);
+    return activateConnection(token);
+  });
+  ipcMain.handle("plc:cancel-connection", (event, token) => {
+    assertTrustedRequest(event.sender);
+    if (typeof token !== "string") throw new Error("Invalid prepared PLC connection");
+    clearPreparedConnection(token, true);
+  });
+  ipcMain.handle("plc:connect", async (event, ipAddress) => {
+    assertTrustedRequest(event.sender);
+    return connect(ipAddress);
+  });
+  ipcMain.handle("plc:disconnect", (event) => {
+    assertTrustedRequest(event.sender);
+    return disconnect();
+  });
+  ipcMain.handle("plc:get-status", (event) => {
+    assertTrustedRequest(event.sender);
+    return connectionStatus;
+  });
+  isRegistered = true;
+}
+function shutdownPlcService() {
+  stopHealthPolling();
+  for (const token of preparedConnections.keys()) {
+    clearPreparedConnection(token, true);
+  }
+  const previousSocket = activeSocket;
+  activeSocket = null;
+  activeClient = null;
+  activeIpAddress = null;
+  if (previousSocket) {
+    previousSocket.removeAllListeners();
+    previousSocket.destroy();
+  }
+  connectionStatus = { state: "disconnected", ipAddress: null, plcWorking: null };
+}
 const __dirname$1 = path$n.dirname(fileURLToPath(import.meta.url));
 process.env.APP_ROOT = path$n.join(__dirname$1, "..");
 const VITE_DEV_SERVER_URL = process.env["VITE_DEV_SERVER_URL"];
@@ -18966,6 +19274,7 @@ function createWindow() {
     frame: false,
     titleBarStyle: "hidden"
   });
+  initializePlcService(mainWindow);
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     if (url.startsWith("http:") || url.startsWith("https:")) {
       shell.openExternal(url);
@@ -18988,6 +19297,7 @@ function createWindow() {
   }
 }
 app.on("window-all-closed", () => {
+  shutdownPlcService();
   if (process.platform !== "darwin") {
     app.quit();
     mainWindow = null;

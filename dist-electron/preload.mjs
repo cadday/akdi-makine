@@ -46,14 +46,17 @@ electron.contextBridge.exposeInMainWorld("electronAPI", {
   close: () => electron.ipcRenderer.invoke("window:close")
 });
 electron.contextBridge.exposeInMainWorld("plcAPI", {
-  // UI Commands -> Backend Main Process
-  sendCoilCommand: (address, value) => electron.ipcRenderer.invoke("write-plc-coil", { address, value }),
-  // Backend Stream -> UI Component Listener
-  onLiveData: (callback) => electron.ipcRenderer.on("plc-live-data", (_event, data) => callback(data)),
-  onStatusError: (callback) => electron.ipcRenderer.on("plc-status", (_event, data) => callback(data)),
-  // Cleanup helper to avoid memory leaks when component unmounts
-  removeListeners: () => {
-    electron.ipcRenderer.removeAllListeners("plc-live-data");
-    electron.ipcRenderer.removeAllListeners("plc-status");
+  prepareConnection: (ipAddress) => electron.ipcRenderer.invoke("plc:prepare-connection", ipAddress),
+  activateConnection: (token) => electron.ipcRenderer.invoke("plc:activate-connection", token),
+  cancelConnection: (token) => electron.ipcRenderer.invoke("plc:cancel-connection", token),
+  connect: (ipAddress) => electron.ipcRenderer.invoke("plc:connect", ipAddress),
+  disconnect: () => electron.ipcRenderer.invoke("plc:disconnect"),
+  getStatus: () => electron.ipcRenderer.invoke("plc:get-status"),
+  onStatusChange: (callback) => {
+    const listener = (_event, status) => callback(status);
+    electron.ipcRenderer.on("plc:status", listener);
+    return () => {
+      electron.ipcRenderer.removeListener("plc:status", listener);
+    };
   }
 });
