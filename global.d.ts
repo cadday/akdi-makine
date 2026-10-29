@@ -6,6 +6,10 @@ interface PlcAPI {
   cancelConnection: (token: string) => Promise<void>;
   connect: (ipAddress: string) => Promise<PlcConnectionStatus>;
   disconnect: () => Promise<PlcConnectionStatus>;
+  setMoveUp: (enabled: boolean) => Promise<void>;
+  setMoveDown: (enabled: boolean) => Promise<void>;
+  resetLoad: () => Promise<void>;
+  resetStroke: () => Promise<void>;
   getStatus: () => Promise<PlcConnectionStatus>;
   onStatusChange: (callback: (status: PlcConnectionStatus) => void) => () => void;
 }

@@ -51,6 +51,10 @@ electron.contextBridge.exposeInMainWorld("plcAPI", {
   cancelConnection: (token) => electron.ipcRenderer.invoke("plc:cancel-connection", token),
   connect: (ipAddress) => electron.ipcRenderer.invoke("plc:connect", ipAddress),
   disconnect: () => electron.ipcRenderer.invoke("plc:disconnect"),
+  setMoveUp: (enabled) => electron.ipcRenderer.invoke("plc:set-move-up", enabled),
+  setMoveDown: (enabled) => electron.ipcRenderer.invoke("plc:set-move-down", enabled),
+  resetLoad: () => electron.ipcRenderer.invoke("plc:reset-load"),
+  resetStroke: () => electron.ipcRenderer.invoke("plc:reset-stroke"),
   getStatus: () => electron.ipcRenderer.invoke("plc:get-status"),
   onStatusChange: (callback) => {
     const listener = (_event, status) => callback(status);

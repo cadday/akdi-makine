@@ -1,49 +1,66 @@
-import { Link } from "react-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Link } from 'react-router';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
-import { Box, Breadcrumbs, Button, Card, CardContent, FormControl, Grid, hslToRgb, MenuItem, Select, Typography, useTheme } from "@mui/material";
-import { DataGrid, type GridColDef, type GridRenderCellParams } from "@mui/x-data-grid";
-import { renderToStaticMarkup } from "react-dom/server";
-import * as echarts from "echarts";
-import type { EChartsOption } from "echarts";
-import { ChevronDown, ChevronLeft, ChevronRight, TicketPercent, WeightTilde } from "lucide-react";
+import {
+  Box,
+  Breadcrumbs,
+  Button,
+  Card,
+  CardContent,
+  FormControl,
+  Grid,
+  hslToRgb,
+  MenuItem,
+  Select,
+  Typography,
+  useTheme,
+} from '@mui/material';
+import { DataGrid, type GridColDef, type GridRenderCellParams } from '@mui/x-data-grid';
+import { renderToStaticMarkup } from 'react-dom/server';
+import * as echarts from 'echarts';
+import type { EChartsOption } from 'echarts';
+import { ChevronDown, ChevronLeft, ChevronRight, TicketPercent, WeightTilde } from 'lucide-react';
 
-import ContentWrapper from "@/components/layout/containers/content-wrapper";
-import TitleWrapper from "@/components/layout/containers/title-wrapper";
-import LoadingFullScreen from "@/components/loading/loading-full-screen";
-import QuickTestForm from "@/pages/app/overview/components/quick-test-form";
-import { LINKS } from "@/constants";
-import { useTranslation } from "react-i18next";
-import { DraftingCompass, FlaskConical, Network, RulerDimensionLine, SlidersVertical } from "lucide-react";
-import { useDb, type TestGraphPoint, type TestRecord } from "@/context/db-context";
-import { getTestGraphType, type TestGraphType } from "@/lib/db";
-import useAppNotifications from "@/hooks/use-app-notifications";
-import { useThemeContext } from "@/theme/theme-provider";
-import { NoTestsFound, NoWayToTest } from "../components/no-entity-found";
-import { cn } from "@/lib/utils";
+import ContentWrapper from '@/components/layout/containers/content-wrapper';
+import TitleWrapper from '@/components/layout/containers/title-wrapper';
+import LoadingFullScreen from '@/components/loading/loading-full-screen';
+import QuickTestForm from '@/pages/app/overview/components/quick-test-form';
+import { LINKS } from '@/constants';
+import { useTranslation } from 'react-i18next';
+import { DraftingCompass, FlaskConical, Network, RulerDimensionLine, SlidersVertical } from 'lucide-react';
+import { useDb, type TestGraphPoint, type TestRecord } from '@/context/db-context';
+import { getTestGraphType, type TestGraphType } from '@/lib/db';
+import useAppNotifications from '@/hooks/use-app-notifications';
+import { useThemeContext } from '@/theme/theme-provider';
+import { NoTestsFound, NoWayToTest } from '../components/no-entity-found';
+import { cn } from '@/lib/utils';
 
 type LatestTestRow = TestRecord & { presetName: string; specimenName: string };
 
 const latestTestColumns: GridColDef<LatestTestRow>[] = [
   {
-    field: "name",
-    headerName: "Name",
+    field: 'name',
+    headerName: 'Name',
     minWidth: 220,
     flex: 1,
     renderCell: (params: GridRenderCellParams<LatestTestRow, string>) => (
-      <Link to={`/tests/${params.row.id}`} className='text-text-primary link-primary link-underline hover:text-primary py-2 font-semibold transition-colors'>
+      <Link
+        to={`/tests/${params.row.id}`}
+        className="text-text-primary link-primary link-underline hover:text-primary py-2 font-semibold transition-colors"
+      >
         {params.value}
       </Link>
     ),
   },
-  { field: "presetName", headerName: "Preset", minWidth: 120, flex: 1 },
-  { field: "specimenName", headerName: "Specimen", minWidth: 120, flex: 1 },
-  { field: "machineIP", headerName: "Machine IP", minWidth: 120, valueFormatter: (value) => value || "-" },
+  { field: 'presetName', headerName: 'Preset', minWidth: 120, flex: 1 },
+  { field: 'specimenName', headerName: 'Specimen', minWidth: 120, flex: 1 },
+  { field: 'machineIP', headerName: 'Machine IP', minWidth: 120, valueFormatter: (value) => value || '-' },
   {
-    field: "createdAt",
-    headerName: "Created",
+    field: 'createdAt',
+    headerName: 'Created',
     minWidth: 160,
-    valueFormatter: (value) => new Date(Number(value)).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short" }),
+    valueFormatter: (value) =>
+      new Date(Number(value)).toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' }),
   },
 ];
 
@@ -59,7 +76,7 @@ function resolveSeriesColor(color: string, cssVariables: CSSStyleDeclaration) {
   const variableName = color.match(/var\(--([^)]+)\)/)?.[1];
   if (!variableName) return color;
   const hslComponents = cssVariables.getPropertyValue(`--${variableName}`).trim();
-  return hslComponents ? hslToRgb(`hsl(${hslComponents.replace(/\s+/g, ", ")})`) : color;
+  return hslComponents ? hslToRgb(`hsl(${hslComponents.replace(/\s+/g, ', ')})`) : color;
 }
 
 function getLucideImage(icon: typeof ChevronLeft, color: string) {
@@ -71,7 +88,7 @@ function getLucideImage(icon: typeof ChevronLeft, color: string) {
 const extraSeriesColors = new Map<string, string>();
 
 function getExtraSeriesColor(id: string, isDarkMode: boolean) {
-  const key = `${id}:${isDarkMode ? "dark" : "light"}`;
+  const key = `${id}:${isDarkMode ? 'dark' : 'light'}`;
   const existing = extraSeriesColors.get(key);
   if (existing) return existing;
   const hue = Math.floor(Math.random() * 360);
@@ -89,30 +106,37 @@ function getNearestGraphPoint(points: TestGraphPoint[], strain: number) {
   );
 }
 
-function LatestTestsGraphTooltip({ points, graphType }: { points: LatestTestTooltipPoint[]; graphType: TestGraphType }) {
-  const [xLabel, xUnit, yLabel, yUnit] = graphType === "stress-strain" ? ["Strain", "%", "Stress", "MPa"] : ["Displacement", "mm", "Load", "N"];
+function LatestTestsGraphTooltip({
+  points,
+  graphType,
+}: {
+  points: LatestTestTooltipPoint[];
+  graphType: TestGraphType;
+}) {
+  const [xLabel, xUnit, yLabel, yUnit] =
+    graphType === 'stress-strain' ? ['Strain', '%', 'Stress', 'MPa'] : ['Displacement', 'mm', 'Load', 'N'];
   return (
-    <Box className='bg-background-paper shadow-darker-sm! outline-grey-50 rounded-lg p-5 outline-1 flex flex-col gap-2'>
+    <Box className="bg-background-paper shadow-darker-sm! outline-grey-50 rounded-lg p-5 outline-1 flex flex-col gap-2">
       {[
         { label: xLabel, unit: xUnit, value: (point: LatestTestTooltipPoint) => point.x, digits: 3 },
         { label: yLabel, unit: yUnit, value: (point: LatestTestTooltipPoint) => point.y, digits: 2 },
       ].map(({ label, unit, value, digits }) => (
-        <Box key={label} className='flex flex-row gap-2'>
-          {label === "Stress" || label === "Load" ? (
+        <Box key={label} className="flex flex-row gap-2">
+          {label === 'Stress' || label === 'Load' ? (
             <WeightTilde size={20} />
-          ) : label === "Strain" ? (
+          ) : label === 'Strain' ? (
             <TicketPercent size={20} />
           ) : (
             <RulerDimensionLine size={20} />
           )}
-          <Box className='flex min-w-0 flex-col gap-1'>
-            <Typography variant='subtitle1' className='text-text-primary'>
+          <Box className="flex min-w-0 flex-col gap-1">
+            <Typography variant="subtitle1" className="text-text-primary">
               {label}
             </Typography>
             {points.map((point) => (
-              <Box key={`${label}-${point.id}`} className='flex min-w-0 items-center gap-1.5'>
-                <Box className='h-2.5 w-2.5 flex-none rounded-full' style={{ backgroundColor: point.color }} />
-                <Typography className='text-text-primary'>
+              <Box key={`${label}-${point.id}`} className="flex min-w-0 items-center gap-1.5">
+                <Box className="h-2.5 w-2.5 flex-none rounded-full" style={{ backgroundColor: point.color }} />
+                <Typography className="text-text-primary">
                   {value(point).toFixed(digits)} ({unit})
                 </Typography>
               </Box>
@@ -132,12 +156,15 @@ export default function Page() {
   const { isDarkMode } = useThemeContext();
   const [counts, setCounts] = useState({ tests: 0, specimens: 0, presets: 0, dataFields: 0 });
   const [latestTests, setLatestTests] = useState<TestRecord[]>([]);
-  const [graphType, setGraphType] = useState<TestGraphType>("stress-strain");
+  const [graphType, setGraphType] = useState<TestGraphType>('stress-strain');
   const [isLoading, setIsLoading] = useState(true);
   const chartElementRef = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<echarts.ECharts | null>(null);
   const latestTestRows = useMemo<LatestTestRow[]>(
-    () => latestTests.slice(0, 10).map((test) => ({ ...test, presetName: test.presetSnapshot.name, specimenName: test.specimenSnapshot.name })),
+    () =>
+      latestTests
+        .slice(0, 10)
+        .map((test) => ({ ...test, presetName: test.presetSnapshot.name, specimenName: test.specimenSnapshot.name })),
     [latestTests],
   );
   const colors = useMemo(() => {
@@ -145,17 +172,19 @@ export default function Page() {
     const fixedColors = [
       theme.palette.primary.main,
       theme.palette.secondary.main,
-      theme.palette["accent-1"].main,
-      theme.palette["accent-2"].main,
-      theme.palette["accent-3"].main,
-      theme.palette["accent-4"].main,
+      theme.palette['accent-1'].main,
+      theme.palette['accent-2'].main,
+      theme.palette['accent-3'].main,
+      theme.palette['accent-4'].main,
     ].map((color) => resolveSeriesColor(color, cssVariables));
     return latestTests.map((test, index) => fixedColors[index] ?? getExtraSeriesColor(test.id, isDarkMode));
   }, [isDarkMode, latestTests, theme.palette]);
   const hasGraphData = latestTests.some(
     (test) =>
       getTestGraphType(test.specimenSnapshot.geometry) === graphType &&
-      (graphType === "stress-strain" ? (test.results?.stressStrainData?.length ?? 0) > 0 : (test.results?.loadDisplacementData?.length ?? 0) > 0),
+      (graphType === 'stress-strain'
+        ? (test.results?.stressStrainData?.length ?? 0) > 0
+        : (test.results?.loadDisplacementData?.length ?? 0) > 0),
   );
 
   useEffect(() => {
@@ -165,14 +194,16 @@ export default function Page() {
       const [countsResult, testsResult] = await Promise.allSettled([getRecordCounts(), getTests()]);
       if (cancelled) return;
 
-      if (countsResult.status === "fulfilled") setCounts(countsResult.value);
+      if (countsResult.status === 'fulfilled') setCounts(countsResult.value);
       else showError(`Failed to load overview counts: ${String(countsResult.reason)}`);
 
-      if (testsResult.status === "fulfilled") {
+      if (testsResult.status === 'fulfilled') {
         setLatestTests(testsResult.value);
         const hasStressStrainData = testsResult.value.some((test) => (test.results?.stressStrainData?.length ?? 0) > 0);
-        const hasLoadDisplacementData = testsResult.value.some((test) => (test.results?.loadDisplacementData?.length ?? 0) > 0);
-        if (!hasStressStrainData && hasLoadDisplacementData) setGraphType("load-displacement");
+        const hasLoadDisplacementData = testsResult.value.some(
+          (test) => (test.results?.loadDisplacementData?.length ?? 0) > 0,
+        );
+        if (!hasStressStrainData && hasLoadDisplacementData) setGraphType('load-displacement');
       } else showError(`Failed to load latest tests: ${String(testsResult.reason)}`);
 
       setIsLoading(false);
@@ -201,51 +232,61 @@ export default function Page() {
   useEffect(() => {
     const chartColors = isDarkMode
       ? {
-          divider: hslToRgb("hsl(226, 4%, 20%)"),
-          hoverLabelBackground: hslToRgb("hsl(226, 4%, 20%)"),
-          secondaryText: hslToRgb("hsl(0, 0%, 60%)"),
+          divider: hslToRgb('hsl(226, 4%, 20%)'),
+          hoverLabelBackground: hslToRgb('hsl(226, 4%, 20%)'),
+          secondaryText: hslToRgb('hsl(0, 0%, 60%)'),
         }
       : {
-          divider: hslToRgb("hsl(0, 0%, 90%)"),
-          hoverLabelBackground: hslToRgb("hsl(0, 0%, 90%)"),
-          secondaryText: hslToRgb("hsl(0, 0%, 60%)"),
+          divider: hslToRgb('hsl(0, 0%, 90%)'),
+          hoverLabelBackground: hslToRgb('hsl(0, 0%, 90%)'),
+          secondaryText: hslToRgb('hsl(0, 0%, 60%)'),
         };
     const getGraphData = (test: TestRecord): TestGraphPoint[] =>
-      graphType === "stress-strain"
+      graphType === 'stress-strain'
         ? (test.results?.stressStrainData ?? []).map(({ strain, stress }) => ({ x: strain, y: stress }))
         : (test.results?.loadDisplacementData ?? []).map(({ displacement, load }) => ({ x: displacement, y: load }));
     const graphTests = latestTests
       .filter((test) => getTestGraphType(test.specimenSnapshot.geometry) === graphType && getGraphData(test).length > 0)
       .slice(0, 5);
-    const graphTestColors = graphTests.map((test) => colors[latestTests.findIndex((latestTest) => latestTest.id === test.id)]);
+    const graphTestColors = graphTests.map(
+      (test) => colors[latestTests.findIndex((latestTest) => latestTest.id === test.id)],
+    );
     const getPointsAtX = (x: number): LatestTestTooltipPoint[] =>
       graphTests.flatMap((test, index) => {
         const nearestPoint = getNearestGraphPoint(getGraphData(test), x);
-        return nearestPoint ? [{ id: test.id, name: test.name, color: graphTestColors[index], x: nearestPoint.x, y: nearestPoint.y }] : [];
+        return nearestPoint
+          ? [{ id: test.id, name: test.name, color: graphTestColors[index], x: nearestPoint.x, y: nearestPoint.y }]
+          : [];
       });
-    const [xAxisLabel, yAxisLabel] = graphType === "stress-strain" ? ["Strain (%)", "Stress (MPa)"] : ["Displacement (mm)", "Load (N)"];
+    const [xAxisLabel, yAxisLabel] =
+      graphType === 'stress-strain' ? ['Strain (%)', 'Stress (MPa)'] : ['Displacement (mm)', 'Load (N)'];
     const option: EChartsOption = {
       animation: false,
       color: colors,
       grid: { top: 35, right: 28, bottom: 78, left: 62 },
       legend: {
         bottom: 0,
-        type: "scroll",
-        icon: "circle",
+        type: 'scroll',
+        icon: 'circle',
         itemWidth: 10,
         itemHeight: 10,
-        pageIcons: { horizontal: [getLucideImage(ChevronLeft, chartColors.secondaryText), getLucideImage(ChevronRight, chartColors.secondaryText)] },
+        pageIcons: {
+          horizontal: [
+            getLucideImage(ChevronLeft, chartColors.secondaryText),
+            getLucideImage(ChevronRight, chartColors.secondaryText),
+          ],
+        },
         pageIconSize: 16,
         textStyle: { color: chartColors.secondaryText },
       },
       tooltip: {
-        trigger: "axis",
-        renderMode: "html",
-        backgroundColor: "transparent",
+        trigger: 'axis',
+        renderMode: 'html',
+        backgroundColor: 'transparent',
         borderWidth: 0,
         padding: 0,
-        extraCssText: "box-shadow: none;",
-        axisPointer: { type: "cross", snap: false, lineStyle: { type: "solid", color: chartColors.divider } },
+        extraCssText: 'box-shadow: none;',
+        axisPointer: { type: 'cross', snap: false, lineStyle: { type: 'solid', color: chartColors.divider } },
         position: (point, _params, _dom, _rect, size) => {
           const [viewWidth, viewHeight] = size.viewSize;
           const [contentWidth, contentHeight] = size.contentSize;
@@ -255,51 +296,55 @@ export default function Page() {
           ];
         },
         formatter: (params) => {
-          if (!Array.isArray(params)) return "";
-          const axisValue = params.find((param) => param.axisDimension === "x")?.axisValue ?? params[0]?.axisValue;
+          if (!Array.isArray(params)) return '';
+          const axisValue = params.find((param) => param.axisDimension === 'x')?.axisValue ?? params[0]?.axisValue;
           const x = Number(axisValue);
-          if (!Number.isFinite(x)) return "";
+          if (!Number.isFinite(x)) return '';
           const points = getPointsAtX(x);
-          return points.length ? renderToStaticMarkup(<LatestTestsGraphTooltip points={points} graphType={graphType} />) : "";
+          return points.length
+            ? renderToStaticMarkup(<LatestTestsGraphTooltip points={points} graphType={graphType} />)
+            : '';
         },
       },
-      dataZoom: [{ type: "inside", filterMode: "none", zoomOnMouseWheel: true, moveOnMouseMove: true, moveOnMouseWheel: false }],
+      dataZoom: [
+        { type: 'inside', filterMode: 'none', zoomOnMouseWheel: true, moveOnMouseMove: true, moveOnMouseWheel: false },
+      ],
       xAxis: {
-        type: "value",
+        type: 'value',
         axisPointer: {
-          type: "line" as const,
-          lineStyle: { type: "solid", color: chartColors.divider },
+          type: 'line' as const,
+          lineStyle: { type: 'solid', color: chartColors.divider },
           label: { backgroundColor: chartColors.hoverLabelBackground, color: chartColors.secondaryText },
         },
         name: xAxisLabel,
-        nameLocation: "middle",
+        nameLocation: 'middle',
         nameGap: 32,
         nameTextStyle: { color: chartColors.secondaryText },
         axisLabel: { color: chartColors.secondaryText },
         axisLine: { lineStyle: { color: chartColors.divider } },
-        splitLine: { lineStyle: { color: chartColors.divider, type: "dashed" } },
+        splitLine: { lineStyle: { color: chartColors.divider, type: 'dashed' } },
       },
       yAxis: {
-        type: "value",
+        type: 'value',
         axisPointer: {
-          type: "line",
-          lineStyle: { type: "solid", color: chartColors.divider },
+          type: 'line',
+          lineStyle: { type: 'solid', color: chartColors.divider },
           label: { backgroundColor: chartColors.hoverLabelBackground, color: chartColors.secondaryText },
         },
         name: yAxisLabel,
-        nameLocation: "middle",
+        nameLocation: 'middle',
         nameGap: 48,
         nameTextStyle: { color: chartColors.secondaryText },
         axisLabel: { color: chartColors.secondaryText },
         axisLine: { lineStyle: { color: chartColors.divider } },
-        splitLine: { lineStyle: { color: chartColors.divider, type: "dashed" } },
+        splitLine: { lineStyle: { color: chartColors.divider, type: 'dashed' } },
       },
       series: [
         ...graphTests.map((test, index) => ({
           name: test.name,
-          type: "line" as const,
+          type: 'line' as const,
           showSymbol: false,
-          symbol: "circle",
+          symbol: 'circle',
           symbolSize: 8,
           emphasis: { scale: true },
           lineStyle: { width: 2, color: graphTestColors[index] },
@@ -307,10 +352,10 @@ export default function Page() {
           data: getGraphData(test).map(({ x, y }) => [x, y]),
         })),
         {
-          id: "hover-markers",
-          type: "scatter" as const,
+          id: 'hover-markers',
+          type: 'scatter' as const,
           data: [],
-          symbol: "circle",
+          symbol: 'circle',
           symbolSize: 10,
           silent: true,
           tooltip: { show: false },
@@ -325,22 +370,22 @@ export default function Page() {
         value: [point.x, point.y],
         itemStyle: { color: point.color, borderWidth: 0 },
       }));
-      chart.setOption({ series: [{ id: "hover-markers", data: markerData }] });
+      chart.setOption({ series: [{ id: 'hover-markers', data: markerData }] });
     };
     const handleAxisPointer = (event: unknown) => {
       const axesInfo = (event as { axesInfo?: Array<{ axisDim?: string; value?: unknown }> }).axesInfo;
-      const xAxis = axesInfo?.find((axis) => axis.axisDim === "x");
+      const xAxis = axesInfo?.find((axis) => axis.axisDim === 'x');
       const x = Number(xAxis?.value);
       if (Number.isFinite(x)) updateMarkers(x);
     };
-    const clearMarkers = () => chart.setOption({ series: [{ id: "hover-markers", data: [] }] });
+    const clearMarkers = () => chart.setOption({ series: [{ id: 'hover-markers', data: [] }] });
 
     chart.setOption(option, { notMerge: true, lazyUpdate: true });
-    chart.on("updateAxisPointer", handleAxisPointer);
-    chart.on("globalout", clearMarkers);
+    chart.on('updateAxisPointer', handleAxisPointer);
+    chart.on('globalout', clearMarkers);
     return () => {
-      chart.off("updateAxisPointer", handleAxisPointer);
-      chart.off("globalout", clearMarkers);
+      chart.off('updateAxisPointer', handleAxisPointer);
+      chart.off('globalout', clearMarkers);
     };
   }, [colors, graphType, isDarkMode, latestTests]);
 
@@ -350,37 +395,39 @@ export default function Page() {
     <>
       <TitleWrapper>
         <Grid size={12} container spacing={2.5}>
-          <Grid size={{ xs: 12, md: "grow" }}>
-            <Typography variant='h1' component='h1' className='mb-0'>
-              {t("menu-overview")}
+          <Grid size={{ xs: 12, md: 'grow' }}>
+            <Typography variant="h1" component="h1" className="mb-0">
+              {t('menu-overview')}
             </Typography>
             <Breadcrumbs>
-              <Link color='inherit' to={LINKS.home}>
-                {t("menu-home")}
+              <Link color="inherit" to={LINKS.home}>
+                {t('menu-home')}
               </Link>
-              <Typography variant='body2'>{t("menu-overview")}</Typography>
+              <Typography variant="body2">{t('menu-overview')}</Typography>
             </Breadcrumbs>
           </Grid>
         </Grid>
       </TitleWrapper>
 
       <ContentWrapper>
-        <Grid size={12} container spacing={5} className='w-full'>
+        <Grid size={12} container spacing={5} className="w-full">
           <Grid container spacing={5} size={{ lg: 8, xs: 12 }}>
             <Grid size={12}>
-              <Typography variant='h6' component='h6' className='mb-3'>
+              <Typography variant="h6" component="h6" className="mb-3">
                 Summary
               </Typography>
 
               <Grid container spacing={2.5} size={{ xs: 12 }}>
                 <Grid size={{ lg: 3, xs: 12 }}>
-                  <Card component={Link} to={"/tests"} className='flex group'>
+                  <Card component={Link} to={'/tests'} className="flex group">
                     <CardContent>
-                      <Box className='flex flex-col gap-4'>
-                        <FlaskConical className='group-hover:text-primary transition-colors' />
-                        <Box className='flex flex-col gap-0'>
-                          <Typography className='group-hover:text-primary transition-colors text-text-secondary'>Tests</Typography>
-                          <Typography className='group-hover:text-primary transition-colors' variant='h6'>
+                      <Box className="flex flex-col gap-4">
+                        <FlaskConical className="group-hover:text-primary transition-colors" />
+                        <Box className="flex flex-col gap-0">
+                          <Typography className="group-hover:text-primary transition-colors text-text-secondary">
+                            Tests
+                          </Typography>
+                          <Typography className="group-hover:text-primary transition-colors" variant="h6">
                             {counts.tests.toLocaleString()}
                           </Typography>
                         </Box>
@@ -389,13 +436,15 @@ export default function Page() {
                   </Card>
                 </Grid>
                 <Grid size={{ lg: 3, xs: 12 }}>
-                  <Card component={Link} to={"/specimens"} className='flex group'>
+                  <Card component={Link} to={'/specimens'} className="flex group">
                     <CardContent>
-                      <Box className='flex flex-col gap-4'>
-                        <DraftingCompass className='group-hover:text-primary transition-colors' />
-                        <Box className='flex flex-col gap-0'>
-                          <Typography className='group-hover:text-primary transition-colors text-text-secondary'>Specimens</Typography>
-                          <Typography className='group-hover:text-primary transition-colors' variant='h6'>
+                      <Box className="flex flex-col gap-4">
+                        <DraftingCompass className="group-hover:text-primary transition-colors" />
+                        <Box className="flex flex-col gap-0">
+                          <Typography className="group-hover:text-primary transition-colors text-text-secondary">
+                            Specimens
+                          </Typography>
+                          <Typography className="group-hover:text-primary transition-colors" variant="h6">
                             {counts.specimens.toLocaleString()}
                           </Typography>
                         </Box>
@@ -404,13 +453,15 @@ export default function Page() {
                   </Card>
                 </Grid>
                 <Grid size={{ lg: 3, xs: 12 }}>
-                  <Card component={Link} to={"/presets"} className='flex group'>
+                  <Card component={Link} to={'/presets'} className="flex group">
                     <CardContent>
-                      <Box className='flex flex-col gap-4'>
-                        <SlidersVertical className='group-hover:text-primary transition-colors' />
-                        <Box className='flex flex-col gap-0'>
-                          <Typography className='group-hover:text-primary transition-colors text-text-secondary'>Presets</Typography>
-                          <Typography className='group-hover:text-primary transition-colors' variant='h6'>
+                      <Box className="flex flex-col gap-4">
+                        <SlidersVertical className="group-hover:text-primary transition-colors" />
+                        <Box className="flex flex-col gap-0">
+                          <Typography className="group-hover:text-primary transition-colors text-text-secondary">
+                            Presets
+                          </Typography>
+                          <Typography className="group-hover:text-primary transition-colors" variant="h6">
                             {counts.presets.toLocaleString()}
                           </Typography>
                         </Box>
@@ -419,13 +470,15 @@ export default function Page() {
                   </Card>
                 </Grid>
                 <Grid size={{ lg: 3, xs: 12 }}>
-                  <Card component={Link} to={"/data-fields"} className='flex group'>
+                  <Card component={Link} to={'/data-fields'} className="flex group">
                     <CardContent>
-                      <Box className='flex flex-col gap-4'>
-                        <Network className='group-hover:text-primary transition-colors' />
-                        <Box className='flex flex-col gap-0'>
-                          <Typography className='group-hover:text-primary transition-colors text-text-secondary'>Data Fields</Typography>
-                          <Typography className='group-hover:text-primary transition-colors' variant='h6'>
+                      <Box className="flex flex-col gap-4">
+                        <Network className="group-hover:text-primary transition-colors" />
+                        <Box className="flex flex-col gap-0">
+                          <Typography className="group-hover:text-primary transition-colors text-text-secondary">
+                            Data Fields
+                          </Typography>
+                          <Typography className="group-hover:text-primary transition-colors" variant="h6">
                             {counts.dataFields.toLocaleString()}
                           </Typography>
                         </Box>
@@ -435,41 +488,41 @@ export default function Page() {
                 </Grid>
               </Grid>
             </Grid>
-            <Grid size={12} className='group/grid'>
-              <Box className='mb-3 flex flex-wrap items-center justify-between gap-2 relative'>
-                <Typography variant='h6' component='h6'>
-                  {graphType === "stress-strain" ? "Latest Stress-Strain Graphs" : "Latest Load-Displacement Graphs"}
+            <Grid size={12} className="group/grid">
+              <Box className="mb-3 flex flex-wrap items-center justify-between gap-2 relative">
+                <Typography variant="h6" component="h6">
+                  {graphType === 'stress-strain' ? 'Latest Stress-Strain Graphs' : 'Latest Load-Displacement Graphs'}
                 </Typography>
                 <FormControl
-                  size='small'
-                  variant='standard'
+                  size="small"
+                  variant="standard"
                   className={cn(
-                    "group-hover/grid:opacity-100",
-                    "transition-all opacity-0 outlined min-w-44 absolute inset-e-0 mt-4 [&_.MuiInputBase-root.MuiInput-root.MuiInputBase-sizeSmall.outlined]:py-0.25! [&_.MuiInput-root]:rounded-xs!",
+                    'group-hover/grid:opacity-100',
+                    'transition-all opacity-0 outlined min-w-44 absolute inset-e-0 mt-4 [&_.MuiInputBase-root.MuiInput-root.MuiInputBase-sizeSmall.outlined]:py-0.25! [&_.MuiInput-root]:rounded-xs!',
                   )}
                 >
                   <Select
-                    variant='standard'
-                    size='small'
-                    className='outlined'
+                    variant="standard"
+                    size="small"
+                    className="outlined"
                     value={graphType}
                     onChange={(event) => setGraphType(event.target.value as TestGraphType)}
-                    inputProps={{ "aria-label": "Graph type" }}
+                    inputProps={{ 'aria-label': 'Graph type' }}
                     IconComponent={ChevronDown}
                   >
-                    <MenuItem value='stress-strain'>Stress-Strain</MenuItem>
-                    <MenuItem value='load-displacement'>Load-Displacement</MenuItem>
+                    <MenuItem value="stress-strain">Stress-Strain</MenuItem>
+                    <MenuItem value="load-displacement">Load-Displacement</MenuItem>
                   </Select>
                 </FormControl>
               </Box>
               <Card>
-                <CardContent className={cn("flex flex-col", !hasGraphData && "min-h-80 justify-center")}>
+                <CardContent className={cn('flex flex-col', !hasGraphData && 'min-h-80 justify-center')}>
                   {hasGraphData ? (
                     <Box
                       ref={chartElementRef}
-                      role='img'
-                      aria-label={`Overlaid ${graphType === "stress-strain" ? "stress-strain" : "load-displacement"} curves for the five latest tests`}
-                      className='h-140 w-full min-w-0'
+                      role="img"
+                      aria-label={`Overlaid ${graphType === 'stress-strain' ? 'stress-strain' : 'load-displacement'} curves for the five latest tests`}
+                      className="h-140 w-full min-w-0"
                     />
                   ) : (
                     <NoTestsFound />
@@ -477,18 +530,18 @@ export default function Page() {
                 </CardContent>
               </Card>
             </Grid>
-            <Grid size={12} className='group/grid'>
-              <Box className='flex flex-row items-center justify-between'>
-                <Typography variant='h6' component='h6' className='mb-3'>
+            <Grid size={12} className="group/grid">
+              <Box className="flex flex-row items-center justify-between">
+                <Typography variant="h6" component="h6" className="mb-3">
                   Latest Tests
                 </Typography>
                 <Button
-                  size='tiny'
-                  color='grey'
-                  variant='text'
+                  size="tiny"
+                  color="grey"
+                  variant="text"
                   component={Link}
-                  to={"/tests"}
-                  className={cn("group-hover/grid:opacity-100", "transition-all opacity-0")}
+                  to={'/tests'}
+                  className={cn('group-hover/grid:opacity-100', 'transition-all opacity-0')}
                   startIcon={<ChevronRight size={16} />}
                 >
                   View All
@@ -496,7 +549,7 @@ export default function Page() {
               </Box>
 
               <Card>
-                <CardContent className={cn("flex flex-col", !latestTestRows.length && "min-h-80 justify-center")}>
+                <CardContent className={cn('flex flex-col', !latestTestRows.length && 'min-h-80 justify-center')}>
                   {latestTestRows.length === 0 ? (
                     <NoTestsFound />
                   ) : (
@@ -510,7 +563,7 @@ export default function Page() {
                       disableRowSelectionOnClick
                       columnHeaderHeight={40}
                       rowHeight={44}
-                      className='dense border-none'
+                      className="dense border-none"
                     />
                   )}
                 </CardContent>
@@ -519,11 +572,25 @@ export default function Page() {
           </Grid>
           <Grid container spacing={5} size={{ lg: 4, xs: 12 }}>
             <Grid size={12}>
-              <Typography variant='h6' component='h6' className='mb-3'>
+              <Typography variant="h6" component="h6" className="mb-3">
                 Quick Test
               </Typography>
               <Card>
-                <CardContent>{counts.specimens === 0 || counts.presets === 0 ? <NoWayToTest /> : <QuickTestForm />}</CardContent>
+                <CardContent>
+                  {counts.specimens === 0 || counts.presets === 0 ? <NoWayToTest /> : <QuickTestForm />}
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid size={12}>
+              <Typography variant="h6" component="h6" className="mb-3">
+                Values
+              </Typography>
+              <Card>
+                <CardContent >
+                  <Box>Load: </Box>
+                  <Box>Distance: </Box>
+                  <Box>Status: </Box>
+                </CardContent>
               </Card>
             </Grid>
           </Grid>

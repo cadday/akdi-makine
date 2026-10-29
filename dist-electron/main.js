@@ -18803,6 +18803,10 @@ modbus.UserRequest = user_request_1.default;
 var user_request_metrics_1 = userRequestMetrics;
 modbus.UserRequestMetrics = user_request_metrics_1.UserRequestMetrics;
 const PLC_WORKING_COIL_ADDRESS = 3048;
+const MOVE_UP_COIL_ADDRESS = 2050;
+const MOVE_DOWN_COIL_ADDRESS = 2048;
+const RESET_LOAD_COIL_ADDRESS = 2120;
+const RESET_STROKE_COIL_ADDRESS = 2106;
 async function readPlcWorkingStatus(client) {
   const response2 = await client.readCoils(PLC_WORKING_COIL_ADDRESS, 1);
   const coilValue = response2.response.body.valuesAsArray[0];
@@ -18810,6 +18814,19 @@ async function readPlcWorkingStatus(client) {
     throw new Error(`PLC returned an invalid value for coil ${PLC_WORKING_COIL_ADDRESS}`);
   }
   return coilValue === true || coilValue === 1;
+}
+async function setMoveUp(client, enabled) {
+  await client.writeSingleCoil(MOVE_UP_COIL_ADDRESS, enabled);
+}
+async function setMoveDown(client, enabled) {
+  await client.writeSingleCoil(MOVE_DOWN_COIL_ADDRESS, enabled);
+}
+async function triggerResetLoad(client) {
+  console.log("Triggering Reset Load");
+  await client.writeSingleCoil(RESET_LOAD_COIL_ADDRESS, true);
+}
+async function triggerResetStroke(client) {
+  await client.writeSingleCoil(RESET_STROKE_COIL_ADDRESS, true);
 }
 const PLC_PORT = 502;
 const CONNECTION_TIMEOUT_MS = 5e3;
@@ -19096,6 +19113,36 @@ function initializePlcService(window2) {
   ipcMain.handle("plc:get-status", (event) => {
     assertTrustedRequest(event.sender);
     return connectionStatus;
+  });
+  ipcMain.handle("plc:set-move-up", async (event, enabled) => {
+    assertTrustedRequest(event.sender);
+    if (typeof enabled !== "boolean") throw new Error("Invalid Move Up command value");
+    if (!activeClient || activeClient.connectionState !== "online" || connectionStatus.state !== "online") {
+      throw new Error("Cannot control Move Up while the PLC is offline");
+    }
+    return setMoveUp(activeClient, enabled);
+  });
+  ipcMain.handle("plc:set-move-down", async (event, enabled) => {
+    assertTrustedRequest(event.sender);
+    if (typeof enabled !== "boolean") throw new Error("Invalid Move Down command value");
+    if (!activeClient || activeClient.connectionState !== "online" || connectionStatus.state !== "online") {
+      throw new Error("Cannot control Move Down while the PLC is offline");
+    }
+    return setMoveDown(activeClient, enabled);
+  });
+  ipcMain.handle("plc:reset-load", async (event) => {
+    assertTrustedRequest(event.sender);
+    if (!activeClient || activeClient.connectionState !== "online" || connectionStatus.state !== "online") {
+      throw new Error("Cannot reset load while the PLC is offline");
+    }
+    return triggerResetLoad(activeClient);
+  });
+  ipcMain.handle("plc:reset-stroke", async (event) => {
+    assertTrustedRequest(event.sender);
+    if (!activeClient || activeClient.connectionState !== "online" || connectionStatus.state !== "online") {
+      throw new Error("Cannot reset stroke while the PLC is offline");
+    }
+    return triggerResetStroke(activeClient);
   });
   isRegistered = true;
 }

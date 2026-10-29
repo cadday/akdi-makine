@@ -2,7 +2,7 @@ import { BrowserWindow, ipcMain } from "electron";
 import { randomUUID } from "node:crypto";
 import Modbus from "jsmodbus";
 import net from "node:net";
-import { readPlcWorkingStatus } from "./plc-operations";
+import { readPlcWorkingStatus, setMoveDown, setMoveUp, triggerResetLoad, triggerResetStroke } from "./plc-operations";
 
 const PLC_PORT = 502;
 const CONNECTION_TIMEOUT_MS = 5000;
@@ -368,6 +368,44 @@ export function initializePlcService(window: BrowserWindow | null): void {
   ipcMain.handle("plc:get-status", (event) => {
     assertTrustedRequest(event.sender);
     return connectionStatus;
+  });
+
+  ipcMain.handle("plc:set-move-up", async (event, enabled: unknown) => {
+    assertTrustedRequest(event.sender);
+    if (typeof enabled !== "boolean") throw new Error("Invalid Move Up command value");
+    if (!activeClient || activeClient.connectionState !== "online" || connectionStatus.state !== "online") {
+      throw new Error("Cannot control Move Up while the PLC is offline");
+    }
+
+    return setMoveUp(activeClient, enabled);
+  });
+
+  ipcMain.handle("plc:set-move-down", async (event, enabled: unknown) => {
+    assertTrustedRequest(event.sender);
+    if (typeof enabled !== "boolean") throw new Error("Invalid Move Down command value");
+    if (!activeClient || activeClient.connectionState !== "online" || connectionStatus.state !== "online") {
+      throw new Error("Cannot control Move Down while the PLC is offline");
+    }
+
+    return setMoveDown(activeClient, enabled);
+  });
+
+  ipcMain.handle("plc:reset-load", async (event) => {
+    assertTrustedRequest(event.sender);
+    if (!activeClient || activeClient.connectionState !== "online" || connectionStatus.state !== "online") {
+      throw new Error("Cannot reset load while the PLC is offline");
+    }
+
+    return triggerResetLoad(activeClient);
+  });
+
+  ipcMain.handle("plc:reset-stroke", async (event) => {
+    assertTrustedRequest(event.sender);
+    if (!activeClient || activeClient.connectionState !== "online" || connectionStatus.state !== "online") {
+      throw new Error("Cannot reset stroke while the PLC is offline");
+    }
+
+    return triggerResetStroke(activeClient);
   });
 
   isRegistered = true;
