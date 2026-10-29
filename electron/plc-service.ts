@@ -2,11 +2,11 @@ import { BrowserWindow, ipcMain } from "electron";
 import { randomUUID } from "node:crypto";
 import Modbus from "jsmodbus";
 import net from "node:net";
+import { readPlcWorkingStatus } from "./plc-operations";
 
 const PLC_PORT = 502;
 const CONNECTION_TIMEOUT_MS = 5000;
 const PREPARED_CONNECTION_TIMEOUT_MS = 60_000;
-const PLC_WORKING_COIL_ADDRESS = 3048;
 const PLC_HEALTH_POLL_INTERVAL_MS = 1000;
 
 export interface PlcConnectionStatus {
@@ -231,18 +231,13 @@ function startHealthPolling(socket: net.Socket, client: InstanceType<typeof Modb
     if (activeSocket !== socket || activeClient !== client) return;
 
     try {
-      const response = await client.readCoils(PLC_WORKING_COIL_ADDRESS, 1);
+      const plcWorking = await readPlcWorkingStatus(client);
       if (activeSocket !== socket || activeClient !== client) return;
-
-      const coilValue: unknown = response.response.body.valuesAsArray[0];
-      if (coilValue !== true && coilValue !== false && coilValue !== 0 && coilValue !== 1) {
-        throw new Error(`PLC returned an invalid value for coil ${PLC_WORKING_COIL_ADDRESS}`);
-      }
 
       sendStatus({
         state: "online",
         ipAddress,
-        plcWorking: coilValue === true || coilValue === 1,
+        plcWorking,
       });
     } catch (error) {
       disconnectActiveSocket(socket, toError(error));

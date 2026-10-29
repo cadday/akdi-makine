@@ -18802,10 +18802,18 @@ var user_request_1 = userRequest;
 modbus.UserRequest = user_request_1.default;
 var user_request_metrics_1 = userRequestMetrics;
 modbus.UserRequestMetrics = user_request_metrics_1.UserRequestMetrics;
+const PLC_WORKING_COIL_ADDRESS = 3048;
+async function readPlcWorkingStatus(client) {
+  const response2 = await client.readCoils(PLC_WORKING_COIL_ADDRESS, 1);
+  const coilValue = response2.response.body.valuesAsArray[0];
+  if (coilValue !== true && coilValue !== false && coilValue !== 0 && coilValue !== 1) {
+    throw new Error(`PLC returned an invalid value for coil ${PLC_WORKING_COIL_ADDRESS}`);
+  }
+  return coilValue === true || coilValue === 1;
+}
 const PLC_PORT = 502;
 const CONNECTION_TIMEOUT_MS = 5e3;
 const PREPARED_CONNECTION_TIMEOUT_MS = 6e4;
-const PLC_WORKING_COIL_ADDRESS = 3048;
 const PLC_HEALTH_POLL_INTERVAL_MS = 1e3;
 let mainWindow$1 = null;
 let activeSocket = null;
@@ -18972,16 +18980,12 @@ function startHealthPolling(socket, client, ipAddress) {
   const poll = async () => {
     if (activeSocket !== socket || activeClient !== client) return;
     try {
-      const response2 = await client.readCoils(PLC_WORKING_COIL_ADDRESS, 1);
+      const plcWorking = await readPlcWorkingStatus(client);
       if (activeSocket !== socket || activeClient !== client) return;
-      const coilValue = response2.response.body.valuesAsArray[0];
-      if (coilValue !== true && coilValue !== false && coilValue !== 0 && coilValue !== 1) {
-        throw new Error(`PLC returned an invalid value for coil ${PLC_WORKING_COIL_ADDRESS}`);
-      }
       sendStatus({
         state: "online",
         ipAddress,
-        plcWorking: coilValue === true || coilValue === 1
+        plcWorking
       });
     } catch (error2) {
       disconnectActiveSocket(socket, toError(error2));
