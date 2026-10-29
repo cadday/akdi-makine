@@ -15,21 +15,22 @@ import {
   InputAdornment,
   MenuItem,
   Select,
+  Tooltip,
   Typography,
 } from "@mui/material";
-import { Bookmark, ChevronDown, Clock3, Gauge, PencilRuler, Save, Weight, WeightTilde, XSquare } from "lucide-react";
-import type { PresetRecord, PresetType } from "@/context/db-context";
-import { PRESET_TYPES } from "@/lib/db";
+import { Bookmark, ChevronDown, Clock3, Crosshair, Gauge, PencilRuler, Plus, Save, Split, X, XSquare } from "lucide-react";
+import type { PresetBase, PresetRecord, PresetType } from "@/context/db-context";
+import { PRESET_BASES, PRESET_TYPES } from "@/lib/db";
 import useAppNotifications from "@/hooks/use-app-notifications";
 import { cn } from "@/lib/utils";
 
 type PresetSaveInput = Omit<PresetRecord, "id" | "createdAt" | "updatedAt">;
-type PresetFormValues = Omit<PresetSaveInput, "type" | "preload" | "load" | "speed" | "duration"> & {
+type PresetFormValues = Omit<PresetSaveInput, "type" | "duration" | "base" | "speed" | "targets"> & {
   type: PresetType | "";
-  preload: number | "";
-  load: number | "";
-  speed: number | "";
   duration: number | "";
+  speed: number | "";
+  base: PresetBase | "";
+  targets: Array<number | "">;
 };
 
 interface PresetFormProps {
@@ -43,20 +44,25 @@ function getInitialValues(preset?: PresetRecord): PresetFormValues {
   return {
     name: preset?.name ?? "",
     type: preset?.type ?? "",
-    preload: preset?.preload ?? "",
-    load: preset?.load ?? "",
-    speed: preset?.speed ?? "",
     duration: preset?.duration ?? "",
+    speed: preset?.speed ?? "",
+    base: preset?.base ?? "",
+    targets: preset?.targets?.length ? [...preset.targets] : [""],
   };
 }
 
 const validationSchema = yup.object({
   name: yup.string().trim().required("Name is required"),
   type: yup.string().oneOf(PRESET_TYPES).required("Type is required"),
-  preload: yup.number().typeError("Enter a number").min(0, "Must be zero or greater").required("Preload is required"),
-  load: yup.number().typeError("Enter a number").min(0, "Must be zero or greater").required("Load is required"),
-  speed: yup.number().typeError("Enter a number").min(0, "Must be zero or greater").required("Speed is required"),
   duration: yup.number().typeError("Enter a number").min(0, "Must be zero or greater").required("Duration is required"),
+  speed: yup.number().typeError("Enter a number").moreThan(0, "Must be greater than zero").required("Speed is required"),
+  base: yup.string().oneOf(PRESET_BASES).required("Base is required"),
+  targets: yup
+    .array()
+    .of(yup.number().typeError("Enter a number").moreThan(0, "Must be greater than zero").required("Target is required"))
+    .min(1, "At least one target is required")
+    .max(5, "A maximum of five targets is allowed")
+    .required("At least one target is required"),
 });
 
 export default function PresetForm({ onSave, preset, initialPreset, saveLabel = "Save" }: PresetFormProps) {
@@ -69,16 +75,16 @@ export default function PresetForm({ onSave, preset, initialPreset, saveLabel = 
     validateOnBlur: false,
     validateOnMount: false,
     onSubmit: async (values) => {
-      if (!values.type || values.preload === "" || values.load === "" || values.speed === "" || values.duration === "") return;
+      if (!values.type || !values.base || values.duration === "" || values.speed === "" || values.targets.some((target) => target === "")) return;
 
       try {
         await onSave({
           name: values.name.trim(),
           type: values.type,
-          preload: Number(values.preload),
-          load: Number(values.load),
-          speed: Number(values.speed),
           duration: Number(values.duration),
+          speed: Number(values.speed),
+          base: values.base,
+          targets: values.targets.map(Number),
         });
       } catch (error) {
         showError(`Failed to save preset: ${String(error)}`);
@@ -137,50 +143,6 @@ export default function PresetForm({ onSave, preset, initialPreset, saveLabel = 
                   </Select>
                 </FormControl>
               </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid size={12}>
-          <Typography variant='h6' component='h6' className='mb-3'>
-            Parameters
-          </Typography>
-          <Card>
-            <CardContent className='-mb-4'>
-              <Box className='flex flex-row gap-2'>
-                <WeightTilde className={cn("flex-none", fieldError("preload") && "text-error!")} />
-                <FormControl className='outlined' variant='standard' size='small' fullWidth required>
-                  <FormLabel component='label' className={fieldError("preload") ? "text-error!" : undefined}>
-                    Preload
-                  </FormLabel>
-                  <Input
-                    name='preload'
-                    type='number'
-                    inputProps={{ min: 0, step: "any" }}
-                    endAdornment={<InputAdornment position='end'>N</InputAdornment>}
-                    value={formik.values.preload}
-                    onChange={(event) => void formik.setFieldValue("preload", event.target.value === "" ? "" : Number(event.target.value))}
-                  />
-                </FormControl>
-              </Box>
-
-              <Box className='flex flex-row gap-2'>
-                <Weight className={cn("flex-none", fieldError("load") && "text-error!")} />
-                <FormControl className='outlined' variant='standard' size='small' fullWidth required>
-                  <FormLabel component='label' className={fieldError("load") ? "text-error!" : undefined}>
-                    Load
-                  </FormLabel>
-                  <Input
-                    name='load'
-                    type='number'
-                    inputProps={{ min: 0, step: "any" }}
-                    endAdornment={<InputAdornment position='end'>N</InputAdornment>}
-                    value={formik.values.load}
-                    onChange={(event) => void formik.setFieldValue("load", event.target.value === "" ? "" : Number(event.target.value))}
-                  />
-                </FormControl>
-              </Box>
-
               <Box className='flex flex-row gap-2'>
                 <Gauge className={cn("flex-none", fieldError("speed") && "text-error!")} />
                 <FormControl className='outlined' variant='standard' size='small' fullWidth required>
@@ -188,7 +150,6 @@ export default function PresetForm({ onSave, preset, initialPreset, saveLabel = 
                     Speed
                   </FormLabel>
                   <Input
-                    name='speed'
                     type='number'
                     inputProps={{ min: 0, step: "any" }}
                     endAdornment={<InputAdornment position='end'>mm/s</InputAdornment>}
@@ -197,12 +158,11 @@ export default function PresetForm({ onSave, preset, initialPreset, saveLabel = 
                   />
                 </FormControl>
               </Box>
-
               <Box className='flex flex-row gap-2'>
                 <Clock3 className={cn("flex-none", fieldError("duration") && "text-error!")} />
                 <FormControl className='outlined' variant='standard' size='small' fullWidth required>
                   <FormLabel component='label' className={fieldError("duration") ? "text-error!" : undefined}>
-                    Duration
+                    Mock Duration
                   </FormLabel>
                   <Input
                     name='duration'
@@ -219,17 +179,124 @@ export default function PresetForm({ onSave, preset, initialPreset, saveLabel = 
         </Grid>
 
         <Grid size={12}>
+          <Typography variant='h6' component='h6' className='mb-3'>
+            Test Base and Parameters
+          </Typography>
+          <Card>
+            <CardContent className='-mb-4'>
+              <Box className='flex flex-row gap-2'>
+                <Split className={cn("flex-none", fieldError("base") && "text-error!")} />
+                <FormControl fullWidth size='small' variant='standard' className='outlined' required>
+                  <FormLabel component='label' className={fieldError("base") ? "text-error!" : undefined}>
+                    Base
+                  </FormLabel>
+                  <Select<PresetBase | "">
+                    value={formik.values.base}
+                    onChange={(event) => {
+                      const nextBase = event.target.value as PresetBase | "";
+                      void formik.setFieldValue("base", nextBase);
+                      if (nextBase !== formik.values.base) void formik.setFieldValue("targets", [""]);
+                    }}
+                    IconComponent={ChevronDown}
+                    MenuProps={{ className: "outlined" }}
+                  >
+                    {PRESET_BASES.map((base) => (
+                      <MenuItem key={base} value={base}>
+                        {base}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Box>
+              {formik.values.targets.map((target, index) => {
+                const targetErrors = Array.isArray(formik.errors.targets) ? formik.errors.targets : [];
+                const targetError = submitted && targetErrors[index];
+                return (
+                  <Box className='flex flex-row items-start gap-2' key={index}>
+                    <Crosshair className={cn("mb-2 flex-none", targetError && "text-error!")} />
+                    <FormControl className='outlined' variant='standard' size='small' fullWidth required>
+                      <FormLabel component='label' className={targetError ? "text-error!" : undefined}>
+                        Target {index + 1}
+                      </FormLabel>
+                      <Input
+                        type='number'
+                        inputProps={{ min: 0, step: "any" }}
+                        endAdornment={
+                          <InputAdornment position='end'>{formik.values.base === "Force" ? "N" : formik.values.base === "Distance" ? "mm" : ""}</InputAdornment>
+                        }
+                        value={target}
+                        onChange={(event) => {
+                          const targets = [...formik.values.targets];
+                          targets[index] = event.target.value === "" ? "" : Number(event.target.value);
+                          void formik.setFieldValue("targets", targets);
+                        }}
+                      />
+                    </FormControl>
+                    <Tooltip title={`Remove Target ${index + 1}`} placement='bottom'>
+                      <span>
+                        <Button
+                          disabled={index === 0}
+                          aria-label={`Remove Target ${index + 1}`}
+                          className='mt-7 icon-only hover:text-error hover:border-error-light/5 hover:bg-error-light/10'
+                          color='grey'
+                          variant='outlined'
+                          onClick={() =>
+                            void formik.setFieldValue(
+                              "targets",
+                              formik.values.targets.filter((_, targetIndex) => targetIndex !== index),
+                            )
+                          }
+                          startIcon={
+                            <Box className='flex h-5 w-5 items-center justify-center'>
+                              <X size={14} />
+                            </Box>
+                          }
+                        />
+                      </span>
+                    </Tooltip>
+                  </Box>
+                );
+              })}
+              {formik.values.targets.length < 5 && (
+                <Button
+                  className='ms-6.5 self-start mb-4'
+                  variant='pastel'
+                  color='grey'
+                  startIcon={<Plus size={16} />}
+                  onClick={() => void formik.setFieldValue("targets", [...formik.values.targets, ""])}
+                >
+                  Add Target
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid size={12}>
           {submitted && !formik.isValid && (
             <Alert severity='error' icon={<XSquare />} className='neutral rounded-3xl! bg-transparent! mb-2 mt-2 p-5'>
               <AlertTitle variant='subtitle1' className='pt-0.5'>
                 The following inputs have errors!
               </AlertTitle>
-              {Object.entries(formik.errors).map(([key, value]) => (
-                <Box className='flex flex-row gap-0.5' key={key}>
-                  <Typography className='text-error'>{key[0].toUpperCase() + key.slice(1)}:</Typography>
-                  <Typography className='text-text-primary'>{typeof value === "string" ? value : JSON.stringify(value)}</Typography>
-                </Box>
-              ))}
+              {Object.entries(formik.errors).flatMap(([key, value]) => {
+                if (key === "targets" && Array.isArray(value)) {
+                  return value.flatMap((targetError, index) =>
+                    typeof targetError === "string" ? (
+                      <Box className='flex flex-row gap-0.5' key={`target-${index}`}>
+                        <Typography className='text-error'>Target {index + 1}:</Typography>
+                        <Typography className='text-text-primary'>{targetError}</Typography>
+                      </Box>
+                    ) : [],
+                  );
+                }
+
+                return (
+                  <Box className='flex flex-row gap-0.5' key={key}>
+                    <Typography className='text-error'>{key[0].toUpperCase() + key.slice(1)}:</Typography>
+                    <Typography className='text-text-primary'>{typeof value === "string" ? value : JSON.stringify(value)}</Typography>
+                  </Box>
+                );
+              })}
             </Alert>
           )}
           <Button

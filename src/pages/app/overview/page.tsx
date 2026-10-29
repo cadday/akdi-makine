@@ -1,12 +1,12 @@
 import { Link } from "react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { Box, Breadcrumbs, Card, CardContent, Grid, hslToRgb, Typography, useTheme } from "@mui/material";
+import { Box, Breadcrumbs, Button, Card, CardContent, FormControl, Grid, hslToRgb, MenuItem, Select, Typography, useTheme } from "@mui/material";
 import { DataGrid, type GridColDef, type GridRenderCellParams } from "@mui/x-data-grid";
 import { renderToStaticMarkup } from "react-dom/server";
 import * as echarts from "echarts";
 import type { EChartsOption } from "echarts";
-import { Hexagon } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, TicketPercent, WeightTilde } from "lucide-react";
 
 import ContentWrapper from "@/components/layout/containers/content-wrapper";
 import TitleWrapper from "@/components/layout/containers/title-wrapper";
@@ -14,8 +14,9 @@ import LoadingFullScreen from "@/components/loading/loading-full-screen";
 import QuickTestForm from "@/pages/app/overview/components/quick-test-form";
 import { LINKS } from "@/constants";
 import { useTranslation } from "react-i18next";
-import { DraftingCompass, FlaskConical, Network, SlidersVertical } from "lucide-react";
-import { useDb, type TestRecord } from "@/context/db-context";
+import { DraftingCompass, FlaskConical, Network, RulerDimensionLine, SlidersVertical } from "lucide-react";
+import { useDb, type TestGraphPoint, type TestRecord } from "@/context/db-context";
+import { getTestGraphType, type TestGraphType } from "@/lib/db";
 import useAppNotifications from "@/hooks/use-app-notifications";
 import { useThemeContext } from "@/theme/theme-provider";
 import { NoTestsFound, NoWayToTest } from "../components/no-entity-found";
@@ -50,8 +51,8 @@ interface LatestTestTooltipPoint {
   id: string;
   name: string;
   color: string;
-  stress: number;
-  strain: number;
+  x: number;
+  y: number;
 }
 
 function resolveSeriesColor(color: string, cssVariables: CSSStyleDeclaration) {
@@ -61,15 +62,49 @@ function resolveSeriesColor(color: string, cssVariables: CSSStyleDeclaration) {
   return hslComponents ? hslToRgb(`hsl(${hslComponents.replace(/\s+/g, ", ")})`) : color;
 }
 
-function LatestTestsGraphTooltip({ points }: { points: LatestTestTooltipPoint[] }) {
+function getLucideImage(icon: typeof ChevronLeft, color: string) {
+  const Icon = icon;
+  const svg = renderToStaticMarkup(<Icon color={color} />);
+  return `image://data:image/svg+xml,${encodeURIComponent(svg)}`;
+}
+
+const extraSeriesColors = new Map<string, string>();
+
+function getExtraSeriesColor(id: string, isDarkMode: boolean) {
+  const key = `${id}:${isDarkMode ? "dark" : "light"}`;
+  const existing = extraSeriesColors.get(key);
+  if (existing) return existing;
+  const hue = Math.floor(Math.random() * 360);
+  const saturation = 65 + Math.floor(Math.random() * 20);
+  const lightness = isDarkMode ? 66 + Math.floor(Math.random() * 10) : 38 + Math.floor(Math.random() * 12);
+  const color = hslToRgb(`hsl(${hue}, ${saturation}%, ${lightness}%)`);
+  extraSeriesColors.set(key, color);
+  return color;
+}
+
+function getNearestGraphPoint(points: TestGraphPoint[], strain: number) {
+  return points.reduce<TestGraphPoint | undefined>(
+    (nearest, point) => (!nearest || Math.abs(point.x - strain) < Math.abs(nearest.x - strain) ? point : nearest),
+    undefined,
+  );
+}
+
+function LatestTestsGraphTooltip({ points, graphType }: { points: LatestTestTooltipPoint[]; graphType: TestGraphType }) {
+  const [xLabel, xUnit, yLabel, yUnit] = graphType === "stress-strain" ? ["Strain", "%", "Stress", "MPa"] : ["Displacement", "mm", "Load", "N"];
   return (
     <Box className='bg-background-paper shadow-darker-sm! outline-grey-50 rounded-lg p-5 outline-1 flex flex-col gap-2'>
       {[
-        { label: "Stress", unit: "MPa", value: (point: LatestTestTooltipPoint) => point.stress, digits: 2 },
-        { label: "Strain", unit: "%", value: (point: LatestTestTooltipPoint) => point.strain, digits: 3 },
+        { label: xLabel, unit: xUnit, value: (point: LatestTestTooltipPoint) => point.x, digits: 3 },
+        { label: yLabel, unit: yUnit, value: (point: LatestTestTooltipPoint) => point.y, digits: 2 },
       ].map(({ label, unit, value, digits }) => (
         <Box key={label} className='flex flex-row gap-2'>
-          <Hexagon size={20} />
+          {label === "Stress" || label === "Load" ? (
+            <WeightTilde size={20} />
+          ) : label === "Strain" ? (
+            <TicketPercent size={20} />
+          ) : (
+            <RulerDimensionLine size={20} />
+          )}
           <Box className='flex min-w-0 flex-col gap-1'>
             <Typography variant='subtitle1' className='text-text-primary'>
               {label}
@@ -77,7 +112,7 @@ function LatestTestsGraphTooltip({ points }: { points: LatestTestTooltipPoint[] 
             {points.map((point) => (
               <Box key={`${label}-${point.id}`} className='flex min-w-0 items-center gap-1.5'>
                 <Box className='h-2.5 w-2.5 flex-none rounded-full' style={{ backgroundColor: point.color }} />
-                <Typography className='text-text-secondary'>
+                <Typography className='text-text-primary'>
                   {value(point).toFixed(digits)} ({unit})
                 </Typography>
               </Box>
@@ -91,22 +126,23 @@ function LatestTestsGraphTooltip({ points }: { points: LatestTestTooltipPoint[] 
 
 export default function Page() {
   const { t } = useTranslation();
-  const { getRecordCounts, getLatestTests } = useDb();
+  const { getRecordCounts, getTests } = useDb();
   const { showError } = useAppNotifications();
   const theme = useTheme();
   const { isDarkMode } = useThemeContext();
   const [counts, setCounts] = useState({ tests: 0, specimens: 0, presets: 0, dataFields: 0 });
   const [latestTests, setLatestTests] = useState<TestRecord[]>([]);
+  const [graphType, setGraphType] = useState<TestGraphType>("stress-strain");
   const [isLoading, setIsLoading] = useState(true);
   const chartElementRef = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<echarts.ECharts | null>(null);
   const latestTestRows = useMemo<LatestTestRow[]>(
-    () => latestTests.map((test) => ({ ...test, presetName: test.presetSnapshot.name, specimenName: test.specimenSnapshot.name })),
+    () => latestTests.slice(0, 10).map((test) => ({ ...test, presetName: test.presetSnapshot.name, specimenName: test.specimenSnapshot.name })),
     [latestTests],
   );
   const colors = useMemo(() => {
     const cssVariables = getComputedStyle(document.documentElement);
-    return [
+    const fixedColors = [
       theme.palette.primary.main,
       theme.palette.secondary.main,
       theme.palette["accent-1"].main,
@@ -114,21 +150,30 @@ export default function Page() {
       theme.palette["accent-3"].main,
       theme.palette["accent-4"].main,
     ].map((color) => resolveSeriesColor(color, cssVariables));
-  }, [theme.palette]);
-  const hasGraphData = latestTests.some((test) => (test.results?.graphData?.length ?? 0) > 0);
+    return latestTests.map((test, index) => fixedColors[index] ?? getExtraSeriesColor(test.id, isDarkMode));
+  }, [isDarkMode, latestTests, theme.palette]);
+  const hasGraphData = latestTests.some(
+    (test) =>
+      getTestGraphType(test.specimenSnapshot.geometry) === graphType &&
+      (graphType === "stress-strain" ? (test.results?.stressStrainData?.length ?? 0) > 0 : (test.results?.loadDisplacementData?.length ?? 0) > 0),
+  );
 
   useEffect(() => {
     let cancelled = false;
     setIsLoading(true);
     const loadOverview = async () => {
-      const [countsResult, testsResult] = await Promise.allSettled([getRecordCounts(), getLatestTests(10)]);
+      const [countsResult, testsResult] = await Promise.allSettled([getRecordCounts(), getTests()]);
       if (cancelled) return;
 
       if (countsResult.status === "fulfilled") setCounts(countsResult.value);
       else showError(`Failed to load overview counts: ${String(countsResult.reason)}`);
 
-      if (testsResult.status === "fulfilled") setLatestTests(testsResult.value);
-      else showError(`Failed to load latest tests: ${String(testsResult.reason)}`);
+      if (testsResult.status === "fulfilled") {
+        setLatestTests(testsResult.value);
+        const hasStressStrainData = testsResult.value.some((test) => (test.results?.stressStrainData?.length ?? 0) > 0);
+        const hasLoadDisplacementData = testsResult.value.some((test) => (test.results?.loadDisplacementData?.length ?? 0) > 0);
+        if (!hasStressStrainData && hasLoadDisplacementData) setGraphType("load-displacement");
+      } else showError(`Failed to load latest tests: ${String(testsResult.reason)}`);
 
       setIsLoading(false);
     };
@@ -138,7 +183,7 @@ export default function Page() {
     return () => {
       cancelled = true;
     };
-  }, [getLatestTests, getRecordCounts, showError]);
+  }, [getRecordCounts, getTests, showError]);
 
   useEffect(() => {
     if (!hasGraphData || !chartElementRef.current) return;
@@ -165,11 +210,34 @@ export default function Page() {
           hoverLabelBackground: hslToRgb("hsl(0, 0%, 90%)"),
           secondaryText: hslToRgb("hsl(0, 0%, 60%)"),
         };
+    const getGraphData = (test: TestRecord): TestGraphPoint[] =>
+      graphType === "stress-strain"
+        ? (test.results?.stressStrainData ?? []).map(({ strain, stress }) => ({ x: strain, y: stress }))
+        : (test.results?.loadDisplacementData ?? []).map(({ displacement, load }) => ({ x: displacement, y: load }));
+    const graphTests = latestTests
+      .filter((test) => getTestGraphType(test.specimenSnapshot.geometry) === graphType && getGraphData(test).length > 0)
+      .slice(0, 5);
+    const graphTestColors = graphTests.map((test) => colors[latestTests.findIndex((latestTest) => latestTest.id === test.id)]);
+    const getPointsAtX = (x: number): LatestTestTooltipPoint[] =>
+      graphTests.flatMap((test, index) => {
+        const nearestPoint = getNearestGraphPoint(getGraphData(test), x);
+        return nearestPoint ? [{ id: test.id, name: test.name, color: graphTestColors[index], x: nearestPoint.x, y: nearestPoint.y }] : [];
+      });
+    const [xAxisLabel, yAxisLabel] = graphType === "stress-strain" ? ["Strain (%)", "Stress (MPa)"] : ["Displacement (mm)", "Load (N)"];
     const option: EChartsOption = {
       animation: false,
       color: colors,
       grid: { top: 35, right: 28, bottom: 78, left: 62 },
-      legend: { bottom: 0, type: "scroll", icon: "circle", itemWidth: 10, itemHeight: 10, textStyle: { color: chartColors.secondaryText } },
+      legend: {
+        bottom: 0,
+        type: "scroll",
+        icon: "circle",
+        itemWidth: 10,
+        itemHeight: 10,
+        pageIcons: { horizontal: [getLucideImage(ChevronLeft, chartColors.secondaryText), getLucideImage(ChevronRight, chartColors.secondaryText)] },
+        pageIconSize: 16,
+        textStyle: { color: chartColors.secondaryText },
+      },
       tooltip: {
         trigger: "axis",
         renderMode: "html",
@@ -177,22 +245,22 @@ export default function Page() {
         borderWidth: 0,
         padding: 0,
         extraCssText: "box-shadow: none;",
-        axisPointer: { type: "cross", lineStyle: { type: "solid", color: chartColors.divider } },
+        axisPointer: { type: "cross", snap: false, lineStyle: { type: "solid", color: chartColors.divider } },
+        position: (point, _params, _dom, _rect, size) => {
+          const [viewWidth, viewHeight] = size.viewSize;
+          const [contentWidth, contentHeight] = size.contentSize;
+          return [
+            Math.min(Math.max(point[0], 0), Math.max(viewWidth - contentWidth, 0)),
+            Math.min(Math.max(point[1], 0), Math.max(viewHeight - contentHeight, 0)),
+          ];
+        },
         formatter: (params) => {
           if (!Array.isArray(params)) return "";
-          const hoveredPoint = params.find((param) => Array.isArray(param.value));
-          const hoveredStrain = Number(hoveredPoint?.axisValue ?? (Array.isArray(hoveredPoint?.value) ? hoveredPoint.value[0] : NaN));
-          if (!Number.isFinite(hoveredStrain)) return "";
-
-          const points = latestTests.flatMap((test, index): LatestTestTooltipPoint[] => {
-            const graphData = test.results?.graphData ?? [];
-            if (graphData.length === 0) return [];
-            const nearestPoint = graphData.reduce((nearest, point) =>
-              Math.abs(point.x - hoveredStrain) < Math.abs(nearest.x - hoveredStrain) ? point : nearest,
-            );
-            return [{ id: test.id, name: test.name, color: colors[index], strain: nearestPoint.x, stress: nearestPoint.y }];
-          });
-          return points.length ? renderToStaticMarkup(<LatestTestsGraphTooltip points={points} />) : "";
+          const axisValue = params.find((param) => param.axisDimension === "x")?.axisValue ?? params[0]?.axisValue;
+          const x = Number(axisValue);
+          if (!Number.isFinite(x)) return "";
+          const points = getPointsAtX(x);
+          return points.length ? renderToStaticMarkup(<LatestTestsGraphTooltip points={points} graphType={graphType} />) : "";
         },
       },
       dataZoom: [{ type: "inside", filterMode: "none", zoomOnMouseWheel: true, moveOnMouseMove: true, moveOnMouseWheel: false }],
@@ -203,7 +271,7 @@ export default function Page() {
           lineStyle: { type: "solid", color: chartColors.divider },
           label: { backgroundColor: chartColors.hoverLabelBackground, color: chartColors.secondaryText },
         },
-        name: "Strain (%)",
+        name: xAxisLabel,
         nameLocation: "middle",
         nameGap: 32,
         nameTextStyle: { color: chartColors.secondaryText },
@@ -218,7 +286,7 @@ export default function Page() {
           lineStyle: { type: "solid", color: chartColors.divider },
           label: { backgroundColor: chartColors.hoverLabelBackground, color: chartColors.secondaryText },
         },
-        name: "Stress (MPa)",
+        name: yAxisLabel,
         nameLocation: "middle",
         nameGap: 48,
         nameTextStyle: { color: chartColors.secondaryText },
@@ -226,20 +294,55 @@ export default function Page() {
         axisLine: { lineStyle: { color: chartColors.divider } },
         splitLine: { lineStyle: { color: chartColors.divider, type: "dashed" } },
       },
-      series: latestTests
-        .map((test, index) => ({
+      series: [
+        ...graphTests.map((test, index) => ({
           name: test.name,
           type: "line" as const,
           showSymbol: false,
-          emphasis: { disabled: true },
-          lineStyle: { width: 2, color: colors[index] },
-          itemStyle: { color: colors[index] },
-          data: (test.results?.graphData ?? []).map(({ x, y }) => [x, y]),
-        }))
-        .filter((series) => series.data.length > 0),
+          symbol: "circle",
+          symbolSize: 8,
+          emphasis: { scale: true },
+          lineStyle: { width: 2, color: graphTestColors[index] },
+          itemStyle: { color: graphTestColors[index] },
+          data: getGraphData(test).map(({ x, y }) => [x, y]),
+        })),
+        {
+          id: "hover-markers",
+          type: "scatter" as const,
+          data: [],
+          symbol: "circle",
+          symbolSize: 10,
+          silent: true,
+          tooltip: { show: false },
+          z: 10,
+        },
+      ],
     };
-    chartRef.current?.setOption(option, { notMerge: true, lazyUpdate: true });
-  }, [colors, isDarkMode, latestTests]);
+    const chart = chartRef.current;
+    if (!chart) return;
+    const updateMarkers = (x: number) => {
+      const markerData = getPointsAtX(x).map((point) => ({
+        value: [point.x, point.y],
+        itemStyle: { color: point.color, borderWidth: 0 },
+      }));
+      chart.setOption({ series: [{ id: "hover-markers", data: markerData }] });
+    };
+    const handleAxisPointer = (event: unknown) => {
+      const axesInfo = (event as { axesInfo?: Array<{ axisDim?: string; value?: unknown }> }).axesInfo;
+      const xAxis = axesInfo?.find((axis) => axis.axisDim === "x");
+      const x = Number(xAxis?.value);
+      if (Number.isFinite(x)) updateMarkers(x);
+    };
+    const clearMarkers = () => chart.setOption({ series: [{ id: "hover-markers", data: [] }] });
+
+    chart.setOption(option, { notMerge: true, lazyUpdate: true });
+    chart.on("updateAxisPointer", handleAxisPointer);
+    chart.on("globalout", clearMarkers);
+    return () => {
+      chart.off("updateAxisPointer", handleAxisPointer);
+      chart.off("globalout", clearMarkers);
+    };
+  }, [colors, graphType, isDarkMode, latestTests]);
 
   return isLoading ? (
     <LoadingFullScreen />
@@ -332,17 +435,40 @@ export default function Page() {
                 </Grid>
               </Grid>
             </Grid>
-            <Grid size={12}>
-              <Typography variant='h6' component='h6' className='mb-3'>
-                Latest Tests Graphs
-              </Typography>
+            <Grid size={12} className='group/grid'>
+              <Box className='mb-3 flex flex-wrap items-center justify-between gap-2 relative'>
+                <Typography variant='h6' component='h6'>
+                  {graphType === "stress-strain" ? "Latest Stress-Strain Graphs" : "Latest Load-Displacement Graphs"}
+                </Typography>
+                <FormControl
+                  size='small'
+                  variant='standard'
+                  className={cn(
+                    "group-hover/grid:opacity-100",
+                    "transition-all opacity-0 outlined min-w-44 absolute inset-e-0 mt-4 [&_.MuiInputBase-root.MuiInput-root.MuiInputBase-sizeSmall.outlined]:py-0.25! [&_.MuiInput-root]:rounded-xs!",
+                  )}
+                >
+                  <Select
+                    variant='standard'
+                    size='small'
+                    className='outlined'
+                    value={graphType}
+                    onChange={(event) => setGraphType(event.target.value as TestGraphType)}
+                    inputProps={{ "aria-label": "Graph type" }}
+                    IconComponent={ChevronDown}
+                  >
+                    <MenuItem value='stress-strain'>Stress-Strain</MenuItem>
+                    <MenuItem value='load-displacement'>Load-Displacement</MenuItem>
+                  </Select>
+                </FormControl>
+              </Box>
               <Card>
                 <CardContent className={cn("flex flex-col", !hasGraphData && "min-h-80 justify-center")}>
                   {hasGraphData ? (
                     <Box
                       ref={chartElementRef}
                       role='img'
-                      aria-label='Overlaid stress-strain curves for the five latest tests'
+                      aria-label={`Overlaid ${graphType === "stress-strain" ? "stress-strain" : "load-displacement"} curves for the five latest tests`}
                       className='h-140 w-full min-w-0'
                     />
                   ) : (
@@ -351,10 +477,24 @@ export default function Page() {
                 </CardContent>
               </Card>
             </Grid>
-            <Grid size={12}>
-              <Typography variant='h6' component='h6' className='mb-3'>
-                Latest Tests
-              </Typography>
+            <Grid size={12} className='group/grid'>
+              <Box className='flex flex-row items-center justify-between'>
+                <Typography variant='h6' component='h6' className='mb-3'>
+                  Latest Tests
+                </Typography>
+                <Button
+                  size='tiny'
+                  color='grey'
+                  variant='text'
+                  component={Link}
+                  to={"/tests"}
+                  className={cn("group-hover/grid:opacity-100", "transition-all opacity-0")}
+                  startIcon={<ChevronRight size={16} />}
+                >
+                  View All
+                </Button>
+              </Box>
+
               <Card>
                 <CardContent className={cn("flex flex-col", !latestTestRows.length && "min-h-80 justify-center")}>
                   {latestTestRows.length === 0 ? (

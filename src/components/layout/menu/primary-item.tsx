@@ -34,8 +34,8 @@ export const PrimaryItem = memo(function PrimaryItem({ item, onSelect, isActive,
       {menuType === MenuType.Comfort && (
         <Box
           className={cn(
-            "hover:bg-grey-20 flex h-18 w-24 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-lg no-underline transition-all select-none",
-            selected && "bg-grey-20",
+            "hover:bg-grey-20/75 flex h-18 w-24 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-lg no-underline transition-all select-none",
+            selected && "bg-grey-20/75",
             className,
           )}
           component={item.isExternalLink ? "a" : "div"}

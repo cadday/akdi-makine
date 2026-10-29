@@ -28,15 +28,21 @@ import {
   Bookmark,
   CalendarCog,
   CalendarPlus,
+  Crosshair,
+  Diameter,
   Clock3,
   Ellipsis,
   FileDown,
   Gauge,
   Hexagon,
   PencilRuler,
+  RulerDimensionLine,
+  Shapes,
+  Split,
+  TicketPercent,
   Timer,
-  Weight,
   WeightTilde,
+  MoveVertical,
 } from "lucide-react";
 import { DynamicIcon } from "lucide-react/dynamic";
 import PopupState, { bindMenu, bindTrigger } from "material-ui-popup-state";
@@ -51,12 +57,13 @@ import { useThemeContext } from "@/theme/theme-provider";
 import { Tensile } from "@/icons/custom-lucide-icons/tensile";
 import { Yeild } from "@/icons/custom-lucide-icons/yield";
 import { Machine } from "@/icons/custom-lucide-icons/machine";
+import { getTestGraphType, type TestGraphType } from "@/lib/db";
 
 interface ComparisonTooltipPoint {
   id: string;
   color: string;
-  stress: number;
-  strain: number;
+  x: number;
+  y: number;
 }
 
 function resolveSeriesColor(color: string, cssVariables: CSSStyleDeclaration) {
@@ -67,15 +74,16 @@ function resolveSeriesColor(color: string, cssVariables: CSSStyleDeclaration) {
   return hslToRgb(`hsl(${hslComponents.replace(/\s+/g, ", ")})`);
 }
 
-function ComparisonStressStrainTooltip({ points }: { points: ComparisonTooltipPoint[] }) {
+function ComparisonGraphTooltip({ points, graphType }: { points: ComparisonTooltipPoint[]; graphType: TestGraphType }) {
+  const [xLabel, xUnit, yLabel, yUnit] = graphType === "stress-strain" ? ["Strain", "%", "Stress", "MPa"] : ["Displacement", "mm", "Load", "N"];
   return (
     <Box className='bg-background-paper shadow-darker-sm! outline-grey-50 rounded-lg p-5 outline-1 flex flex-col gap-2'>
       {[
-        { label: "Stress", unit: "MPa", value: (point: ComparisonTooltipPoint) => point.stress, digits: 2 },
-        { label: "Strain", unit: "%", value: (point: ComparisonTooltipPoint) => point.strain, digits: 3 },
+        { label: xLabel, unit: xUnit, value: (point: ComparisonTooltipPoint) => point.x, digits: 3 },
+        { label: yLabel, unit: yUnit, value: (point: ComparisonTooltipPoint) => point.y, digits: 2 },
       ].map(({ label, unit, value, digits }) => (
         <Box key={label} className='flex flex-row gap-2'>
-          <Hexagon size={20} />
+          {label === "Stress" || label === "Load" ? <WeightTilde size={20} /> : label === "Strain" ? <TicketPercent size={20} /> : <RulerDimensionLine size={20} />}
           <Box className='flex min-w-0 flex-col gap-1'>
             <Typography variant='subtitle1' className='text-text-primary'>
               {label}
@@ -127,6 +135,18 @@ function renderValue(value: DynamicDataValue | undefined, field?: DataFieldDefin
 
 function formatDate(timestamp: number) {
   return new Date(timestamp).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" });
+}
+
+function getNearestGraphPoint(points: TestGraphPoint[], strain: number) {
+  return points.reduce<TestGraphPoint | undefined>((nearest, point) =>
+    !nearest || Math.abs(point.x - strain) < Math.abs(nearest.x - strain) ? point : nearest,
+  undefined);
+}
+
+function getTestGraphData(test: TestRecord, graphType: TestGraphType): TestGraphPoint[] {
+  return graphType === "stress-strain"
+    ? (test.results?.stressStrainData ?? []).map(({ strain, stress }) => ({ x: strain, y: stress }))
+    : (test.results?.loadDisplacementData ?? []).map(({ displacement, load }) => ({ x: displacement, y: load }));
 }
 
 function ComparisonField({
@@ -186,6 +206,7 @@ function ComparisonDetails({
   testFields,
   specimenFields,
   graph,
+  graphType,
   printMode,
 }: {
   tests: TestRecord[];
@@ -193,14 +214,17 @@ function ComparisonDetails({
   testFields: DataFieldDefinition[];
   specimenFields: DataFieldDefinition[];
   graph: React.ReactNode;
+  graphType: TestGraphType;
   printMode: boolean;
 }) {
+  const targetCount = Math.max(1, ...tests.map((test) => test.presetSnapshot.targets?.length ?? 0));
+
   return (
     <Grid container size={12} spacing={5}>
       <Grid container size={{ lg: 8, xs: 12 }} spacing={5}>
         <Grid size={12}>
           <Typography variant='h6' component='h6' className='mb-3'>
-            Stress Strain Graph
+            {graphType === "stress-strain" ? "Stress Strain Graph" : "Load Displacement Graph"}
           </Typography>
           <Card>
             <CardContent>{graph}</CardContent>
@@ -366,10 +390,36 @@ function ComparisonDetails({
         <ComparisonCard title='Preset'>
           <ComparisonField icon={<Bookmark className='flex-none' />} label='Name' tests={tests} colors={colors} valueForTest={(test) => test.presetSnapshot.name} />
           <ComparisonField icon={<PencilRuler className='flex-none' />} label='Type' tests={tests} colors={colors} valueForTest={(test) => test.presetSnapshot.type} />
-          <ComparisonField icon={<WeightTilde className='flex-none' />} label='Preload' tests={tests} colors={colors} valueForTest={(test) => `${test.presetSnapshot.preload} N`} />
-          <ComparisonField icon={<Weight className='flex-none' />} label='Load' tests={tests} colors={colors} valueForTest={(test) => `${test.presetSnapshot.load} N`} />
-          <ComparisonField icon={<Gauge className='flex-none' />} label='Speed' tests={tests} colors={colors} valueForTest={(test) => `${test.presetSnapshot.speed} mm/s`} />
-          <ComparisonField icon={<Clock3 className='flex-none' />} label='Duration' tests={tests} colors={colors} valueForTest={(test) => `${test.presetSnapshot.duration} s`} />
+          <ComparisonField
+            icon={<Gauge className='flex-none' />}
+            label='Speed'
+            tests={tests}
+            colors={colors}
+            valueForTest={(test) => (typeof test.presetSnapshot.speed === "number" ? `${test.presetSnapshot.speed} mm/s` : "-")}
+          />
+          <ComparisonField
+            icon={<Split className='flex-none' />}
+            label='Base'
+            tests={tests}
+            colors={colors}
+            valueForTest={(test) => test.presetSnapshot.base ?? "-"}
+          />
+          {Array.from({ length: targetCount }, (_, index) => (
+            <ComparisonField
+              key={`preset-target-${index}`}
+              icon={<Crosshair className='flex-none' />}
+              label={`Target ${index + 1}`}
+              tests={tests}
+              colors={colors}
+              valueForTest={(test) => {
+                const target = test.presetSnapshot.targets?.[index];
+                if (typeof target !== "number") return "-";
+                const unit = test.presetSnapshot.base === "Force" ? "N" : test.presetSnapshot.base === "Distance" ? "mm" : "";
+                return unit ? `${target} ${unit}` : String(target);
+              }}
+            />
+          ))}
+          <ComparisonField icon={<Clock3 className='flex-none' />} label='Mock Duration' tests={tests} colors={colors} valueForTest={(test) => `${test.presetSnapshot.duration} s`} />
         </ComparisonCard>
         <ComparisonCard title='Definition'>
           <ComparisonField icon={<Bookmark className='flex-none' />} label='Name' tests={tests} colors={colors} valueForTest={(test) => test.name} />
@@ -391,6 +441,49 @@ function ComparisonDetails({
       <Grid container size={{ lg: 4, xs: 12 }} spacing={5}>
         <ComparisonCard title='Specimen'>
           <ComparisonField icon={<Hexagon className='flex-none' />} label='Name' tests={tests} colors={colors} valueForTest={(test) => test.specimenSnapshot.name} />
+          <ComparisonField
+            icon={<Shapes className='flex-none' />}
+            label='Geometry'
+            tests={tests}
+            colors={colors}
+            valueForTest={(test) => test.specimenSnapshot.geometry ?? "Not Specified"}
+          />
+          <ComparisonField
+            icon={<Diameter className='flex-none' />}
+            label='Diameter'
+            tests={tests}
+            colors={colors}
+            valueForTest={(test) =>
+              test.specimenSnapshot.geometry === "Cylindrical" && test.specimenSnapshot.diameter != null ? `${test.specimenSnapshot.diameter} mm` : "-"
+            }
+          />
+          <ComparisonField
+            icon={<RulerDimensionLine className='flex-none' />}
+            label='Side 1'
+            tests={tests}
+            colors={colors}
+            valueForTest={(test) =>
+              test.specimenSnapshot.geometry === "Rectangular" && test.specimenSnapshot.side1 != null ? `${test.specimenSnapshot.side1} mm` : "-"
+            }
+          />
+          <ComparisonField
+            icon={<RulerDimensionLine className='flex-none rotate-90' />}
+            label='Side 2'
+            tests={tests}
+            colors={colors}
+            valueForTest={(test) =>
+              test.specimenSnapshot.geometry === "Rectangular" && test.specimenSnapshot.side2 != null ? `${test.specimenSnapshot.side2} mm` : "-"
+            }
+          />
+          <ComparisonField
+            icon={<MoveVertical className='flex-none' />}
+            label='Height'
+            tests={tests}
+            colors={colors}
+            valueForTest={(test) =>
+              test.specimenSnapshot.geometry !== "Not Specified" && test.specimenSnapshot.height != null ? `${test.specimenSnapshot.height} mm` : "-"
+            }
+          />
           {specimenFields.map((field) => (
             <ComparisonField
               key={field.id}
@@ -423,6 +516,7 @@ export default function CompareTestsPage({ printMode = false }: { printMode?: bo
   const [loadError, setLoadError] = useState<string | null>(null);
   const [missingCount, setMissingCount] = useState(0);
   const requestedIds = useMemo(() => Array.from(new Set(searchParams.getAll("testId").filter(Boolean))), [searchParams]);
+  const graphType = tests.length ? getTestGraphType(tests[0].specimenSnapshot.geometry) : "stress-strain";
   usePrintReadiness(printMode, isLoading, loadError);
   const colors = useMemo(() => {
     const cssVariables = getComputedStyle(document.documentElement);
@@ -462,6 +556,10 @@ export default function CompareTestsPage({ printMode = false }: { printMode?: bo
         setTestFields(currentTestFields);
         setSpecimenFields(currentSpecimenFields);
         if (foundTests.length < 2) setLoadError("At least two selected tests must still exist to compare them.");
+        else if (new Set(foundTests.map((test) => getTestGraphType(test.specimenSnapshot.geometry))).size > 1) {
+          if (printMode) setLoadError("Cannot generate a comparison PDF for tests with different graph types.");
+          else navigate("/tests", { replace: true });
+        }
       } catch (error) {
         if (!cancelled) setLoadError(`Failed to load comparison data: ${String(error)}`);
       } finally {
@@ -472,7 +570,7 @@ export default function CompareTestsPage({ printMode = false }: { printMode?: bo
     return () => {
       cancelled = true;
     };
-  }, [getDataFields, getTest, requestedIds]);
+  }, [getDataFields, getTest, navigate, printMode, requestedIds]);
 
   useEffect(() => {
     if (isLoading || loadError || !chartElementRef.current) return;
@@ -511,22 +609,17 @@ export default function CompareTestsPage({ printMode = false }: { printMode?: bo
         borderWidth: 0,
         padding: 0,
         extraCssText: "box-shadow: none;",
-        axisPointer: { type: "cross", lineStyle: { type: "solid", color: chartColors.divider } },
+        axisPointer: { type: "cross", snap: false, lineStyle: { type: "solid", color: chartColors.divider } },
         formatter: (params) => {
           if (!Array.isArray(params)) return "";
-          const hoveredPoint = params.find((param) => Array.isArray(param.value));
-          const hoveredStrain = Number(hoveredPoint?.axisValue ?? (Array.isArray(hoveredPoint?.value) ? hoveredPoint.value[0] : NaN));
-          if (!Number.isFinite(hoveredStrain)) return "";
-
+          const axisValue = params.find((param) => param.axisDimension === "x")?.axisValue ?? params[0]?.axisValue;
+          const x = Number(axisValue);
+          if (!Number.isFinite(x)) return "";
           const points = tests.flatMap((test, index): ComparisonTooltipPoint[] => {
-            const graphData = test.results?.graphData ?? [];
-            if (graphData.length === 0) return [];
-            const nearestPoint = graphData.reduce((nearest, point) =>
-              Math.abs(point.x - hoveredStrain) < Math.abs(nearest.x - hoveredStrain) ? point : nearest,
-            );
-            return [{ id: test.id, color: colors[index], strain: nearestPoint.x, stress: nearestPoint.y }];
+            const nearestPoint = getNearestGraphPoint(getTestGraphData(test, graphType), x);
+            return nearestPoint ? [{ id: test.id, color: colors[index], x: nearestPoint.x, y: nearestPoint.y }] : [];
           });
-          return points.length ? renderToStaticMarkup(<ComparisonStressStrainTooltip points={points} />) : "";
+          return points.length ? renderToStaticMarkup(<ComparisonGraphTooltip points={points} graphType={graphType} />) : "";
         },
       },
       dataZoom: [{ type: "inside", filterMode: "none", zoomOnMouseWheel: true, moveOnMouseMove: true, moveOnMouseWheel: false }],
@@ -537,7 +630,7 @@ export default function CompareTestsPage({ printMode = false }: { printMode?: bo
           lineStyle: { type: "solid", color: chartColors.divider },
           label: { backgroundColor: chartColors.hoverLabelBackground, color: chartColors.secondaryText },
         },
-        name: "Strain (%)",
+        name: graphType === "stress-strain" ? "Strain (%)" : "Displacement (mm)",
         nameLocation: "middle",
         nameGap: 32,
         nameTextStyle: { color: chartColors.secondaryText },
@@ -552,7 +645,7 @@ export default function CompareTestsPage({ printMode = false }: { printMode?: bo
           lineStyle: { type: "solid", color: chartColors.divider },
           label: { backgroundColor: chartColors.hoverLabelBackground, color: chartColors.secondaryText },
         },
-        name: "Stress (MPa)",
+        name: graphType === "stress-strain" ? "Stress (MPa)" : "Load (N)",
         nameLocation: "middle",
         nameGap: 48,
         nameTextStyle: { color: chartColors.secondaryText },
@@ -560,15 +653,29 @@ export default function CompareTestsPage({ printMode = false }: { printMode?: bo
         axisLine: { lineStyle: { color: chartColors.divider } },
         splitLine: { lineStyle: { color: chartColors.divider, type: "dashed" } },
       },
-      series: tests.map((test, index) => ({
-        name: test.name,
-        type: "line",
-        showSymbol: false,
-        emphasis: { disabled: true },
-        lineStyle: { width: 2, color: colors[index] },
-        itemStyle: { color: colors[index] },
-        data: (test.results?.graphData ?? []).map((point: TestGraphPoint) => [point.x, point.y]),
-      })),
+      series: [
+        ...tests.map((test, index) => ({
+          name: test.name,
+          type: "line" as const,
+          showSymbol: false,
+          symbol: "circle",
+          symbolSize: 8,
+          emphasis: { scale: true },
+          lineStyle: { width: 2, color: colors[index] },
+          itemStyle: { color: colors[index] },
+          data: getTestGraphData(test, graphType).map(({ x, y }) => [x, y]),
+        })),
+        {
+          id: "hover-markers",
+          type: "scatter" as const,
+          data: [],
+          symbol: "circle",
+          symbolSize: 10,
+          silent: true,
+          tooltip: { show: false },
+          z: 10,
+        },
+      ],
     };
     const chart = chartRef.current;
     const chartElement = chartElementRef.current;
@@ -582,11 +689,32 @@ export default function CompareTestsPage({ printMode = false }: { printMode?: bo
       chartElement.dataset.printAssetsLoading = "true";
       chart.on("finished", onFinished);
     }
+    const updateMarkers = (x: number) => {
+      const markerData = tests.flatMap((test, index) => {
+        const nearestPoint = getNearestGraphPoint(getTestGraphData(test, graphType), x);
+        return nearestPoint
+          ? [{ value: [nearestPoint.x, nearestPoint.y], itemStyle: { color: colors[index], borderWidth: 0 } }]
+          : [];
+      });
+      chart.setOption({ series: [{ id: "hover-markers", data: markerData }] });
+    };
+    const handleAxisPointer = (event: unknown) => {
+      const axesInfo = (event as { axesInfo?: Array<{ axisDim?: string; value?: unknown }> }).axesInfo;
+      const xAxis = axesInfo?.find((axis) => axis.axisDim === "x");
+      const x = Number(xAxis?.value);
+      if (Number.isFinite(x)) updateMarkers(x);
+    };
+    const clearMarkers = () => chart.setOption({ series: [{ id: "hover-markers", data: [] }] });
+
     chart.setOption(option, { notMerge: true, lazyUpdate: !printMode });
+    chart.on("updateAxisPointer", handleAxisPointer);
+    chart.on("globalout", clearMarkers);
     return () => {
       chart.off("finished", onFinished);
+      chart.off("updateAxisPointer", handleAxisPointer);
+      chart.off("globalout", clearMarkers);
     };
-  }, [colors, isDarkMode, printMode, tests]);
+  }, [colors, graphType, isDarkMode, printMode, tests]);
 
   return (
     <>
@@ -685,18 +813,19 @@ export default function CompareTestsPage({ printMode = false }: { printMode?: bo
                 colors={colors}
                 testFields={testFields}
                 specimenFields={specimenFields}
+                graphType={graphType}
                 printMode={printMode}
                 graph={
-                  tests.some((test) => (test.results?.graphData?.length ?? 0) > 0) ? (
+                  tests.some((test) => getTestGraphData(test, graphType).length > 0) ? (
                     <Box
                       ref={chartElementRef}
                       role='img'
-                      aria-label='Overlaid stress-strain curves for selected tests'
+                      aria-label={`Overlaid ${graphType === "stress-strain" ? "stress-strain" : "load-displacement"} curves for selected tests`}
                       className='h-140 w-full min-w-0'
                       data-print-assets-loading={printMode ? "true" : undefined}
                     />
                   ) : (
-                    <Alert severity='info'>No saved stress-strain data is available for these tests.</Alert>
+                    <Alert severity='info'>No saved {graphType === "stress-strain" ? "stress-strain" : "load-displacement"} data is available for these tests.</Alert>
                   )
                 }
               />

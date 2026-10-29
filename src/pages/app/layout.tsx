@@ -2,7 +2,7 @@ import "@/style/global.css";
 
 import { Suspense, useEffect } from "react";
 import { Outlet, useLocation } from "react-router";
-
+import MachineControls from "@/components/layout/machine-controls/machine-controls";
 import Header from "@/components/layout/containers/header";
 import Main from "@/components/layout/containers/main";
 import LeftMenu from "@/components/layout/menu/left-menu";
@@ -25,6 +25,7 @@ export default function AppLayout() {
         <LeftMenu />
         <Main>
           <Header />
+          <MachineControls />
           <Box className='min-h-[calc(100vh-3.5rem)]'>
             <Suspense fallback={<Loading />}>
               <Outlet />

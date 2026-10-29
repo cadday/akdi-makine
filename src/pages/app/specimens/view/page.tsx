@@ -8,12 +8,12 @@ import { LINKS } from "@/constants";
 import { Box, Breadcrumbs, Button, Card, CardContent, Grid, ListItemIcon, ListItemText, Menu, MenuItem, Tab, Tooltip, Typography } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { DataGrid, type GridColDef, type GridRenderCellParams } from "@mui/x-data-grid";
-import TestDataGrid from "@/components/data-grid/test-data-grid";
+import TestDataGrid from "@/pages/app/tests/components/test-data-grid";
 import LoadingFullScreen from "@/components/loading/loading-full-screen";
 import { useDb, type DataFieldDefinition, type DynamicDataValue, type SpecimenRecord, type TestRecord, type UploadedImage } from "@/context/db-context";
 import useAppNotifications from "@/hooks/use-app-notifications";
 import { DynamicIcon } from "lucide-react/dynamic";
-import { CalendarCog, CalendarPlus, ChevronLeft, ChevronRight, Ellipsis, Hexagon, X } from "lucide-react";
+import { CalendarCog, CalendarPlus, ChevronLeft, ChevronRight, Diameter, Ellipsis, Hexagon, MoveVertical, RulerDimensionLine, Shapes, X } from "lucide-react";
 import TabList from "@mui/lab/TabList";
 import TabPanel from "@mui/lab/TabPanel";
 import TabContext from "@mui/lab/TabContext";
@@ -229,15 +229,56 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                           </Typography>
                           <Card>
                             <CardContent className='flex flex-col gap-5'>
-                              {fields.map((field) => (
-                                <Box key={field.id} className='flex flex-row gap-2'>
-                                  {field.icon ? <DynamicIcon name={field.icon} className='flex-none' /> : <Hexagon className='flex-none' />}
-                                  <Box className='flex flex-col gap-1'>
-                                    <Typography variant='subtitle1'>{field.name}</Typography>
-                                    {renderValue(field, specimen.customData?.[field.id] ?? specimen.customData?.[field.name] ?? null)}
-                                  </Box>
+                              <Box className='flex flex-row gap-2'>
+                                <Shapes className='flex-none' />
+                                <Box className='flex flex-col gap-1'>
+                                  <Typography variant='subtitle1'>Geometry</Typography>
+                                  <Typography>{specimen.geometry ?? "Not Specified"}</Typography>
                                 </Box>
-                              ))}
+                              </Box>
+                              {specimen.geometry === "Cylindrical" && (
+                                <>
+                                  <Box className='flex flex-row gap-2'>
+                                    <Diameter className='flex-none' />
+                                    <Box className='flex flex-col gap-1'>
+                                      <Typography variant='subtitle1'>Diameter</Typography>
+                                      <Typography>{specimen.diameter} mm</Typography>
+                                    </Box>
+                                  </Box>
+                                  <Box className='flex flex-row gap-2'>
+                                    <MoveVertical className='flex-none' />
+                                    <Box className='flex flex-col gap-1'>
+                                      <Typography variant='subtitle1'>Height</Typography>
+                                      <Typography>{specimen.height} mm</Typography>
+                                    </Box>
+                                  </Box>
+                                </>
+                              )}
+                              {specimen.geometry === "Rectangular" && (
+                                <>
+                                  <Box className='flex flex-row gap-2'>
+                                    <RulerDimensionLine className='flex-none' />
+                                    <Box className='flex flex-col gap-1'>
+                                      <Typography variant='subtitle1'>Side 1</Typography>
+                                      <Typography>{specimen.side1} mm</Typography>
+                                    </Box>
+                                  </Box>
+                                  <Box className='flex flex-row gap-2'>
+                                    <RulerDimensionLine className='flex-none rotate-90' />
+                                    <Box className='flex flex-col gap-1'>
+                                      <Typography variant='subtitle1'>Side 2</Typography>
+                                      <Typography>{specimen.side2} mm</Typography>
+                                    </Box>
+                                  </Box>
+                                  <Box className='flex flex-row gap-2'>
+                                    <MoveVertical className='flex-none' />
+                                    <Box className='flex flex-col gap-1'>
+                                      <Typography variant='subtitle1'>Height</Typography>
+                                      <Typography>{specimen.height} mm</Typography>
+                                    </Box>
+                                  </Box>
+                                </>
+                              )}
                               <Box className='flex flex-row gap-2'>
                                 <CalendarPlus className='flex-none' />
                                 <Box className='flex flex-col gap-1'>
@@ -252,6 +293,15 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                                   <Typography>{new Date(specimen.updatedAt).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short" })}</Typography>
                                 </Box>
                               </Box>
+                              {fields.map((field) => (
+                                <Box key={field.id} className='flex flex-row gap-2'>
+                                  {field.icon ? <DynamicIcon name={field.icon} className='flex-none' /> : <Hexagon className='flex-none' />}
+                                  <Box className='flex flex-col gap-1'>
+                                    <Typography variant='subtitle1'>{field.name}</Typography>
+                                    {renderValue(field, specimen.customData?.[field.id] ?? specimen.customData?.[field.name] ?? null)}
+                                  </Box>
+                                </Box>
+                              ))}
                             </CardContent>
                           </Card>
                         </Grid>
@@ -291,7 +341,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                 <TabPanel value='Tests'>
                   <Grid size={12} container spacing={5} className='w-full'>
                     <Grid size={12}>
-                      <TestDataGrid tests={specimenTests} dataFields={testFields} onTestsChange={setSpecimenTests} />
+                      <TestDataGrid tests={specimenTests} dataFields={testFields} onTestsChange={setSpecimenTests} alignColumnsLeft />
                     </Grid>
                   </Grid>
                 </TabPanel>

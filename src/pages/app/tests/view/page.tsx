@@ -14,16 +14,20 @@ import {
   ChevronRight,
   Clock3,
   Columns,
+  Crosshair,
   Ellipsis,
   EllipsisVertical,
   EyeClosed,
   Filter,
   Gauge,
   Hexagon,
+  Diameter,
+  MoveVertical,
   PencilRuler,
+  RulerDimensionLine,
+  Shapes,
+  Split,
   Trash,
-  Weight,
-  WeightTilde,
   X,
 } from "lucide-react";
 import { DynamicIcon } from "lucide-react/dynamic";
@@ -44,26 +48,30 @@ import SearchInput from "@/components/layout/search/search";
 import SaveRecordPdfMenuItem from "@/components/pdf/save-record-pdf-menu-item";
 import usePrintReadiness from "@/hooks/use-print-readiness";
 import { cn } from "@/lib/utils";
+import { getTestGraphType } from "@/lib/db";
 
 interface RawGraphDataRow {
   id: number;
-  strain: number;
-  stress: number;
+  x: number;
+  y: number;
 }
 
-const rawGraphDataColumns: GridColDef<RawGraphDataRow>[] = [
-  {
-    field: "strain",
-    headerName: "Strain (%)",
-    minWidth: 160,
-    flex: 1,
-    type: "number",
-    align: "left",
-    headerAlign: "left",
-    renderCell: (params) => <Box className='ps-4'>{params.value}</Box>,
-  },
-  { field: "stress", headerName: "Stress (MPa)", minWidth: 160, flex: 1, type: "number", align: "left", headerAlign: "left" },
-];
+function getRawGraphDataColumns(graphType: "load-displacement" | "stress-strain"): GridColDef<RawGraphDataRow>[] {
+  const [xLabel, yLabel] = graphType === "stress-strain" ? ["Strain (%)", "Stress (MPa)"] : ["Displacement (mm)", "Load (N)"];
+  return [
+    {
+      field: "x",
+      headerName: xLabel,
+      minWidth: 160,
+      flex: 1,
+      type: "number",
+      align: "left",
+      headerAlign: "left",
+      renderCell: (params) => <Box className='ps-4'>{params.value}</Box>,
+    },
+    { field: "y", headerName: yLabel, minWidth: 160, flex: 1, type: "number", align: "left", headerAlign: "left" },
+  ];
+}
 
 export default function Page({ printMode = false }: { printMode?: boolean }) {
   const { t } = useTranslation();
@@ -141,6 +149,13 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
 
   const specimen = test?.specimenSnapshot ?? null;
   const preset = test?.presetSnapshot ?? null;
+  const graphType = getTestGraphType(specimen?.geometry);
+  const graphPoints = graphType === "stress-strain" ? (test?.results?.stressStrainData ?? []) : (test?.results?.loadDisplacementData ?? []);
+  const rawGraphDataRows = graphPoints.map((point, index) =>
+    graphType === "stress-strain"
+      ? { id: index, x: point.strain, y: point.stress }
+      : { id: index, x: point.displacement, y: point.load },
+  );
 
   return (
     <>
@@ -264,30 +279,34 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                                   </Box>
                                 </Box>
                                 <Box className='flex flex-row gap-2'>
-                                  <WeightTilde className='flex-none' />
-                                  <Box className='flex flex-col gap-1'>
-                                    <Typography variant='subtitle1'>Preload</Typography>
-                                    <Typography>{preset.preload} N</Typography>
-                                  </Box>
-                                </Box>
-                                <Box className='flex flex-row gap-2'>
-                                  <Weight className='flex-none' />
-                                  <Box className='flex flex-col gap-1'>
-                                    <Typography variant='subtitle1'>Load</Typography>
-                                    <Typography>{preset.load} N</Typography>
-                                  </Box>
-                                </Box>
-                                <Box className='flex flex-row gap-2'>
                                   <Gauge className='flex-none' />
                                   <Box className='flex flex-col gap-1'>
                                     <Typography variant='subtitle1'>Speed</Typography>
-                                    <Typography>{preset.speed} mm/s</Typography>
+                                    <Typography>{typeof preset.speed === "number" ? `${preset.speed} mm/s` : "-"}</Typography>
                                   </Box>
                                 </Box>
                                 <Box className='flex flex-row gap-2'>
+                                  <Split className='flex-none' />
+                                  <Box className='flex flex-col gap-1'>
+                                    <Typography variant='subtitle1'>Base</Typography>
+                                    <Typography>{preset.base ?? "-"}</Typography>
+                                  </Box>
+                                </Box>
+                                {(preset.targets?.length ? preset.targets : [undefined]).map((target, index) => (
+                                  <Box className='flex flex-row gap-2' key={`target-${index}`}>
+                                    <Crosshair className='flex-none' />
+                                    <Box className='flex flex-col gap-1'>
+                                      <Typography variant='subtitle1'>Target {index + 1}</Typography>
+                                      <Typography>
+                                        {typeof target === "number" ? `${target} ${preset.base === "Force" ? "N" : preset.base === "Distance" ? "mm" : ""}`.trim() : "-"}
+                                      </Typography>
+                                    </Box>
+                                  </Box>
+                                ))}
+                                <Box className='flex flex-row gap-2'>
                                   <Clock3 className='flex-none' />
                                   <Box className='flex flex-col gap-1'>
-                                    <Typography variant='subtitle1'>Duration</Typography>
+                                    <Typography variant='subtitle1'>Mock Duration</Typography>
                                     <Typography>{preset.duration} s</Typography>
                                   </Box>
                                 </Box>
@@ -317,6 +336,56 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                                     <Typography>{specimen.name}</Typography>
                                   </Box>
                                 </Box>
+                                <Box className='flex flex-row gap-2'>
+                                  <Shapes className='flex-none' />
+                                  <Box className='flex flex-col gap-1'>
+                                    <Typography variant='subtitle1'>Geometry</Typography>
+                                    <Typography>{specimen.geometry ?? "Not Specified"}</Typography>
+                                  </Box>
+                                </Box>
+                                {specimen.geometry === "Cylindrical" && (
+                                  <>
+                                    <Box className='flex flex-row gap-2'>
+                                      <Diameter className='flex-none' />
+                                      <Box className='flex flex-col gap-1'>
+                                        <Typography variant='subtitle1'>Diameter</Typography>
+                                        <Typography>{specimen.diameter != null ? `${specimen.diameter} mm` : "-"}</Typography>
+                                      </Box>
+                                    </Box>
+                                    <Box className='flex flex-row gap-2'>
+                                      <MoveVertical className='flex-none' />
+                                      <Box className='flex flex-col gap-1'>
+                                        <Typography variant='subtitle1'>Height</Typography>
+                                        <Typography>{specimen.height != null ? `${specimen.height} mm` : "-"}</Typography>
+                                      </Box>
+                                    </Box>
+                                  </>
+                                )}
+                                {specimen.geometry === "Rectangular" && (
+                                  <>
+                                    <Box className='flex flex-row gap-2'>
+                                      <RulerDimensionLine className='flex-none' />
+                                      <Box className='flex flex-col gap-1'>
+                                        <Typography variant='subtitle1'>Side 1</Typography>
+                                        <Typography>{specimen.side1 != null ? `${specimen.side1} mm` : "-"}</Typography>
+                                      </Box>
+                                    </Box>
+                                    <Box className='flex flex-row gap-2'>
+                                      <RulerDimensionLine className='flex-none rotate-90' />
+                                      <Box className='flex flex-col gap-1'>
+                                        <Typography variant='subtitle1'>Side 2</Typography>
+                                        <Typography>{specimen.side2 != null ? `${specimen.side2} mm` : "-"}</Typography>
+                                      </Box>
+                                    </Box>
+                                    <Box className='flex flex-row gap-2'>
+                                      <MoveVertical className='flex-none' />
+                                      <Box className='flex flex-col gap-1'>
+                                        <Typography variant='subtitle1'>Height</Typography>
+                                        <Typography>{specimen.height != null ? `${specimen.height} mm` : "-"}</Typography>
+                                      </Box>
+                                    </Box>
+                                  </>
+                                )}
                                 {specimenFields.map((field) => (
                                   <Box key={field.id} className='flex flex-row gap-2'>
                                     {field.icon ? <DynamicIcon name={field.icon} className='flex-none' /> : <Hexagon className='flex-none' />}
@@ -341,8 +410,8 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                 {!loadError && test && (
                   <DataGrid
                     autoHeight
-                    rows={(test.results?.graphData ?? []).map((point, index) => ({ id: index, strain: point.x, stress: point.y }))}
-                    columns={rawGraphDataColumns}
+                    rows={rawGraphDataRows}
+                    columns={getRawGraphDataColumns(graphType)}
                     initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
                     getRowSpacing={getRowSpacing}
                     pageSizeOptions={[10, 20, 50, 100]}
