@@ -207,6 +207,8 @@ export default function Page() {
         field,
         headerName,
         minWidth: 120,
+        align: "left",
+        headerAlign: "left",
         type: "number",
         valueFormatter: (value) => (typeof value === "number" ? `${value} mm` : "-"),
       })),

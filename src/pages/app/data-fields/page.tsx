@@ -209,6 +209,8 @@ export default function Page() {
       field: "mandatory",
       headerName: "Mandatory",
       minWidth: 120,
+      align: "left",
+      headerAlign: "left",
       type: "boolean",
     },
     {
