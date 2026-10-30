@@ -1,7 +1,6 @@
-import { forwardRef, useEffect, useState, type InputHTMLAttributes } from 'react';
+import { useEffect, useState } from 'react';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
-import { IMaskInput } from 'react-imask';
 import {
   Alert,
   AlertTitle,
@@ -20,72 +19,8 @@ import { Gauge, MoveVertical, Save, WeightTilde, XSquare } from 'lucide-react';
 import { usePlcData } from '@/context/plc-context';
 import useAppNotifications from '@/hooks/use-app-notifications';
 import { cn } from '@/lib/utils';
-
-interface DecimalMaskInputProps
-  extends Omit<InputHTMLAttributes<HTMLInputElement>, 'mask' | 'min' | 'max' | 'value'> {
-  min?: number;
-  max?: number;
-  scale?: number;
-  onAccept?: (value: string, event?: InputEvent) => void;
-  value?: string;
-}
-
-const DecimalMaskInput = forwardRef<HTMLInputElement, DecimalMaskInputProps>(
-  (
-    {
-      autoComplete,
-      className,
-      disabled,
-      id,
-      inputMode,
-      max = Number.MAX_SAFE_INTEGER,
-      min = Number.MIN_SAFE_INTEGER,
-      name,
-      onBlur,
-      onChange,
-      onFocus,
-      onAccept,
-      placeholder,
-      readOnly,
-      required,
-      scale = 1,
-      tabIndex,
-      title,
-      value,
-    },
-    ref,
-  ) => (
-    <IMaskInput
-      inputRef={ref}
-      autoComplete={autoComplete}
-      className={className}
-      disabled={disabled}
-      id={id}
-      inputMode={inputMode}
-      name={name}
-      onBlur={onBlur}
-      onChange={onChange}
-      onFocus={onFocus}
-      placeholder={placeholder}
-      readOnly={readOnly}
-      required={required}
-      tabIndex={tabIndex}
-      title={title}
-      value={value}
-      mask={Number}
-      scale={scale}
-      min={min}
-      max={max}
-      radix="."
-      thousandsSeparator=""
-      normalizeZeros={false}
-      padFractionalZeros
-      unmask={false}
-      onAccept={(value, _mask, event) => onAccept?.(String(value), event)}
-    />
-  ),
-);
-DecimalMaskInput.displayName = 'DecimalMaskInput';
+import { DecimalMaskInput } from './masked-decimal-input';
+import { PLC_INT32_MAX, PLC_INT32_MIN, requiredScaledNumber } from './plc-numeric-validation';
 
 interface AdjustmentValues {
   manualVelocity: string;
@@ -103,46 +38,21 @@ const adjustmentFieldLabels: Record<string, string> = {
   bottomLoadLimit: 'Bottom Load Limit',
 };
 
-const plcInt32Min = -0x80000000;
-const plcInt32Max = 0x7fffffff;
 const manualVelocityMaximum = 75;
-
-const requiredScaledNumber = (
-  label: string,
-  scale: number,
-  decimalPlaces: number,
-  min: number,
-  max: number,
-  maxError = `${label} exceeds the PLC range`,
-) =>
-  yup
-    .number()
-    .transform((value, originalValue) => (originalValue === '' ? undefined : value))
-    .typeError(`${label} must be a number`)
-    .test(`${decimalPlaces}-decimal-places`, `${label} may have at most ${decimalPlaces} decimal places`, (value) => {
-    if (value === undefined || value === null) return true;
-    if (!Number.isFinite(value)) return false;
-    const scaledValue = value * scale;
-    const tolerance = Number.EPSILON * Math.max(1, Math.abs(scaledValue)) * 4;
-    return Math.abs(scaledValue - Math.round(scaledValue)) <= tolerance;
-  })
-    .min(min, `${label} is below the PLC range`)
-    .max(max, maxError)
-    .required(`${label} is required`);
 
 const validationSchema = yup.object({
   manualVelocity: requiredScaledNumber(
     'Manual Velocity',
     10,
     1,
-    plcInt32Min / 10,
+    PLC_INT32_MIN / 10,
     manualVelocityMaximum,
     'Manual Velocity cannot exceed 75.0',
   ),
-  topDistanceLimit: requiredScaledNumber('Top Distance Limit', 10000, 4, 0, plcInt32Max / 10000),
-  bottomDistanceLimit: requiredScaledNumber('Bottom Distance Limit', 10000, 4, 0, -plcInt32Min / 10000),
-  topLoadLimit: requiredScaledNumber('Top Load Limit', 10, 1, 0, plcInt32Max / 10),
-  bottomLoadLimit: requiredScaledNumber('Bottom Load Limit', 10, 1, 0, -plcInt32Min / 10),
+  topDistanceLimit: requiredScaledNumber('Top Distance Limit', 10000, 4, 0, PLC_INT32_MAX / 10000),
+  bottomDistanceLimit: requiredScaledNumber('Bottom Distance Limit', 10000, 4, 0, -PLC_INT32_MIN / 10000),
+  topLoadLimit: requiredScaledNumber('Top Load Limit', 10, 1, 0, PLC_INT32_MAX / 10),
+  bottomLoadLimit: requiredScaledNumber('Bottom Load Limit', 10, 1, 0, -PLC_INT32_MIN / 10),
 });
 
 const initialValues: AdjustmentValues = {
@@ -285,8 +195,8 @@ export default function Adjustments() {
                     inputProps={{
                       inputMode: 'decimal',
                       scale: 1,
-                      min: plcInt32Min / 10,
-                      max: plcInt32Max / 10,
+                      min: PLC_INT32_MIN / 10,
+                      max: PLC_INT32_MAX / 10,
                       onAccept: handleMaskedInputAccept('manualVelocity'),
                     }}
                     endAdornment={<InputAdornment position="end">mm/min</InputAdornment>}
@@ -312,7 +222,7 @@ export default function Adjustments() {
                       inputMode: 'decimal',
                       scale: 4,
                       min: 0,
-                      max: plcInt32Max / 10000,
+                      max: PLC_INT32_MAX / 10000,
                       onAccept: handleMaskedInputAccept('topDistanceLimit'),
                     }}
                     startAdornment={<InputAdornment position="start">+</InputAdornment>}
@@ -339,7 +249,7 @@ export default function Adjustments() {
                       inputMode: 'decimal',
                       scale: 4,
                       min: 0,
-                      max: -plcInt32Min / 10000,
+                      max: -PLC_INT32_MIN / 10000,
                       onAccept: handleMaskedInputAccept('bottomDistanceLimit'),
                     }}
                     startAdornment={<InputAdornment position="start">-</InputAdornment>}
@@ -363,7 +273,7 @@ export default function Adjustments() {
                       inputMode: 'decimal',
                       scale: 1,
                       min: 0,
-                      max: plcInt32Max / 10,
+                      max: PLC_INT32_MAX / 10,
                       onAccept: handleMaskedInputAccept('topLoadLimit'),
                     }}
                     startAdornment={<InputAdornment position="start">+</InputAdornment>}
@@ -390,7 +300,7 @@ export default function Adjustments() {
                       inputMode: 'decimal',
                       scale: 1,
                       min: 0,
-                      max: -plcInt32Min / 10,
+                      max: -PLC_INT32_MIN / 10,
                       onAccept: handleMaskedInputAccept('bottomLoadLimit'),
                     }}
                     startAdornment={<InputAdornment position="start">-</InputAdornment>}

@@ -4,6 +4,7 @@ import Modbus from "jsmodbus";
 import net from "node:net";
 import {
   readPlcAdjustments,
+  readPlcLimits,
   readPlcOverviewValues,
   readPlcWorkingStatus,
   setMoveDown,
@@ -11,6 +12,7 @@ import {
   triggerResetLoad,
   triggerResetStroke,
   writePlcAdjustments,
+  writePlcLimits,
 } from "./plc-operations";
 
 const PLC_PORT = 502;
@@ -386,6 +388,24 @@ export function initializePlcService(window: BrowserWindow | null): void {
     }
 
     return readPlcOverviewValues(activeClient);
+  });
+
+  ipcMain.handle("plc:read-limits", async (event) => {
+    assertTrustedRequest(event.sender);
+    if (!activeClient || activeClient.connectionState !== "online" || connectionStatus.state !== "online") {
+      throw new Error("Cannot read limits while the PLC is offline");
+    }
+
+    return readPlcLimits(activeClient);
+  });
+
+  ipcMain.handle("plc:write-limits", async (event, values: unknown) => {
+    assertTrustedRequest(event.sender);
+    if (!activeClient || activeClient.connectionState !== "online" || connectionStatus.state !== "online") {
+      throw new Error("Cannot write limits while the PLC is offline");
+    }
+
+    return writePlcLimits(activeClient, values);
   });
 
   ipcMain.handle("plc:read-adjustments", async (event) => {

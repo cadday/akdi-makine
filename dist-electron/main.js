@@ -18812,6 +18812,11 @@ const PLC_DISTANCE_REGISTER_ADDRESS = 4098;
 const PLC_STATUS_REGISTER_ADDRESS = 4116;
 const PLC_OVERVIEW_REGISTER_COUNT = PLC_STATUS_REGISTER_ADDRESS - PLC_LOAD_REGISTER_ADDRESS + 1;
 const PLC_STATUS_REGISTER_INDEX = PLC_STATUS_REGISTER_ADDRESS - PLC_LOAD_REGISTER_ADDRESS;
+const PLC_TEST_DISTANCE_LIMIT_ADDRESS = 4598;
+const PLC_TEST_DISTANCE_LIMIT_SCALE = 1e4;
+const PLC_TEST_LOAD_LIMIT_ADDRESS = 4600;
+const PLC_TEST_LOAD_LIMIT_SCALE = 10;
+const PLC_TEST_LIMITS_REGISTER_COUNT = 4;
 const PLC_MANUAL_VELOCITY_ADDRESS = 4606;
 const PLC_MANUAL_VELOCITY_SCALE = 10;
 const PLC_MANUAL_VELOCITY_MAX = 750;
@@ -18835,14 +18840,16 @@ function decodeDvpDword(firstWordValue, secondWordValue, address) {
   const unsignedValue = highWord * 65536 + lowWord;
   return unsignedValue >= 2147483648 ? unsignedValue - 4294967296 : unsignedValue;
 }
-function validateScaledSignedDword(value, name, scale, decimalPlaces, maxDword = 2147483647) {
+function validateScaledSignedDword(value, name, scale, decimalPlaces, range2 = {}) {
   if (typeof value !== "number" || !Number.isFinite(value)) {
     throw new Error(`${name} must be a number`);
   }
   const scaledValue = value * scale;
   const integerValue = Math.round(scaledValue);
   const tolerance = Number.EPSILON * Math.max(1, Math.abs(scaledValue)) * 4;
-  if (Math.abs(scaledValue - integerValue) > tolerance || integerValue < -2147483648 || integerValue > maxDword) {
+  const minDword = range2.min ?? -2147483648;
+  const maxDword = range2.max ?? 2147483647;
+  if (Math.abs(scaledValue - integerValue) > tolerance || integerValue < minDword || integerValue > maxDword) {
     throw new Error(`${name} must have at most ${decimalPlaces} decimal places and fit the supported PLC range`);
   }
   return integerValue;
@@ -18872,6 +18879,43 @@ async function readPlcOverviewValues(client) {
     distance,
     status: validateRegister(registers[PLC_STATUS_REGISTER_INDEX], PLC_STATUS_REGISTER_ADDRESS)
   };
+}
+async function readPlcLimits(client) {
+  const response2 = await client.readHoldingRegisters(PLC_TEST_DISTANCE_LIMIT_ADDRESS, PLC_TEST_LIMITS_REGISTER_COUNT);
+  const registers = response2.response.body.valuesAsArray;
+  if (registers.length !== PLC_TEST_LIMITS_REGISTER_COUNT) {
+    throw new Error(
+      `PLC returned ${registers.length} test limit registers; expected ${PLC_TEST_LIMITS_REGISTER_COUNT}`
+    );
+  }
+  return {
+    testDistanceLimit: decodeDvpDword(registers[0], registers[1], PLC_TEST_DISTANCE_LIMIT_ADDRESS) / PLC_TEST_DISTANCE_LIMIT_SCALE,
+    testLoadLimit: decodeDvpDword(registers[2], registers[3], PLC_TEST_LOAD_LIMIT_ADDRESS) / PLC_TEST_LOAD_LIMIT_SCALE
+  };
+}
+async function writePlcLimits(client, value) {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new Error("Invalid PLC limits");
+  }
+  const input = value;
+  const testDistanceLimit = validateScaledSignedDword(
+    input.testDistanceLimit,
+    "Test Distance Limit",
+    PLC_TEST_DISTANCE_LIMIT_SCALE,
+    4,
+    { min: 0 }
+  );
+  const testLoadLimit = validateScaledSignedDword(
+    input.testLoadLimit,
+    "Test Load Limit",
+    PLC_TEST_LOAD_LIMIT_SCALE,
+    1,
+    { min: 0 }
+  );
+  await client.writeMultipleRegisters(PLC_TEST_DISTANCE_LIMIT_ADDRESS, [
+    ...encodeDvpDword(testDistanceLimit),
+    ...encodeDvpDword(testLoadLimit)
+  ]);
 }
 async function readPlcAdjustments(client) {
   const firstResponse = await client.readHoldingRegisters(
@@ -18912,7 +18956,7 @@ async function writePlcAdjustments(client, value) {
     "Manual Velocity",
     PLC_MANUAL_VELOCITY_SCALE,
     1,
-    PLC_MANUAL_VELOCITY_MAX
+    { max: PLC_MANUAL_VELOCITY_MAX }
   );
   const topDistanceLimit = validateScaledSignedDword(
     input.topDistanceLimit,
@@ -19248,6 +19292,20 @@ function initializePlcService(window2) {
       throw new Error("Cannot read overview values while the PLC is offline");
     }
     return readPlcOverviewValues(activeClient);
+  });
+  ipcMain.handle("plc:read-limits", async (event) => {
+    assertTrustedRequest(event.sender);
+    if (!activeClient || activeClient.connectionState !== "online" || connectionStatus.state !== "online") {
+      throw new Error("Cannot read limits while the PLC is offline");
+    }
+    return readPlcLimits(activeClient);
+  });
+  ipcMain.handle("plc:write-limits", async (event, values) => {
+    assertTrustedRequest(event.sender);
+    if (!activeClient || activeClient.connectionState !== "online" || connectionStatus.state !== "online") {
+      throw new Error("Cannot write limits while the PLC is offline");
+    }
+    return writePlcLimits(activeClient, values);
   });
   ipcMain.handle("plc:read-adjustments", async (event) => {
     assertTrustedRequest(event.sender);

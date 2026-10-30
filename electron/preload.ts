@@ -62,6 +62,8 @@ contextBridge.exposeInMainWorld("plcAPI", {
   resetLoad: () => ipcRenderer.invoke("plc:reset-load") as Promise<void>,
   resetStroke: () => ipcRenderer.invoke("plc:reset-stroke") as Promise<void>,
   readOverviewValues: () => ipcRenderer.invoke("plc:read-overview-values") as Promise<PlcOverviewValues>,
+  readLimits: () => ipcRenderer.invoke("plc:read-limits") as Promise<PlcLimitsValues>,
+  writeLimits: (values: PlcLimitsValues) => ipcRenderer.invoke("plc:write-limits", values) as Promise<void>,
   readAdjustments: () => ipcRenderer.invoke("plc:read-adjustments") as Promise<PlcAdjustmentValues>,
   writeAdjustments: (values: PlcAdjustmentValues) =>
     ipcRenderer.invoke("plc:write-adjustments", values) as Promise<void>,

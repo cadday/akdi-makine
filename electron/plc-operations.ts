@@ -10,6 +10,11 @@ const PLC_DISTANCE_REGISTER_ADDRESS = 4098;
 const PLC_STATUS_REGISTER_ADDRESS = 4116;
 const PLC_OVERVIEW_REGISTER_COUNT = PLC_STATUS_REGISTER_ADDRESS - PLC_LOAD_REGISTER_ADDRESS + 1;
 const PLC_STATUS_REGISTER_INDEX = PLC_STATUS_REGISTER_ADDRESS - PLC_LOAD_REGISTER_ADDRESS;
+const PLC_TEST_DISTANCE_LIMIT_ADDRESS = 4598;
+const PLC_TEST_DISTANCE_LIMIT_SCALE = 10000;
+const PLC_TEST_LOAD_LIMIT_ADDRESS = 4600;
+const PLC_TEST_LOAD_LIMIT_SCALE = 10;
+const PLC_TEST_LIMITS_REGISTER_COUNT = 4;
 const PLC_MANUAL_VELOCITY_ADDRESS = 4606;
 const PLC_MANUAL_VELOCITY_SCALE = 10;
 const PLC_MANUAL_VELOCITY_MAX = 750;
@@ -49,7 +54,7 @@ function validateScaledSignedDword(
   name: string,
   scale: number,
   decimalPlaces: number,
-  maxDword = 0x7fffffff,
+  range: { min?: number; max?: number } = {},
 ): number {
   if (typeof value !== "number" || !Number.isFinite(value)) {
     throw new Error(`${name} must be a number`);
@@ -58,9 +63,11 @@ function validateScaledSignedDword(
   const scaledValue = value * scale;
   const integerValue = Math.round(scaledValue);
   const tolerance = Number.EPSILON * Math.max(1, Math.abs(scaledValue)) * 4;
+  const minDword = range.min ?? -0x80000000;
+  const maxDword = range.max ?? 0x7fffffff;
   if (
     Math.abs(scaledValue - integerValue) > tolerance ||
-    integerValue < -0x80000000 ||
+    integerValue < minDword ||
     integerValue > maxDword
   ) {
     throw new Error(`${name} must have at most ${decimalPlaces} decimal places and fit the supported PLC range`);
@@ -101,6 +108,53 @@ export async function readPlcOverviewValues(client: PlcModbusClient): Promise<Pl
     distance,
     status: validateRegister(registers[PLC_STATUS_REGISTER_INDEX], PLC_STATUS_REGISTER_ADDRESS),
   };
+}
+
+export async function readPlcLimits(client: PlcModbusClient): Promise<PlcLimitsValues> {
+  const response = await client.readHoldingRegisters(PLC_TEST_DISTANCE_LIMIT_ADDRESS, PLC_TEST_LIMITS_REGISTER_COUNT);
+  const registers = response.response.body.valuesAsArray;
+
+  if (registers.length !== PLC_TEST_LIMITS_REGISTER_COUNT) {
+    throw new Error(
+      `PLC returned ${registers.length} test limit registers; expected ${PLC_TEST_LIMITS_REGISTER_COUNT}`,
+    );
+  }
+
+  return {
+    testDistanceLimit:
+      decodeDvpDword(registers[0], registers[1], PLC_TEST_DISTANCE_LIMIT_ADDRESS) /
+      PLC_TEST_DISTANCE_LIMIT_SCALE,
+    testLoadLimit:
+      decodeDvpDword(registers[2], registers[3], PLC_TEST_LOAD_LIMIT_ADDRESS) /
+      PLC_TEST_LOAD_LIMIT_SCALE,
+  };
+}
+
+export async function writePlcLimits(client: PlcModbusClient, value: unknown): Promise<void> {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new Error("Invalid PLC limits");
+  }
+
+  const input = value as Record<string, unknown>;
+  const testDistanceLimit = validateScaledSignedDword(
+    input.testDistanceLimit,
+    "Test Distance Limit",
+    PLC_TEST_DISTANCE_LIMIT_SCALE,
+    4,
+    { min: 0 },
+  );
+  const testLoadLimit = validateScaledSignedDword(
+    input.testLoadLimit,
+    "Test Load Limit",
+    PLC_TEST_LOAD_LIMIT_SCALE,
+    1,
+    { min: 0 },
+  );
+
+  await client.writeMultipleRegisters(PLC_TEST_DISTANCE_LIMIT_ADDRESS, [
+    ...encodeDvpDword(testDistanceLimit),
+    ...encodeDvpDword(testLoadLimit),
+  ]);
 }
 
 export async function readPlcAdjustments(client: PlcModbusClient): Promise<PlcAdjustmentValues> {
@@ -156,7 +210,7 @@ export async function writePlcAdjustments(client: PlcModbusClient, value: unknow
     'Manual Velocity',
     PLC_MANUAL_VELOCITY_SCALE,
     1,
-    PLC_MANUAL_VELOCITY_MAX,
+    { max: PLC_MANUAL_VELOCITY_MAX },
   );
   const topDistanceLimit = validateScaledSignedDword(
     input.topDistanceLimit,

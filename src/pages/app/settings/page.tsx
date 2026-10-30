@@ -6,6 +6,7 @@ import { LINKS } from '@/constants';
 import { useTranslation } from 'react-i18next';
 import Adjustments from '@/pages/app/settings/components/adjustments';
 import BackupAndRestore from '@/pages/app/settings/components/backup-and-restore';
+import Limits from '@/pages/app/settings/components/limits';
 
 export default function Page() {
   const { t } = useTranslation();
@@ -31,6 +32,7 @@ export default function Page() {
       <ContentWrapper>
         <Grid size={12} container spacing={5} className="w-full">
           <Adjustments />
+          <Limits />
           <BackupAndRestore />
         </Grid>
       </ContentWrapper>
