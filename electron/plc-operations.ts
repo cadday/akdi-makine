@@ -12,6 +12,7 @@ const PLC_OVERVIEW_REGISTER_COUNT = PLC_STATUS_REGISTER_ADDRESS - PLC_LOAD_REGIS
 const PLC_STATUS_REGISTER_INDEX = PLC_STATUS_REGISTER_ADDRESS - PLC_LOAD_REGISTER_ADDRESS;
 const PLC_MANUAL_VELOCITY_ADDRESS = 4606;
 const PLC_MANUAL_VELOCITY_SCALE = 10;
+const PLC_MANUAL_VELOCITY_MAX = 750;
 const PLC_TOP_DISTANCE_LIMIT_ADDRESS = 4608;
 const PLC_DISTANCE_LIMIT_SCALE = 10000;
 const PLC_TOP_LOAD_LIMIT_ADDRESS = 4610;
@@ -43,7 +44,13 @@ function decodeDvpDword(
   return unsignedValue >= 0x80000000 ? unsignedValue - 0x100000000 : unsignedValue;
 }
 
-function validateScaledSignedDword(value: unknown, name: string, scale: number, decimalPlaces: number): number {
+function validateScaledSignedDword(
+  value: unknown,
+  name: string,
+  scale: number,
+  decimalPlaces: number,
+  maxDword = 0x7fffffff,
+): number {
   if (typeof value !== "number" || !Number.isFinite(value)) {
     throw new Error(`${name} must be a number`);
   }
@@ -54,9 +61,9 @@ function validateScaledSignedDword(value: unknown, name: string, scale: number, 
   if (
     Math.abs(scaledValue - integerValue) > tolerance ||
     integerValue < -0x80000000 ||
-    integerValue > 0x7fffffff
+    integerValue > maxDword
   ) {
-    throw new Error(`${name} must have at most ${decimalPlaces} decimal places and fit a signed 32-bit integer`);
+    throw new Error(`${name} must have at most ${decimalPlaces} decimal places and fit the supported PLC range`);
   }
 
   return integerValue;
@@ -149,6 +156,7 @@ export async function writePlcAdjustments(client: PlcModbusClient, value: unknow
     'Manual Velocity',
     PLC_MANUAL_VELOCITY_SCALE,
     1,
+    PLC_MANUAL_VELOCITY_MAX,
   );
   const topDistanceLimit = validateScaledSignedDword(
     input.topDistanceLimit,

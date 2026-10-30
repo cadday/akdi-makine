@@ -18814,6 +18814,7 @@ const PLC_OVERVIEW_REGISTER_COUNT = PLC_STATUS_REGISTER_ADDRESS - PLC_LOAD_REGIS
 const PLC_STATUS_REGISTER_INDEX = PLC_STATUS_REGISTER_ADDRESS - PLC_LOAD_REGISTER_ADDRESS;
 const PLC_MANUAL_VELOCITY_ADDRESS = 4606;
 const PLC_MANUAL_VELOCITY_SCALE = 10;
+const PLC_MANUAL_VELOCITY_MAX = 750;
 const PLC_TOP_DISTANCE_LIMIT_ADDRESS = 4608;
 const PLC_DISTANCE_LIMIT_SCALE = 1e4;
 const PLC_TOP_LOAD_LIMIT_ADDRESS = 4610;
@@ -18834,15 +18835,15 @@ function decodeDvpDword(firstWordValue, secondWordValue, address) {
   const unsignedValue = highWord * 65536 + lowWord;
   return unsignedValue >= 2147483648 ? unsignedValue - 4294967296 : unsignedValue;
 }
-function validateScaledSignedDword(value, name, scale, decimalPlaces) {
+function validateScaledSignedDword(value, name, scale, decimalPlaces, maxDword = 2147483647) {
   if (typeof value !== "number" || !Number.isFinite(value)) {
     throw new Error(`${name} must be a number`);
   }
   const scaledValue = value * scale;
   const integerValue = Math.round(scaledValue);
   const tolerance = Number.EPSILON * Math.max(1, Math.abs(scaledValue)) * 4;
-  if (Math.abs(scaledValue - integerValue) > tolerance || integerValue < -2147483648 || integerValue > 2147483647) {
-    throw new Error(`${name} must have at most ${decimalPlaces} decimal places and fit a signed 32-bit integer`);
+  if (Math.abs(scaledValue - integerValue) > tolerance || integerValue < -2147483648 || integerValue > maxDword) {
+    throw new Error(`${name} must have at most ${decimalPlaces} decimal places and fit the supported PLC range`);
   }
   return integerValue;
 }
@@ -18910,7 +18911,8 @@ async function writePlcAdjustments(client, value) {
     input.manualVelocity,
     "Manual Velocity",
     PLC_MANUAL_VELOCITY_SCALE,
-    1
+    1,
+    PLC_MANUAL_VELOCITY_MAX
   );
   const topDistanceLimit = validateScaledSignedDword(
     input.topDistanceLimit,

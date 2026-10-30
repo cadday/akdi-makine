@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { forwardRef, useEffect, useState, type InputHTMLAttributes } from 'react';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
+import { IMaskInput } from 'react-imask';
 import {
   Alert,
   AlertTitle,
@@ -10,7 +11,6 @@ import {
   CardContent,
   FormControl,
   FormLabel,
-  FormHelperText,
   Grid,
   Input,
   InputAdornment,
@@ -20,6 +20,72 @@ import { Gauge, MoveVertical, Save, WeightTilde, XSquare } from 'lucide-react';
 import { usePlcData } from '@/context/plc-context';
 import useAppNotifications from '@/hooks/use-app-notifications';
 import { cn } from '@/lib/utils';
+
+interface DecimalMaskInputProps
+  extends Omit<InputHTMLAttributes<HTMLInputElement>, 'mask' | 'min' | 'max' | 'value'> {
+  min?: number;
+  max?: number;
+  scale?: number;
+  onAccept?: (value: string, event?: InputEvent) => void;
+  value?: string;
+}
+
+const DecimalMaskInput = forwardRef<HTMLInputElement, DecimalMaskInputProps>(
+  (
+    {
+      autoComplete,
+      className,
+      disabled,
+      id,
+      inputMode,
+      max = Number.MAX_SAFE_INTEGER,
+      min = Number.MIN_SAFE_INTEGER,
+      name,
+      onBlur,
+      onChange,
+      onFocus,
+      onAccept,
+      placeholder,
+      readOnly,
+      required,
+      scale = 1,
+      tabIndex,
+      title,
+      value,
+    },
+    ref,
+  ) => (
+    <IMaskInput
+      inputRef={ref}
+      autoComplete={autoComplete}
+      className={className}
+      disabled={disabled}
+      id={id}
+      inputMode={inputMode}
+      name={name}
+      onBlur={onBlur}
+      onChange={onChange}
+      onFocus={onFocus}
+      placeholder={placeholder}
+      readOnly={readOnly}
+      required={required}
+      tabIndex={tabIndex}
+      title={title}
+      value={value}
+      mask={Number}
+      scale={scale}
+      min={min}
+      max={max}
+      radix="."
+      thousandsSeparator=""
+      normalizeZeros={false}
+      padFractionalZeros
+      unmask={false}
+      onAccept={(value, _mask, event) => onAccept?.(String(value), event)}
+    />
+  ),
+);
+DecimalMaskInput.displayName = 'DecimalMaskInput';
 
 interface AdjustmentValues {
   manualVelocity: string;
@@ -37,7 +103,18 @@ const adjustmentFieldLabels: Record<string, string> = {
   bottomLoadLimit: 'Bottom Load Limit',
 };
 
-const requiredScaledNumber = (label: string, scale: number, decimalPlaces: number) =>
+const plcInt32Min = -0x80000000;
+const plcInt32Max = 0x7fffffff;
+const manualVelocityMaximum = 75;
+
+const requiredScaledNumber = (
+  label: string,
+  scale: number,
+  decimalPlaces: number,
+  min: number,
+  max: number,
+  maxError = `${label} exceeds the PLC range`,
+) =>
   yup
     .number()
     .transform((value, originalValue) => (originalValue === '' ? undefined : value))
@@ -49,16 +126,23 @@ const requiredScaledNumber = (label: string, scale: number, decimalPlaces: numbe
     const tolerance = Number.EPSILON * Math.max(1, Math.abs(scaledValue)) * 4;
     return Math.abs(scaledValue - Math.round(scaledValue)) <= tolerance;
   })
-    .min(-0x80000000 / scale, `${label} is below the PLC range`)
-    .max(0x7fffffff / scale, `${label} exceeds the PLC range`)
+    .min(min, `${label} is below the PLC range`)
+    .max(max, maxError)
     .required(`${label} is required`);
 
 const validationSchema = yup.object({
-  manualVelocity: requiredScaledNumber('Manual Velocity', 10, 1),
-  topDistanceLimit: requiredScaledNumber('Top Distance Limit', 10000, 4),
-  bottomDistanceLimit: requiredScaledNumber('Bottom Distance Limit', 10000, 4),
-  topLoadLimit: requiredScaledNumber('Top Load Limit', 10, 1),
-  bottomLoadLimit: requiredScaledNumber('Bottom Load Limit', 10, 1),
+  manualVelocity: requiredScaledNumber(
+    'Manual Velocity',
+    10,
+    1,
+    plcInt32Min / 10,
+    manualVelocityMaximum,
+    'Manual Velocity cannot exceed 75.0',
+  ),
+  topDistanceLimit: requiredScaledNumber('Top Distance Limit', 10000, 4, 0, plcInt32Max / 10000),
+  bottomDistanceLimit: requiredScaledNumber('Bottom Distance Limit', 10000, 4, 0, -plcInt32Min / 10000),
+  topLoadLimit: requiredScaledNumber('Top Load Limit', 10, 1, 0, plcInt32Max / 10),
+  bottomLoadLimit: requiredScaledNumber('Bottom Load Limit', 10, 1, 0, -plcInt32Min / 10),
 });
 
 const initialValues: AdjustmentValues = {
@@ -72,10 +156,10 @@ const initialValues: AdjustmentValues = {
 function fromPlcAdjustmentValues(values: PlcAdjustmentValues): AdjustmentValues {
   return {
     manualVelocity: values.manualVelocity.toFixed(1),
-    topDistanceLimit: values.topDistanceLimit.toFixed(4),
-    bottomDistanceLimit: values.bottomDistanceLimit.toFixed(4),
-    topLoadLimit: values.topLoadLimit.toFixed(1),
-    bottomLoadLimit: values.bottomLoadLimit.toFixed(1),
+    topDistanceLimit: Math.abs(values.topDistanceLimit).toFixed(4),
+    bottomDistanceLimit: Math.abs(values.bottomDistanceLimit).toFixed(4),
+    topLoadLimit: Math.abs(values.topLoadLimit).toFixed(1),
+    bottomLoadLimit: Math.abs(values.bottomLoadLimit).toFixed(1),
   };
 }
 
@@ -84,16 +168,15 @@ function toPlcAdjustmentValues(values: AdjustmentValues): PlcAdjustmentValues | 
 
   return {
     manualVelocity: Number(values.manualVelocity),
-    topDistanceLimit: Number(values.topDistanceLimit),
-    bottomDistanceLimit: Number(values.bottomDistanceLimit),
-    topLoadLimit: Number(values.topLoadLimit),
-    bottomLoadLimit: Number(values.bottomLoadLimit),
+    topDistanceLimit: Math.abs(Number(values.topDistanceLimit)),
+    bottomDistanceLimit: -Math.abs(Number(values.bottomDistanceLimit)),
+    topLoadLimit: Math.abs(Number(values.topLoadLimit)),
+    bottomLoadLimit: -Math.abs(Number(values.bottomLoadLimit)),
   };
 }
 
 export default function Adjustments() {
   const [submitted, setSubmitted] = useState(false);
-  const [plcValues, setPlcValues] = useState<AdjustmentValues>(initialValues);
   const [hasLoadedValues, setHasLoadedValues] = useState(false);
   const [isReading, setIsReading] = useState(false);
   const { showError, showSuccess } = useAppNotifications();
@@ -101,28 +184,30 @@ export default function Adjustments() {
   const { ipAddress, state } = connectionStatus;
   const isPlcOnline = state === 'online' && Boolean(ipAddress);
   const formik = useFormik<AdjustmentValues>({
-    initialValues: plcValues,
-    enableReinitialize: true,
+    initialValues,
     validationSchema,
     validateOnBlur: false,
     validateOnChange: true,
-    onSubmit: async (values) => {
+    onSubmit: async (values, helpers) => {
       const adjustments = toPlcAdjustmentValues(values);
       if (!adjustments || !isPlcOnline || !hasLoadedValues) return;
 
       try {
         await window.plcAPI.writeAdjustments(adjustments);
-        setPlcValues(fromPlcAdjustmentValues(adjustments));
+        helpers.resetForm({ values: fromPlcAdjustmentValues(adjustments) });
+        setSubmitted(false);
         showSuccess('PLC adjustments saved.');
       } catch (error) {
         showError(`Failed to save PLC adjustments: ${String(error)}`);
       }
     },
   });
+  const { resetForm } = formik;
 
   useEffect(() => {
     let cancelled = false;
-    setPlcValues(initialValues);
+    setSubmitted(false);
+    resetForm({ values: initialValues });
     setHasLoadedValues(false);
 
     if (!isPlcOnline) {
@@ -137,7 +222,8 @@ export default function Adjustments() {
       try {
         const values = await window.plcAPI.readAdjustments();
         if (cancelled) return;
-        setPlcValues(fromPlcAdjustmentValues(values));
+        const adjustmentValues = fromPlcAdjustmentValues(values);
+        resetForm({ values: adjustmentValues });
         setHasLoadedValues(true);
       } catch (error) {
         if (!cancelled) showError(`Failed to read PLC adjustments: ${String(error)}`);
@@ -151,9 +237,18 @@ export default function Adjustments() {
     return () => {
       cancelled = true;
     };
-  }, [ipAddress, isPlcOnline, showError]);
+  }, [ipAddress, isPlcOnline, resetForm, showError]);
 
-  const fieldError = (field: keyof AdjustmentValues) => submitted && formik.errors[field];
+  const hasManualVelocityValue = formik.values.manualVelocity.trim() !== '';
+  const fieldError = (field: keyof AdjustmentValues) =>
+    (submitted || (field === 'manualVelocity' && hasManualVelocityValue)) && formik.errors[field];
+  const visibleErrors = Object.entries(formik.errors).filter(
+    ([field]) => submitted || (field === 'manualVelocity' && hasManualVelocityValue),
+  );
+  const handleMaskedInputAccept = (field: keyof AdjustmentValues) => (value: string, event?: InputEvent) => {
+    if (!event) return;
+    void formik.setFieldValue(field, value);
+  };
   const formDisabled = !isPlcOnline || !hasLoadedValues || isReading || formik.isSubmitting;
 
   return (
@@ -186,15 +281,17 @@ export default function Adjustments() {
                   </FormLabel>
                   <Input
                     name="manualVelocity"
-                    type="number"
-                    inputProps={{ step: 0.1 }}
+                    inputComponent={DecimalMaskInput}
+                    inputProps={{
+                      inputMode: 'decimal',
+                      scale: 1,
+                      min: plcInt32Min / 10,
+                      max: plcInt32Max / 10,
+                      onAccept: handleMaskedInputAccept('manualVelocity'),
+                    }}
                     endAdornment={<InputAdornment position="end">mm/min</InputAdornment>}
                     value={isPlcOnline ? formik.values.manualVelocity : ''}
-                    onChange={formik.handleChange}
                   />
-                  {fieldError('manualVelocity') && (
-                    <FormHelperText error>{fieldError('manualVelocity')}</FormHelperText>
-                  )}
                 </FormControl>
               </Box>
             </Grid>
@@ -210,15 +307,18 @@ export default function Adjustments() {
                   </FormLabel>
                   <Input
                     name="topDistanceLimit"
-                    type="number"
-                    inputProps={{ step: 0.0001 }}
+                    inputComponent={DecimalMaskInput}
+                    inputProps={{
+                      inputMode: 'decimal',
+                      scale: 4,
+                      min: 0,
+                      max: plcInt32Max / 10000,
+                      onAccept: handleMaskedInputAccept('topDistanceLimit'),
+                    }}
+                    startAdornment={<InputAdornment position="start">+</InputAdornment>}
                     endAdornment={<InputAdornment position="end">mm</InputAdornment>}
                     value={isPlcOnline ? formik.values.topDistanceLimit : ''}
-                    onChange={formik.handleChange}
                   />
-                  {fieldError('topDistanceLimit') && (
-                    <FormHelperText error>{fieldError('topDistanceLimit')}</FormHelperText>
-                  )}
                 </FormControl>
               </Box>
             </Grid>
@@ -234,15 +334,18 @@ export default function Adjustments() {
                   </FormLabel>
                   <Input
                     name="bottomDistanceLimit"
-                    type="number"
-                    inputProps={{ step: 0.0001 }}
+                    inputComponent={DecimalMaskInput}
+                    inputProps={{
+                      inputMode: 'decimal',
+                      scale: 4,
+                      min: 0,
+                      max: -plcInt32Min / 10000,
+                      onAccept: handleMaskedInputAccept('bottomDistanceLimit'),
+                    }}
+                    startAdornment={<InputAdornment position="start">-</InputAdornment>}
                     endAdornment={<InputAdornment position="end">mm</InputAdornment>}
                     value={isPlcOnline ? formik.values.bottomDistanceLimit : ''}
-                    onChange={formik.handleChange}
                   />
-                  {fieldError('bottomDistanceLimit') && (
-                    <FormHelperText error>{fieldError('bottomDistanceLimit')}</FormHelperText>
-                  )}
                 </FormControl>
               </Box>
             </Grid>
@@ -255,13 +358,18 @@ export default function Adjustments() {
                   </FormLabel>
                   <Input
                     name="topLoadLimit"
-                    type="number"
-                    inputProps={{ step: 0.1 }}
+                    inputComponent={DecimalMaskInput}
+                    inputProps={{
+                      inputMode: 'decimal',
+                      scale: 1,
+                      min: 0,
+                      max: plcInt32Max / 10,
+                      onAccept: handleMaskedInputAccept('topLoadLimit'),
+                    }}
+                    startAdornment={<InputAdornment position="start">+</InputAdornment>}
                     endAdornment={<InputAdornment position="end">N</InputAdornment>}
                     value={isPlcOnline ? formik.values.topLoadLimit : ''}
-                    onChange={formik.handleChange}
                   />
-                  {fieldError('topLoadLimit') && <FormHelperText error>{fieldError('topLoadLimit')}</FormHelperText>}
                 </FormControl>
               </Box>
             </Grid>
@@ -277,25 +385,28 @@ export default function Adjustments() {
                   </FormLabel>
                   <Input
                     name="bottomLoadLimit"
-                    type="number"
-                    inputProps={{ step: 0.1 }}
+                    inputComponent={DecimalMaskInput}
+                    inputProps={{
+                      inputMode: 'decimal',
+                      scale: 1,
+                      min: 0,
+                      max: -plcInt32Min / 10,
+                      onAccept: handleMaskedInputAccept('bottomLoadLimit'),
+                    }}
+                    startAdornment={<InputAdornment position="start">-</InputAdornment>}
                     endAdornment={<InputAdornment position="end">N</InputAdornment>}
                     value={isPlcOnline ? formik.values.bottomLoadLimit : ''}
-                    onChange={formik.handleChange}
                   />
-                  {fieldError('bottomLoadLimit') && (
-                    <FormHelperText error>{fieldError('bottomLoadLimit')}</FormHelperText>
-                  )}
                 </FormControl>
               </Box>
             </Grid>
             <Grid size={12}>
-              {submitted && !formik.isValid && (
-                <Alert severity="error" icon={<XSquare />} className="neutral rounded-3xl! bg-transparent! mb-2 mt-2 p-5">
+              {visibleErrors.length > 0 && (
+                <Alert severity="error" icon={<XSquare />} className="neutral rounded-xl! bg-transparent! mb-2 mt-2 p-5">
                   <AlertTitle variant="subtitle1" className="pt-0.5">
                     The following inputs have errors!
                   </AlertTitle>
-                  {Object.entries(formik.errors).map(([field, error]) => (
+                  {visibleErrors.map(([field, error]) => (
                     <Box className="flex flex-row gap-0.5" key={field}>
                       <Typography className="text-error">
                         {adjustmentFieldLabels[field] ?? field}:
