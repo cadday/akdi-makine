@@ -112,8 +112,7 @@ export default function QuickTestForm({ onTestCreated }: { onTestCreated?: () =>
           presetSnapshot: {
             name: preset.name,
             type: preset.type,
-            duration: preset.duration,
-            speed: preset.speed,
+            velocity: preset.velocity,
             base: preset.base,
             targets: [...(preset.targets ?? [])],
           },

@@ -18,17 +18,16 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { Bookmark, ChevronDown, Clock3, Crosshair, Gauge, PencilRuler, Plus, Save, Split, X, XSquare } from "lucide-react";
+import { Bookmark, ChevronDown, Crosshair, Gauge, PencilRuler, Plus, Save, Split, X, XSquare } from "lucide-react";
 import type { PresetBase, PresetRecord, PresetType } from "@/context/db-context";
 import { PRESET_BASES, PRESET_TYPES } from "@/lib/db";
 import useAppNotifications from "@/hooks/use-app-notifications";
 import { cn } from "@/lib/utils";
 
 type PresetSaveInput = Omit<PresetRecord, "id" | "createdAt" | "updatedAt">;
-type PresetFormValues = Omit<PresetSaveInput, "type" | "duration" | "base" | "speed" | "targets"> & {
+type PresetFormValues = Omit<PresetSaveInput, "type" | "base" | "velocity" | "targets"> & {
   type: PresetType | "";
-  duration: number | "";
-  speed: number | "";
+  velocity: number | "";
   base: PresetBase | "";
   targets: Array<number | "">;
 };
@@ -44,8 +43,7 @@ function getInitialValues(preset?: PresetRecord): PresetFormValues {
   return {
     name: preset?.name ?? "",
     type: preset?.type ?? "",
-    duration: preset?.duration ?? "",
-    speed: preset?.speed ?? "",
+    velocity: preset?.velocity ?? "",
     base: preset?.base ?? "",
     targets: preset?.targets?.length ? [...preset.targets] : [""],
   };
@@ -54,8 +52,7 @@ function getInitialValues(preset?: PresetRecord): PresetFormValues {
 const validationSchema = yup.object({
   name: yup.string().trim().required("Name is required"),
   type: yup.string().oneOf(PRESET_TYPES).required("Type is required"),
-  duration: yup.number().typeError("Enter a number").min(0, "Must be zero or greater").required("Duration is required"),
-  speed: yup.number().typeError("Enter a number").moreThan(0, "Must be greater than zero").required("Speed is required"),
+  velocity: yup.number().typeError("Enter a number").moreThan(0, "Must be greater than zero").required("Velocity is required"),
   base: yup.string().oneOf(PRESET_BASES).required("Base is required"),
   targets: yup
     .array()
@@ -75,14 +72,13 @@ export default function PresetForm({ onSave, preset, initialPreset, saveLabel = 
     validateOnBlur: false,
     validateOnMount: false,
     onSubmit: async (values) => {
-      if (!values.type || !values.base || values.duration === "" || values.speed === "" || values.targets.some((target) => target === "")) return;
+      if (!values.type || !values.base || values.velocity === "" || values.targets.some((target) => target === "")) return;
 
       try {
         await onSave({
           name: values.name.trim(),
           type: values.type,
-          duration: Number(values.duration),
-          speed: Number(values.speed),
+          velocity: Number(values.velocity),
           base: values.base,
           targets: values.targets.map(Number),
         });
@@ -144,33 +140,17 @@ export default function PresetForm({ onSave, preset, initialPreset, saveLabel = 
                 </FormControl>
               </Box>
               <Box className='flex flex-row gap-2'>
-                <Gauge className={cn("flex-none", fieldError("speed") && "text-error!")} />
+                <Gauge className={cn("flex-none", fieldError("velocity") && "text-error!")} />
                 <FormControl className='outlined' variant='standard' size='small' fullWidth required>
-                  <FormLabel component='label' className={fieldError("speed") ? "text-error!" : undefined}>
-                    Speed
+                  <FormLabel component='label' className={fieldError("velocity") ? "text-error!" : undefined}>
+                    Velocity
                   </FormLabel>
                   <Input
                     type='number'
                     inputProps={{ min: 0, step: "any" }}
-                    endAdornment={<InputAdornment position='end'>mm/s</InputAdornment>}
-                    value={formik.values.speed}
-                    onChange={(event) => void formik.setFieldValue("speed", event.target.value === "" ? "" : Number(event.target.value))}
-                  />
-                </FormControl>
-              </Box>
-              <Box className='flex flex-row gap-2'>
-                <Clock3 className={cn("flex-none", fieldError("duration") && "text-error!")} />
-                <FormControl className='outlined' variant='standard' size='small' fullWidth required>
-                  <FormLabel component='label' className={fieldError("duration") ? "text-error!" : undefined}>
-                    Mock Duration
-                  </FormLabel>
-                  <Input
-                    name='duration'
-                    type='number'
-                    inputProps={{ min: 0, step: "any" }}
-                    endAdornment={<InputAdornment position='end'>s</InputAdornment>}
-                    value={formik.values.duration}
-                    onChange={(event) => void formik.setFieldValue("duration", event.target.value === "" ? "" : Number(event.target.value))}
+                    endAdornment={<InputAdornment position='end'>mm/min</InputAdornment>}
+                    value={formik.values.velocity}
+                    onChange={(event) => void formik.setFieldValue("velocity", event.target.value === "" ? "" : Number(event.target.value))}
                   />
                 </FormControl>
               </Box>

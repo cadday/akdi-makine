@@ -39,10 +39,9 @@ interface TestDataGridProps {
   dataFields: DataFieldDefinition[];
   onTestsChange: Dispatch<SetStateAction<TestRecord[]>>;
   onAddItem?: () => void;
-  alignColumnsLeft?: boolean;
 }
 
-export default function TestDataGrid({ tests, dataFields, onTestsChange, onAddItem, alignColumnsLeft = false }: TestDataGridProps) {
+export default function TestDataGrid({ tests, dataFields, onTestsChange, onAddItem }: TestDataGridProps) {
   const navigate = useNavigate();
   const { deleteTest, deleteTests, duplicateTest, duplicateTests } = useDb();
   const { showError } = useAppNotifications();
@@ -245,7 +244,6 @@ export default function TestDataGrid({ tests, dataFields, onTestsChange, onAddIt
           autoHeight
           rows={rows}
           columns={columns}
-          alignColumnsLeft={alignColumnsLeft}
           initialState={{
             columns: { columnVisibilityModel: { id: false, createdAt: false } },
             pagination: { paginationModel: { pageSize: 10 } },

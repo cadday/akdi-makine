@@ -232,8 +232,7 @@ export default function Page() {
           presetSnapshot: {
             name: preset.name,
             type: preset.type,
-            duration: preset.duration,
-            speed: preset.speed,
+            velocity: preset.velocity,
             base: preset.base,
             targets: [...(preset.targets ?? [])],
           },

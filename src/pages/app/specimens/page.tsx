@@ -315,7 +315,6 @@ export default function Page() {
                 autoHeight
                 rows={rows}
                 columns={columns}
-                alignColumnsLeft
                 loading={isLoading}
                 initialState={{
                   columns: { columnVisibilityModel: { id: false, createdAt: false } },

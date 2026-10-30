@@ -193,7 +193,7 @@ export default function Page() {
         }
       },
     },
-    { field: "speed", headerName: "Speed (mm/s)", minWidth: 130, type: "number" },
+    { field: "velocity", headerName: "Velocity (mm/min)", minWidth: 150, type: "number", align: "left", headerAlign: "left" },
     { field: "base", headerName: "Base", minWidth: 130 },
     {
       field: "targets",
@@ -201,7 +201,6 @@ export default function Page() {
       minWidth: 180,
       valueGetter: (_value, row) => (row.targets ?? []).map((target) => `${target} ${row.base === "Force" ? "N" : "mm"}`).join(", "),
     },
-    { field: "duration", headerName: "Mock Duration (s)", minWidth: 130, type: "number" },
     {
       field: "createdAt",
       headerName: "Created",
@@ -274,7 +273,6 @@ export default function Page() {
                 autoHeight
                 rows={rows}
                 columns={columns}
-                alignColumnsLeft
                 loading={isLoading}
                 initialState={{
                   columns: { columnVisibilityModel: { id: false, createdAt: false } },

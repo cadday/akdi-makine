@@ -30,7 +30,6 @@ import {
   CalendarPlus,
   Crosshair,
   Diameter,
-  Clock3,
   Ellipsis,
   FileDown,
   Gauge,
@@ -392,10 +391,10 @@ function ComparisonDetails({
           <ComparisonField icon={<PencilRuler className='flex-none' />} label='Type' tests={tests} colors={colors} valueForTest={(test) => test.presetSnapshot.type} />
           <ComparisonField
             icon={<Gauge className='flex-none' />}
-            label='Speed'
+            label='Velocity'
             tests={tests}
             colors={colors}
-            valueForTest={(test) => (typeof test.presetSnapshot.speed === "number" ? `${test.presetSnapshot.speed} mm/s` : "-")}
+            valueForTest={(test) => (typeof test.presetSnapshot.velocity === "number" ? `${test.presetSnapshot.velocity} mm/min` : "-")}
           />
           <ComparisonField
             icon={<Split className='flex-none' />}
@@ -419,7 +418,6 @@ function ComparisonDetails({
               }}
             />
           ))}
-          <ComparisonField icon={<Clock3 className='flex-none' />} label='Mock Duration' tests={tests} colors={colors} valueForTest={(test) => `${test.presetSnapshot.duration} s`} />
         </ComparisonCard>
         <ComparisonCard title='Definition'>
           <ComparisonField icon={<Bookmark className='flex-none' />} label='Name' tests={tests} colors={colors} valueForTest={(test) => test.name} />

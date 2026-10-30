@@ -17,7 +17,6 @@ interface TestRunState {
 
 interface UseMockTestRunOptions {
   testId: string;
-  duration: number;
   specimen: TestSpecimenSnapshot;
   savedResults?: TestResults;
   onResultsSaved?: (results: TestResults) => void;
@@ -144,7 +143,7 @@ function getStressStrainPoint(point: LoadDisplacementPoint, specimen: TestSpecim
 function getMockResults(
   loadDisplacementData: LoadDisplacementPoint[],
   stressStrainData: StressStrainPoint[],
-  duration: number,
+  testDuration: number,
   curve: MockCurve,
 ): TestResults {
   return {
@@ -154,7 +153,7 @@ function getMockResults(
     elongation: Number(curve.elongation.toFixed(2)),
     firstLength: Number(curve.firstLength.toFixed(2)),
     lastLength: Number(curve.lastLength.toFixed(2)),
-    testDuration: duration,
+    testDuration,
     loadDisplacementData,
     stressStrainData,
   };
@@ -177,7 +176,7 @@ function getPartialMockResults(
   };
 }
 
-export default function useMockTestRun({ testId, duration, specimen, savedResults, onResultsSaved, readOnly = false }: UseMockTestRunOptions) {
+export default function useMockTestRun({ testId, specimen, savedResults, onResultsSaved, readOnly = false }: UseMockTestRunOptions) {
   const { updateTestResults } = useDb();
   const curve = useMemo(() => createMockCurve(testId), [testId]);
   const [state, setState] = useState<TestRunState>(() => {
@@ -261,7 +260,7 @@ export default function useMockTestRun({ testId, duration, specimen, savedResult
     setState({ status: "in-progress", progress: 0, loadDisplacementData, stressStrainData, results: null, error: null });
 
     intervalRef.current = window.setInterval(() => {
-      const progress = duration <= 0 ? 1 : Math.min((performance.now() - startTime) / (duration * 1000), 1);
+      const progress = 1;
       const stressStrainPoint = getMockStressStrainPoint(progress, curve);
       const loadDisplacementPoint = getMockLoadDisplacementPoint(stressStrainPoint, curve, specimen);
       loadDisplacementData = [...loadDisplacementData, loadDisplacementPoint];
@@ -275,7 +274,7 @@ export default function useMockTestRun({ testId, duration, specimen, savedResult
       if (progress < 1) return;
       if (intervalRef.current !== null) window.clearInterval(intervalRef.current);
       intervalRef.current = null;
-      const results = getMockResults(loadDisplacementData, stressStrainData, duration, curve);
+      const results = getMockResults(loadDisplacementData, stressStrainData, (performance.now() - startTime) / 1000, curve);
       if (!cancelled) void saveResults(results);
     }, SAMPLE_INTERVAL_MS);
 
@@ -284,7 +283,7 @@ export default function useMockTestRun({ testId, duration, specimen, savedResult
       if (intervalRef.current !== null) window.clearInterval(intervalRef.current);
       intervalRef.current = null;
     };
-  }, [curve, duration, readOnly, savedResults, saveResults, specimen, testId]);
+  }, [curve, readOnly, savedResults, saveResults, specimen, testId]);
 
   return { ...state, retrySave, stopTest };
 }

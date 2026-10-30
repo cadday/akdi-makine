@@ -87,8 +87,7 @@ export interface TestSpecimenSnapshot {
 export interface TestPresetSnapshot {
   name: string;
   type: PresetType;
-  duration: number;
-  speed?: number;
+  velocity?: number;
   base?: PresetBase;
   targets?: number[];
 }
@@ -111,8 +110,7 @@ export interface PresetRecord {
   id: string;
   name: string;
   type: PresetType;
-  duration: number;
-  speed: number;
+  velocity: number;
   base: PresetBase;
   targets: number[];
   createdAt: number;

@@ -12,7 +12,6 @@ import {
   Bookmark,
   ChevronLeft,
   ChevronRight,
-  Clock3,
   Columns,
   Crosshair,
   Ellipsis,
@@ -281,8 +280,8 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                                 <Box className='flex flex-row gap-2'>
                                   <Gauge className='flex-none' />
                                   <Box className='flex flex-col gap-1'>
-                                    <Typography variant='subtitle1'>Speed</Typography>
-                                    <Typography>{typeof preset.speed === "number" ? `${preset.speed} mm/s` : "-"}</Typography>
+                                    <Typography variant='subtitle1'>Velocity</Typography>
+                                    <Typography>{typeof preset.velocity === "number" ? `${preset.velocity} mm/min` : "-"}</Typography>
                                   </Box>
                                 </Box>
                                 <Box className='flex flex-row gap-2'>
@@ -303,13 +302,6 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                                     </Box>
                                   </Box>
                                 ))}
-                                <Box className='flex flex-row gap-2'>
-                                  <Clock3 className='flex-none' />
-                                  <Box className='flex flex-col gap-1'>
-                                    <Typography variant='subtitle1'>Mock Duration</Typography>
-                                    <Typography>{preset.duration} s</Typography>
-                                  </Box>
-                                </Box>
                               </>
                             ) : (
                               <Typography color='textSecondary'>No related preset</Typography>

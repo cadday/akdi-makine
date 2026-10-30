@@ -1,7 +1,7 @@
 import { SyntheticEvent, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { Box, Breadcrumbs, Button, Card, CardContent, Grid, ListItemIcon, ListItemText, Menu, MenuItem, Tab, Tooltip, Typography } from "@mui/material";
-import { CalendarCog, CalendarPlus, ChevronLeft, ChevronRight, Clock3, Crosshair, Ellipsis, Gauge, PencilRuler, Split, X } from "lucide-react";
+import { CalendarCog, CalendarPlus, ChevronLeft, ChevronRight, Crosshair, Ellipsis, Gauge, PencilRuler, Split, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { DataGrid, type GridColDef, type GridRenderCellParams } from "@mui/x-data-grid";
 import TestDataGrid from "@/pages/app/tests/components/test-data-grid";
@@ -221,8 +221,8 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                               <Box className='flex flex-row gap-2'>
                                 <Gauge className='flex-none' />
                                 <Box className='flex flex-col gap-1'>
-                                  <Typography variant='subtitle1'>Speed</Typography>
-                                  <Typography>{typeof preset.speed === "number" ? `${preset.speed} mm/s` : "-"}</Typography>
+                                  <Typography variant='subtitle1'>Velocity</Typography>
+                                  <Typography>{typeof preset.velocity === "number" ? `${preset.velocity} mm/min` : "-"}</Typography>
                                 </Box>
                               </Box>
                               <Box className='flex flex-row gap-2'>
@@ -243,13 +243,6 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                                   </Box>
                                 </Box>
                               ))}
-                              <Box className='flex flex-row gap-2'>
-                                <Clock3 className='flex-none' />
-                                <Box className='flex flex-col gap-1'>
-                                  <Typography variant='subtitle1'>Mock Duration</Typography>
-                                  <Typography>{preset.duration} s</Typography>
-                                </Box>
-                              </Box>
                               <Box className='flex flex-row gap-2'>
                                 <CalendarPlus className='flex-none' />
                                 <Box className='flex flex-col gap-1'>
@@ -303,7 +296,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                 <TabPanel value='Tests'>
                   <Grid size={12} container spacing={5} className='w-full'>
                     <Grid size={12}>
-                      <TestDataGrid tests={tests} dataFields={testFields} onTestsChange={setTests} alignColumnsLeft />
+                      <TestDataGrid tests={tests} dataFields={testFields} onTestsChange={setTests} />
                     </Grid>
                   </Grid>
                 </TabPanel>

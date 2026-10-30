@@ -23,10 +23,9 @@ interface RowMenuState {
 export interface DataGridWithRowActionsProps<Row extends GridValidRowModel> extends Omit<DataGridProps<Row>, "columns" | "getRowClassName"> {
   columns: GridColDef<Row>[];
   getRowActions: (rowId: string) => DataGridRowAction[];
-  alignColumnsLeft?: boolean;
 }
 
-export default function DataGridWithRowActions<Row extends GridValidRowModel>({ columns, getRowActions, alignColumnsLeft = false, ...gridProps }: DataGridWithRowActionsProps<Row>) {
+export default function DataGridWithRowActions<Row extends GridValidRowModel>({ columns, getRowActions, ...gridProps }: DataGridWithRowActionsProps<Row>) {
   const [rowMenu, setRowMenu] = useState<RowMenuState | null>(null);
   const activeRowId = rowMenu?.open ? rowMenu.rowId : null;
   const closeRowMenu = useCallback(() => {
@@ -52,8 +51,8 @@ export default function DataGridWithRowActions<Row extends GridValidRowModel>({ 
         headerName: "Actions",
         minWidth: 80,
         flex: 1,
-        align: alignColumnsLeft ? "left" : "right",
-        headerAlign: alignColumnsLeft ? "left" : "right",
+        align: "right",
+        headerAlign: "right",
         sortable: false,
         filterable: false,
         disableColumnMenu: true,
@@ -79,7 +78,7 @@ export default function DataGridWithRowActions<Row extends GridValidRowModel>({ 
         ),
       },
     ],
-    [activeRowId, alignColumnsLeft, closeRowMenu, columns],
+    [activeRowId, closeRowMenu, columns],
   );
 
   return (
@@ -88,23 +87,6 @@ export default function DataGridWithRowActions<Row extends GridValidRowModel>({ 
         <DataGrid
           {...gridProps}
           columns={columnsWithActions}
-          sx={
-            alignColumnsLeft
-              ? {
-                  "& .MuiDataGrid-cell:not(.MuiDataGrid-cellCheckbox), & .MuiDataGrid-cell--textRight:not(.MuiDataGrid-cellCheckbox), & .MuiDataGrid-cell--textCenter:not(.MuiDataGrid-cellCheckbox)": {
-                    justifyContent: "flex-start",
-                    textAlign: "left !important",
-                  },
-                  "& .MuiDataGrid-columnHeader:not(.MuiDataGrid-columnHeaderCheckbox) .MuiDataGrid-columnHeaderTitleContainer": {
-                    justifyContent: "flex-start",
-                    flexDirection: "row",
-                  },
-                  "& .MuiDataGrid-columnHeader:not(.MuiDataGrid-columnHeaderCheckbox) .MuiDataGrid-columnHeaderTitle": {
-                    textAlign: "left",
-                  },
-                }
-              : undefined
-          }
           getRowClassName={(params) => (String(params.id) === activeRowId ? "outline-primary-light/40 outline-2" : "")}
         />
       </Box>

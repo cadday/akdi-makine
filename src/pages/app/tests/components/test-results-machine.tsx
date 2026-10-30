@@ -66,7 +66,6 @@ export default function TestResultsMachine({ test, onResultsSaved, readOnly = fa
   const graphType = getTestGraphType(test.specimenSnapshot.geometry);
   const { loadDisplacementData, stressStrainData, progress, results, status, stopTest } = useMockTestRun({
     testId: test.id,
-    duration: test.presetSnapshot.duration,
     specimen: test.specimenSnapshot,
     savedResults: test.results,
     onResultsSaved,
