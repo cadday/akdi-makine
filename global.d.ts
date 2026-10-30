@@ -45,6 +45,7 @@ declare global {
 
   interface PlcTestRunPreset {
     type: "Tensile" | "Compression";
+    base: "Load" | "Distance";
     velocity: number;
     targets: number[];
   }

@@ -211,7 +211,7 @@ export default function PresetForm({ onSave, preset, initialPreset, saveLabel = 
                         type='number'
                         inputProps={{ min: 0, step: "any" }}
                         endAdornment={
-                          <InputAdornment position='end'>{formik.values.base === "Force" ? "N" : formik.values.base === "Distance" ? "mm" : ""}</InputAdornment>
+                          <InputAdornment position='end'>{formik.values.base === "Load" ? "N" : formik.values.base === "Distance" ? "mm" : ""}</InputAdornment>
                         }
                         value={target}
                         onChange={(event) => {

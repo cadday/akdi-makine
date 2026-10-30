@@ -250,6 +250,7 @@ export default function Page() {
             testId,
             preset: {
               type: preset.type,
+              base: preset.base,
               velocity: preset.velocity,
               targets: [...(preset.targets ?? [])],
             },

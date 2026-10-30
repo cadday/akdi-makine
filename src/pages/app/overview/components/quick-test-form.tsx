@@ -135,6 +135,7 @@ export default function QuickTestForm({ onTestCreated }: { onTestCreated?: () =>
             testId,
             preset: {
               type: preset.type,
+              base: preset.base,
               velocity: preset.velocity,
               targets: [...(preset.targets ?? [])],
             },

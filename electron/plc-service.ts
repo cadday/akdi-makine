@@ -370,10 +370,13 @@ function validateTestRunRequest(value: unknown): PlcTestRunRequest {
   if (preset.type !== "Tensile" && preset.type !== "Compression") {
     throw new Error("Invalid PLC test type");
   }
+  if (preset.base !== "Load" && preset.base !== "Distance") {
+    throw new Error("Invalid PLC test base");
+  }
   if (typeof preset.velocity !== "number" || !Number.isFinite(preset.velocity)) {
     throw new Error("Invalid PLC test velocity");
   }
-  if (!Array.isArray(preset.targets)) {
+  if (!Array.isArray(preset.targets) || preset.targets.length < 1 || preset.targets.length > 5) {
     throw new Error("Invalid PLC test targets");
   }
   const targets = preset.targets.map((target) => {
@@ -385,6 +388,7 @@ function validateTestRunRequest(value: unknown): PlcTestRunRequest {
     testId: request.testId,
     preset: {
       type: preset.type,
+      base: preset.base,
       velocity: preset.velocity,
       targets,
     },

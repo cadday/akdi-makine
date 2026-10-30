@@ -311,7 +311,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                                     <Box className='flex flex-col gap-1'>
                                       <Typography variant='subtitle1'>Target {index + 1}</Typography>
                                       <Typography>
-                                        {typeof target === "number" ? `${target} ${preset.base === "Force" ? "N" : preset.base === "Distance" ? "mm" : ""}`.trim() : "-"}
+                                        {typeof target === "number" ? `${target} ${preset.base === "Load" ? "N" : preset.base === "Distance" ? "mm" : ""}`.trim() : "-"}
                                       </Typography>
                                     </Box>
                                   </Box>

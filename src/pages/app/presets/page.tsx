@@ -199,7 +199,7 @@ export default function Page() {
       field: "targets",
       headerName: "Targets",
       minWidth: 180,
-      valueGetter: (_value, row) => (row.targets ?? []).map((target) => `${target} ${row.base === "Force" ? "N" : "mm"}`).join(", "),
+      valueGetter: (_value, row) => (row.targets ?? []).map((target) => `${target} ${row.base === "Load" ? "N" : "mm"}`).join(", "),
     },
     {
       field: "createdAt",

@@ -413,7 +413,7 @@ function ComparisonDetails({
               valueForTest={(test) => {
                 const target = test.presetSnapshot.targets?.[index];
                 if (typeof target !== "number") return "-";
-                const unit = test.presetSnapshot.base === "Force" ? "N" : test.presetSnapshot.base === "Distance" ? "mm" : "";
+                const unit = test.presetSnapshot.base === "Load" ? "N" : test.presetSnapshot.base === "Distance" ? "mm" : "";
                 return unit ? `${target} ${unit}` : String(target);
               }}
             />
