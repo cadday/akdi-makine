@@ -18812,6 +18812,16 @@ const PLC_DISTANCE_REGISTER_ADDRESS = 4098;
 const PLC_STATUS_REGISTER_ADDRESS = 4116;
 const PLC_OVERVIEW_REGISTER_COUNT = PLC_STATUS_REGISTER_ADDRESS - PLC_LOAD_REGISTER_ADDRESS + 1;
 const PLC_STATUS_REGISTER_INDEX = PLC_STATUS_REGISTER_ADDRESS - PLC_LOAD_REGISTER_ADDRESS;
+const PLC_MANUAL_VELOCITY_ADDRESS = 4606;
+const PLC_MANUAL_VELOCITY_SCALE = 10;
+const PLC_TOP_DISTANCE_LIMIT_ADDRESS = 4608;
+const PLC_DISTANCE_LIMIT_SCALE = 1e4;
+const PLC_TOP_LOAD_LIMIT_ADDRESS = 4610;
+const PLC_LOAD_LIMIT_SCALE = 10;
+const PLC_BOTTOM_DISTANCE_LIMIT_ADDRESS = 4622;
+const PLC_BOTTOM_LOAD_LIMIT_ADDRESS = 4624;
+const PLC_FIRST_ADJUSTMENT_REGISTER_COUNT = PLC_TOP_LOAD_LIMIT_ADDRESS - PLC_MANUAL_VELOCITY_ADDRESS + 2;
+const PLC_LAST_ADJUSTMENT_REGISTER_COUNT = PLC_BOTTOM_LOAD_LIMIT_ADDRESS - PLC_BOTTOM_DISTANCE_LIMIT_ADDRESS + 2;
 function validateRegister(value, address) {
   if (typeof value !== "number" || !Number.isInteger(value) || value < 0 || value > 65535) {
     throw new Error(`PLC returned an invalid value for holding register ${address}`);
@@ -18823,6 +18833,22 @@ function decodeDvpDword(firstWordValue, secondWordValue, address) {
   const highWord = validateRegister(secondWordValue, address + 1);
   const unsignedValue = highWord * 65536 + lowWord;
   return unsignedValue >= 2147483648 ? unsignedValue - 4294967296 : unsignedValue;
+}
+function validateScaledSignedDword(value, name, scale, decimalPlaces) {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    throw new Error(`${name} must be a number`);
+  }
+  const scaledValue = value * scale;
+  const integerValue = Math.round(scaledValue);
+  const tolerance = Number.EPSILON * Math.max(1, Math.abs(scaledValue)) * 4;
+  if (Math.abs(scaledValue - integerValue) > tolerance || integerValue < -2147483648 || integerValue > 2147483647) {
+    throw new Error(`${name} must have at most ${decimalPlaces} decimal places and fit a signed 32-bit integer`);
+  }
+  return integerValue;
+}
+function encodeDvpDword(value) {
+  const unsignedValue = value < 0 ? value + 4294967296 : value;
+  return [unsignedValue % 65536, Math.floor(unsignedValue / 65536)];
 }
 async function readPlcWorkingStatus(client) {
   const response2 = await client.readCoils(PLC_WORKING_COIL_ADDRESS, 1);
@@ -18845,6 +18871,75 @@ async function readPlcOverviewValues(client) {
     distance,
     status: validateRegister(registers[PLC_STATUS_REGISTER_INDEX], PLC_STATUS_REGISTER_ADDRESS)
   };
+}
+async function readPlcAdjustments(client) {
+  const firstResponse = await client.readHoldingRegisters(
+    PLC_MANUAL_VELOCITY_ADDRESS,
+    PLC_FIRST_ADJUSTMENT_REGISTER_COUNT
+  );
+  const firstRegisters = firstResponse.response.body.valuesAsArray;
+  if (firstRegisters.length !== PLC_FIRST_ADJUSTMENT_REGISTER_COUNT) {
+    throw new Error(
+      `PLC returned ${firstRegisters.length} initial adjustment registers; expected ${PLC_FIRST_ADJUSTMENT_REGISTER_COUNT}`
+    );
+  }
+  const lastResponse = await client.readHoldingRegisters(
+    PLC_BOTTOM_DISTANCE_LIMIT_ADDRESS,
+    PLC_LAST_ADJUSTMENT_REGISTER_COUNT
+  );
+  const lastRegisters = lastResponse.response.body.valuesAsArray;
+  if (lastRegisters.length !== PLC_LAST_ADJUSTMENT_REGISTER_COUNT) {
+    throw new Error(
+      `PLC returned ${lastRegisters.length} final adjustment registers; expected ${PLC_LAST_ADJUSTMENT_REGISTER_COUNT}`
+    );
+  }
+  return {
+    manualVelocity: decodeDvpDword(firstRegisters[0], firstRegisters[1], PLC_MANUAL_VELOCITY_ADDRESS) / PLC_MANUAL_VELOCITY_SCALE,
+    topDistanceLimit: decodeDvpDword(firstRegisters[2], firstRegisters[3], PLC_TOP_DISTANCE_LIMIT_ADDRESS) / PLC_DISTANCE_LIMIT_SCALE,
+    bottomDistanceLimit: decodeDvpDword(lastRegisters[0], lastRegisters[1], PLC_BOTTOM_DISTANCE_LIMIT_ADDRESS) / PLC_DISTANCE_LIMIT_SCALE,
+    topLoadLimit: decodeDvpDword(firstRegisters[4], firstRegisters[5], PLC_TOP_LOAD_LIMIT_ADDRESS) / PLC_LOAD_LIMIT_SCALE,
+    bottomLoadLimit: decodeDvpDword(lastRegisters[2], lastRegisters[3], PLC_BOTTOM_LOAD_LIMIT_ADDRESS) / PLC_LOAD_LIMIT_SCALE
+  };
+}
+async function writePlcAdjustments(client, value) {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new Error("Invalid PLC adjustments");
+  }
+  const input = value;
+  const manualVelocity = validateScaledSignedDword(
+    input.manualVelocity,
+    "Manual Velocity",
+    PLC_MANUAL_VELOCITY_SCALE,
+    1
+  );
+  const topDistanceLimit = validateScaledSignedDword(
+    input.topDistanceLimit,
+    "Top Distance Limit",
+    PLC_DISTANCE_LIMIT_SCALE,
+    4
+  );
+  const bottomDistanceLimit = validateScaledSignedDword(
+    input.bottomDistanceLimit,
+    "Bottom Distance Limit",
+    PLC_DISTANCE_LIMIT_SCALE,
+    4
+  );
+  const topLoadLimit = validateScaledSignedDword(input.topLoadLimit, "Top Load Limit", PLC_LOAD_LIMIT_SCALE, 1);
+  const bottomLoadLimit = validateScaledSignedDword(
+    input.bottomLoadLimit,
+    "Bottom Load Limit",
+    PLC_LOAD_LIMIT_SCALE,
+    1
+  );
+  await client.writeMultipleRegisters(PLC_MANUAL_VELOCITY_ADDRESS, [
+    ...encodeDvpDword(manualVelocity),
+    ...encodeDvpDword(topDistanceLimit),
+    ...encodeDvpDword(topLoadLimit)
+  ]);
+  await client.writeMultipleRegisters(PLC_BOTTOM_DISTANCE_LIMIT_ADDRESS, [
+    ...encodeDvpDword(bottomDistanceLimit),
+    ...encodeDvpDword(bottomLoadLimit)
+  ]);
 }
 async function setMoveUp(client, enabled) {
   await client.writeSingleCoil(MOVE_UP_COIL_ADDRESS, enabled);
@@ -19151,6 +19246,20 @@ function initializePlcService(window2) {
       throw new Error("Cannot read overview values while the PLC is offline");
     }
     return readPlcOverviewValues(activeClient);
+  });
+  ipcMain.handle("plc:read-adjustments", async (event) => {
+    assertTrustedRequest(event.sender);
+    if (!activeClient || activeClient.connectionState !== "online" || connectionStatus.state !== "online") {
+      throw new Error("Cannot read adjustments while the PLC is offline");
+    }
+    return readPlcAdjustments(activeClient);
+  });
+  ipcMain.handle("plc:write-adjustments", async (event, values) => {
+    assertTrustedRequest(event.sender);
+    if (!activeClient || activeClient.connectionState !== "online" || connectionStatus.state !== "online") {
+      throw new Error("Cannot write adjustments while the PLC is offline");
+    }
+    return writePlcAdjustments(activeClient, values);
   });
   ipcMain.handle("plc:set-move-up", async (event, enabled) => {
     assertTrustedRequest(event.sender);

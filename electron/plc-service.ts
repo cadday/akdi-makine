@@ -3,12 +3,14 @@ import { randomUUID } from "node:crypto";
 import Modbus from "jsmodbus";
 import net from "node:net";
 import {
+  readPlcAdjustments,
   readPlcOverviewValues,
   readPlcWorkingStatus,
   setMoveDown,
   setMoveUp,
   triggerResetLoad,
   triggerResetStroke,
+  writePlcAdjustments,
 } from "./plc-operations";
 
 const PLC_PORT = 502;
@@ -384,6 +386,24 @@ export function initializePlcService(window: BrowserWindow | null): void {
     }
 
     return readPlcOverviewValues(activeClient);
+  });
+
+  ipcMain.handle("plc:read-adjustments", async (event) => {
+    assertTrustedRequest(event.sender);
+    if (!activeClient || activeClient.connectionState !== "online" || connectionStatus.state !== "online") {
+      throw new Error("Cannot read adjustments while the PLC is offline");
+    }
+
+    return readPlcAdjustments(activeClient);
+  });
+
+  ipcMain.handle("plc:write-adjustments", async (event, values: unknown) => {
+    assertTrustedRequest(event.sender);
+    if (!activeClient || activeClient.connectionState !== "online" || connectionStatus.state !== "online") {
+      throw new Error("Cannot write adjustments while the PLC is offline");
+    }
+
+    return writePlcAdjustments(activeClient, values);
   });
 
   ipcMain.handle("plc:set-move-up", async (event, enabled: unknown) => {

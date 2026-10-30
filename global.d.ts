@@ -11,6 +11,8 @@ interface PlcAPI {
   resetLoad: () => Promise<void>;
   resetStroke: () => Promise<void>;
   readOverviewValues: () => Promise<PlcOverviewValues>;
+  readAdjustments: () => Promise<PlcAdjustmentValues>;
+  writeAdjustments: (values: PlcAdjustmentValues) => Promise<void>;
   getStatus: () => Promise<PlcConnectionStatus>;
   onStatusChange: (callback: (status: PlcConnectionStatus) => void) => () => void;
 }
@@ -46,6 +48,14 @@ declare global {
     load: number;
     distance: number;
     status: number;
+  }
+
+  interface PlcAdjustmentValues {
+    manualVelocity: number;
+    topDistanceLimit: number;
+    bottomDistanceLimit: number;
+    topLoadLimit: number;
+    bottomLoadLimit: number;
   }
 
   interface Window {

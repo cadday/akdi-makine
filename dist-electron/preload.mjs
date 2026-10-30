@@ -56,6 +56,8 @@ electron.contextBridge.exposeInMainWorld("plcAPI", {
   resetLoad: () => electron.ipcRenderer.invoke("plc:reset-load"),
   resetStroke: () => electron.ipcRenderer.invoke("plc:reset-stroke"),
   readOverviewValues: () => electron.ipcRenderer.invoke("plc:read-overview-values"),
+  readAdjustments: () => electron.ipcRenderer.invoke("plc:read-adjustments"),
+  writeAdjustments: (values) => electron.ipcRenderer.invoke("plc:write-adjustments", values),
   getStatus: () => electron.ipcRenderer.invoke("plc:get-status"),
   onStatusChange: (callback) => {
     const listener = (_event, status) => callback(status);

@@ -62,6 +62,9 @@ contextBridge.exposeInMainWorld("plcAPI", {
   resetLoad: () => ipcRenderer.invoke("plc:reset-load") as Promise<void>,
   resetStroke: () => ipcRenderer.invoke("plc:reset-stroke") as Promise<void>,
   readOverviewValues: () => ipcRenderer.invoke("plc:read-overview-values") as Promise<PlcOverviewValues>,
+  readAdjustments: () => ipcRenderer.invoke("plc:read-adjustments") as Promise<PlcAdjustmentValues>,
+  writeAdjustments: (values: PlcAdjustmentValues) =>
+    ipcRenderer.invoke("plc:write-adjustments", values) as Promise<void>,
   getStatus: () => ipcRenderer.invoke("plc:get-status") as Promise<PlcConnectionStatus>,
   onStatusChange: (callback: (status: PlcConnectionStatus) => void) => {
     const listener = (_event: Electron.IpcRendererEvent, status: PlcConnectionStatus) => callback(status);
