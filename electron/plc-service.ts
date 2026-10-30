@@ -14,6 +14,7 @@ import {
   writePlcAdjustments,
   writePlcLimits,
 } from "./plc-operations";
+import { PlcTestRunManager } from "./plc-test-run";
 
 const PLC_PORT = 502;
 const CONNECTION_TIMEOUT_MS = 5000;
@@ -43,6 +44,9 @@ let healthPollTimeout: NodeJS.Timeout | null = null;
 let connectionStatus: PlcConnectionStatus = { state: "disconnected", ipAddress: null };
 let isRegistered = false;
 const preparedConnections = new Map<string, PreparedConnection>();
+const plcTestRuns = new PlcTestRunManager((update) => {
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send("plc:test-run-update", update);
+});
 
 function sendStatus(status: PlcConnectionStatus) {
   const unchanged =
@@ -132,6 +136,7 @@ function disconnectActiveSocket(socket: net.Socket, error?: Error) {
   if (activeSocket !== socket) return;
 
   const ipAddress = activeIpAddress;
+  plcTestRuns.connectionLost(error ?? new Error("PLC connection closed during a test"));
   stopHealthPolling();
   activeSocket = null;
   activeClient = null;
@@ -156,6 +161,7 @@ function handleSocketClose(socket: net.Socket) {
   removePreparedSocket(socket);
   if (activeSocket === socket) {
     const ipAddress = activeIpAddress;
+    plcTestRuns.connectionLost(new Error("PLC connection closed unexpectedly during a test"));
     stopHealthPolling();
     activeSocket = null;
     activeClient = null;
@@ -228,6 +234,7 @@ function openSocket(ipAddress: string) {
 }
 
 async function prepareConnection(value: unknown) {
+  if (plcTestRuns.hasActiveRun) throw new Error("Stop the active test before changing PLC connections");
   const ipAddress = normalizeIpAddress(value);
   const { socket, client } = await openSocket(ipAddress);
   const token = randomUUID();
@@ -267,6 +274,7 @@ function startHealthPolling(socket: net.Socket, client: InstanceType<typeof Modb
 }
 
 function activateConnection(token: unknown): PlcConnectionStatus {
+  if (plcTestRuns.hasActiveRun) throw new Error("Stop the active test before changing PLC connections");
   if (typeof token !== "string") throw new Error("Invalid prepared PLC connection");
 
   const prepared = preparedConnections.get(token);
@@ -295,6 +303,7 @@ function activateConnection(token: unknown): PlcConnectionStatus {
 }
 
 function disconnect() {
+  if (plcTestRuns.hasActiveRun) throw new Error("Stop the active test before disconnecting");
   stopHealthPolling();
   const previousSocket = activeSocket;
   activeSocket = null;
@@ -316,6 +325,7 @@ function disconnect() {
 }
 
 async function connect(ipAddress: unknown) {
+  if (plcTestRuns.hasActiveRun) throw new Error("Stop the active test before changing PLC connections");
   const normalizedIpAddress = normalizeIpAddress(ipAddress);
   const previousSocket = activeSocket;
   const previousIpAddress = activeIpAddress;
@@ -346,6 +356,41 @@ async function connect(ipAddress: unknown) {
   }
 }
 
+function validateTestRunRequest(value: unknown): PlcTestRunRequest {
+  if (typeof value !== "object" || value === null) throw new Error("Invalid PLC test request");
+  const request = value as Record<string, unknown>;
+  if (typeof request.testId !== "string" || request.testId.trim().length === 0) {
+    throw new Error("Invalid test ID");
+  }
+  if (typeof request.preset !== "object" || request.preset === null) {
+    throw new Error("Invalid preset for PLC test");
+  }
+
+  const preset = request.preset as Record<string, unknown>;
+  if (preset.type !== "Tensile" && preset.type !== "Compression") {
+    throw new Error("Invalid PLC test type");
+  }
+  if (typeof preset.velocity !== "number" || !Number.isFinite(preset.velocity)) {
+    throw new Error("Invalid PLC test velocity");
+  }
+  if (!Array.isArray(preset.targets)) {
+    throw new Error("Invalid PLC test targets");
+  }
+  const targets = preset.targets.map((target) => {
+    if (typeof target !== "number" || !Number.isFinite(target)) throw new Error("Invalid PLC test targets");
+    return target;
+  });
+
+  return {
+    testId: request.testId,
+    preset: {
+      type: preset.type,
+      velocity: preset.velocity,
+      targets,
+    },
+  };
+}
+
 export function initializePlcService(window: BrowserWindow | null): void {
   mainWindow = window;
   if (isRegistered) return;
@@ -374,6 +419,22 @@ export function initializePlcService(window: BrowserWindow | null): void {
   ipcMain.handle("plc:disconnect", (event) => {
     assertTrustedRequest(event.sender);
     return disconnect();
+  });
+
+  ipcMain.handle("plc:start-test-run", async (event, value: unknown) => {
+    assertTrustedRequest(event.sender);
+    const request = validateTestRunRequest(value);
+    if (!activeClient || activeClient.connectionState !== "online" || connectionStatus.state !== "online") {
+      throw new Error("Cannot start a test while the PLC is offline");
+    }
+
+    await plcTestRuns.start(activeClient, request);
+  });
+
+  ipcMain.handle("plc:stop-test-run", async (event, testId: unknown) => {
+    assertTrustedRequest(event.sender);
+    if (typeof testId !== "string") throw new Error("Invalid test ID");
+    await plcTestRuns.stop(testId);
   });
 
   ipcMain.handle("plc:get-status", (event) => {
@@ -467,8 +528,9 @@ export function initializePlcService(window: BrowserWindow | null): void {
   isRegistered = true;
 }
 
-export function shutdownPlcService(): void {
+export async function shutdownPlcService(): Promise<void> {
   stopHealthPolling();
+  await plcTestRuns.shutdown();
   for (const token of preparedConnections.keys()) {
     clearPreparedConnection(token, true);
   }

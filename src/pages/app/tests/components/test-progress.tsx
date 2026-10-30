@@ -1,13 +1,16 @@
 import { Box, LinearProgress } from '@mui/material';
 
-export default function TestProgress({ progress }: { progress: number }) {
+export default function TestProgress({ progress }: { progress?: number }) {
+  const normalizedProgress =
+    typeof progress === "number" && Number.isFinite(progress) ? Math.min(Math.max(progress, 0), 1) : undefined;
+
   return (
     <>
       <Box className="w-full fixed top-0 left-29 h-14 bg-background/60 z-5004 backdrop-blur-xs"></Box>
       <Box className="fixed inset-0 bg-background/60 w-full h-full z-5000"></Box>
       <LinearProgress
-        variant="determinate"
-        value={Math.min(Math.max(progress, 0), 1) * 100}
+        variant={normalizedProgress === undefined ? "indeterminate" : "determinate"}
+        value={normalizedProgress === undefined ? undefined : normalizedProgress * 100}
         className="fixed w-[calc(100%-7.25rem)] h-0.5 top-14 z-5003 inset-s-29"
       />
     </>

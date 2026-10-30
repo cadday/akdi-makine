@@ -57,6 +57,7 @@ export interface StressStrainPoint {
 }
 
 export type TestGraphType = "load-displacement" | "stress-strain";
+export type TestRunStatus = "starting" | "running" | "stopping" | "completed" | "stopped" | "failed";
 
 export function getTestGraphType(geometry?: SpecimenGeometry): TestGraphType {
   return geometry === "Cylindrical" || geometry === "Rectangular" ? "stress-strain" : "load-displacement";
@@ -102,6 +103,8 @@ export interface TestRecord {
   presetSnapshot: TestPresetSnapshot;
   customData: Record<string, DynamicDataValue>;
   results?: TestResults;
+  runStatus?: TestRunStatus;
+  runError?: string;
   createdAt: number;
   updatedAt: number;
 }
@@ -450,6 +453,70 @@ export async function updateTestResults(id: string, results: Partial<TestResults
   });
 }
 
+export function getStressStrainPoint(
+  point: LoadDisplacementPoint,
+  specimen: TestSpecimenSnapshot,
+): StressStrainPoint | null {
+  let crossSectionArea: number;
+  if (specimen.geometry === "Cylindrical" && typeof specimen.diameter === "number") {
+    crossSectionArea = (Math.PI * specimen.diameter ** 2) / 4;
+  } else if (
+    specimen.geometry === "Rectangular" &&
+    typeof specimen.side1 === "number" &&
+    typeof specimen.side2 === "number"
+  ) {
+    crossSectionArea = specimen.side1 * specimen.side2;
+  } else {
+    return null;
+  }
+
+  if (
+    !Number.isFinite(crossSectionArea) ||
+    crossSectionArea <= 0 ||
+    typeof specimen.height !== "number" ||
+    !Number.isFinite(specimen.height) ||
+    specimen.height <= 0
+  ) {
+    return null;
+  }
+
+  return {
+    strain: (point.displacement / specimen.height) * 100,
+    stress: point.load / crossSectionArea,
+  };
+}
+
+export async function updateTestRunStatus(id: string, runStatus: TestRunStatus, runError?: string) {
+  return db.tests.where("id").equals(id).modify((test) => {
+    test.runStatus = runStatus;
+    test.runError = runError;
+    const results = test.results ?? { loadDisplacementData: [], stressStrainData: [] };
+    results.finalized = runStatus === "completed" || runStatus === "stopped";
+    test.results = results;
+    test.updatedAt = Date.now();
+  });
+}
+
+export async function appendTestSample(
+  id: string,
+  point: LoadDisplacementPoint,
+  stressStrainPoint: StressStrainPoint | null,
+  elapsedMs: number,
+  runStatus: Extract<TestRunStatus, "running" | "stopping">,
+) {
+  return db.tests.where("id").equals(id).modify((test) => {
+    const results = test.results ?? { loadDisplacementData: [], stressStrainData: [] };
+    results.loadDisplacementData.push(point);
+    if (stressStrainPoint) results.stressStrainData.push(stressStrainPoint);
+    results.finalized = false;
+    results.testDuration = elapsedMs / 1000;
+    test.results = results;
+    test.runStatus = runStatus;
+    test.runError = undefined;
+    test.updatedAt = Date.now();
+  });
+}
+
 export async function deleteTest(id: string) {
   const test = await db.tests.get(id);
   await db.tests.delete(id);
@@ -466,18 +533,27 @@ export async function deleteTests(ids: string[]) {
   await deleteUnreferencedImages(tests);
 }
 
+function createTestDuplicate(original: TestRecord, now: number): TestRecord {
+  const activeRun =
+    original.runStatus === "starting" || original.runStatus === "running" || original.runStatus === "stopping";
+
+  return {
+    ...original,
+    id: createId(),
+    name: `${original.name} (Copy)`,
+    runStatus: activeRun ? undefined : original.runStatus,
+    runError: activeRun ? undefined : original.runError,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
 export async function duplicateTest(id: string) {
   const original = await db.tests.get(id);
   if (!original) return undefined;
 
   const now = Date.now();
-  const duplicate: TestRecord = {
-    ...original,
-    id: createId(),
-    name: `${original.name} (Copy)`,
-    createdAt: now,
-    updatedAt: now,
-  };
+  const duplicate = createTestDuplicate(original, now);
 
   await db.tests.add(duplicate);
   return duplicate;
@@ -491,13 +567,7 @@ export async function duplicateTests(ids: string[]) {
     const now = Date.now();
     const duplicates = originals
       .filter((original): original is TestRecord => Boolean(original))
-      .map((original) => ({
-        ...original,
-        id: createId(),
-        name: `${original.name} (Copy)`,
-        createdAt: now,
-        updatedAt: now,
-      }));
+      .map((original) => createTestDuplicate(original, now));
 
     await db.tests.bulkAdd(duplicates);
     return duplicates;

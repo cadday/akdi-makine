@@ -52,11 +52,20 @@ function getInitialValues(preset?: PresetRecord): PresetFormValues {
 const validationSchema = yup.object({
   name: yup.string().trim().required("Name is required"),
   type: yup.string().oneOf(PRESET_TYPES).required("Type is required"),
-  velocity: yup.number().typeError("Enter a number").moreThan(0, "Must be greater than zero").required("Velocity is required"),
+  velocity: yup
+    .number()
+    .typeError("Enter a number")
+    .moreThan(0, "Must be greater than zero")
+    .test("plc-precision", "Velocity can have at most 1 decimal place", (value) => {
+      if (value === undefined) return true;
+      const scaled = value * 10;
+      return Math.abs(scaled - Math.round(scaled)) < 1e-8;
+    })
+    .required("Velocity is required"),
   base: yup.string().oneOf(PRESET_BASES).required("Base is required"),
   targets: yup
     .array()
-    .of(yup.number().typeError("Enter a number").moreThan(0, "Must be greater than zero").required("Target is required"))
+    .of(yup.number().typeError("Enter a number").required("Target is required"))
     .min(1, "At least one target is required")
     .max(5, "A maximum of five targets is allowed")
     .required("At least one target is required"),

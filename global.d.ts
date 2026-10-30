@@ -15,6 +15,9 @@ interface PlcAPI {
   writeLimits: (values: PlcLimitsValues) => Promise<void>;
   readAdjustments: () => Promise<PlcAdjustmentValues>;
   writeAdjustments: (values: PlcAdjustmentValues) => Promise<void>;
+  startTestRun: (request: PlcTestRunRequest) => Promise<void>;
+  stopTestRun: (testId: string) => Promise<void>;
+  onTestRunUpdate: (callback: (update: PlcTestRunUpdate) => void) => () => void;
   getStatus: () => Promise<PlcConnectionStatus>;
   onStatusChange: (callback: (status: PlcConnectionStatus) => void) => () => void;
 }
@@ -38,6 +41,32 @@ interface ElectronAPI {
 }
 
 declare global {
+  type PlcTestRunState = "starting" | "running" | "stopping" | "completed" | "stopped" | "failed";
+
+  interface PlcTestRunPreset {
+    type: "Tensile" | "Compression";
+    velocity: number;
+    targets: number[];
+  }
+
+  interface PlcTestRunRequest {
+    testId: string;
+    preset: PlcTestRunPreset;
+  }
+
+  interface PlcTestRunSample {
+    elapsedMs: number;
+    load: number;
+    displacement: number;
+  }
+
+  interface PlcTestRunUpdate {
+    testId: string;
+    state: PlcTestRunState;
+    sample?: PlcTestRunSample;
+    error?: string;
+  }
+
   interface PlcConnectionStatus {
     state: "disconnected" | "connecting" | "online" | "offline";
     ipAddress: string | null;

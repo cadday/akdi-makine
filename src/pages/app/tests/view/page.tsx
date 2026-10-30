@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, type SyntheticEvent } from "react";
+import { liveQuery } from "dexie";
 import { Link, useNavigate, useParams } from "react-router";
 import { Box, Breadcrumbs, Button, Card, CardContent, Grid, ListItemIcon, ListItemText, Menu, MenuItem, Tab, Tooltip, Typography } from "@mui/material";
 import { DataGrid, type GridColDef, type GridRowSpacingParams } from "@mui/x-data-grid";
@@ -76,7 +77,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { getTest, getDataFields, deleteTest } = useDb();
+  const { db, getDataFields, deleteTest } = useDb();
   const { showError } = useAppNotifications();
   const { requestDelete, dialog } = useDeleteConfirmation();
   const [test, setTest] = useState<TestRecord | null>(null);
@@ -90,43 +91,60 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
 
   useEffect(() => {
     let cancelled = false;
-    const loadTest = async () => {
-      setIsLoading(true);
-      setLoadError(null);
-      setTest(null);
-      setSpecimenFields([]);
+    let recordLoaded = false;
+    let fieldsLoaded = false;
+    setIsLoading(true);
+    setLoadError(null);
+    setTest(null);
+    setSpecimenFields([]);
 
-      if (!id) {
-        setLoadError("Test not found");
-        setIsLoading(false);
-        return;
-      }
+    if (!id) {
+      setLoadError("Test not found");
+      setIsLoading(false);
+      return;
+    }
 
-      try {
-        const record = await getTest(id);
+    const subscription = liveQuery(() => db.tests.get(id)).subscribe({
+      next: (record) => {
+        if (cancelled) return;
+        recordLoaded = true;
         if (!record) {
-          if (!cancelled) setLoadError("Test not found");
+          setTest(null);
+          setLoadError("Test not found");
+          setIsLoading(false);
           return;
         }
 
-        const [testFields, linkedSpecimenFields] = await Promise.all([getDataFields("Test"), getDataFields("Specimen")]);
-        if (cancelled) return;
-
         setTest(record);
+        setLoadError(null);
+        if (fieldsLoaded) setIsLoading(false);
+      },
+      error: (error) => {
+        if (cancelled) return;
+        setLoadError(`Failed to load test: ${String(error)}`);
+        setIsLoading(false);
+      },
+    });
+
+    void Promise.all([getDataFields("Test"), getDataFields("Specimen")])
+      .then(([testFields, linkedSpecimenFields]) => {
+        if (cancelled) return;
         setFields(testFields);
         setSpecimenFields(linkedSpecimenFields);
-      } catch (error) {
-        if (!cancelled) setLoadError(`Failed to load test: ${String(error)}`);
-      } finally {
-        if (!cancelled) setIsLoading(false);
-      }
-    };
+        fieldsLoaded = true;
+        if (recordLoaded) setIsLoading(false);
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        setLoadError(`Failed to load test data fields: ${String(error)}`);
+        setIsLoading(false);
+      });
 
-    void loadTest();
     return () => {
       cancelled = true;
+      subscription.unsubscribe();
     };
-  }, [getDataFields, getTest, id]);
+  }, [db, getDataFields, id]);
 
   useEffect(() => {
     if (loadError) showError(loadError);
@@ -249,10 +267,6 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                     <Grid container spacing={5} size={{ lg: 8, xs: 12 }}>
                       <TestResultsMachine
                         test={test}
-                        readOnly={printMode}
-                        onResultsSaved={(results) => {
-                          setTest((current) => (current ? { ...current, results, updatedAt: Date.now() } : current));
-                        }}
                       />
 
                       <Grid size={12}>

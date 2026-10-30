@@ -3,6 +3,7 @@ import { createContext, type PropsWithChildren, useContext, useMemo } from "reac
 import {
   createDataField,
   addMachine,
+  appendTestSample,
   createPreset,
   createSpecimen,
   createTest,
@@ -46,6 +47,7 @@ import {
   updateSpecimen,
   updateTest,
   updateTestResults,
+  updateTestRunStatus,
   type DataFieldContainer,
   type DataFieldDefinition,
   type DataFieldType,
@@ -90,6 +92,8 @@ interface DbContextType {
   getTest: typeof getTest;
   updateTest: typeof updateTest;
   updateTestResults: typeof updateTestResults;
+  appendTestSample: typeof appendTestSample;
+  updateTestRunStatus: typeof updateTestRunStatus;
   deleteTest: typeof deleteTest;
   deleteTests: typeof deleteTests;
   duplicateTest: typeof duplicateTest;
@@ -142,6 +146,8 @@ export function DbProvider({ children }: PropsWithChildren) {
       getTest,
       updateTest,
       updateTestResults,
+      appendTestSample,
+      updateTestRunStatus,
       deleteTest,
       deleteTests,
       duplicateTest,

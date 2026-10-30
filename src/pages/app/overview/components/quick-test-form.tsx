@@ -18,6 +18,7 @@ import {
 } from "@mui/material";
 import { Bookmark, ChevronDown, DraftingCompass, Play, SlidersVertical, X, XSquare } from "lucide-react";
 import { useDb, type PresetRecord, type SpecimenRecord } from "@/context/db-context";
+import { useTestRun } from "@/context/test-run-context";
 import useAppNotifications from "@/hooks/use-app-notifications";
 import { cn } from "@/lib/utils";
 
@@ -42,6 +43,7 @@ function createDefaultTestName() {
 export default function QuickTestForm({ onTestCreated }: { onTestCreated?: () => void }) {
   const navigate = useNavigate();
   const { getSpecimens, getPresets, getConnectedMachine, createTest } = useDb();
+  const { hasActiveTest, startTestRun } = useTestRun();
   const { showError } = useAppNotifications();
   const [specimens, setSpecimens] = useState<SpecimenRecord[]>([]);
   const [presets, setPresets] = useState<PresetRecord[]>([]);
@@ -86,6 +88,11 @@ export default function QuickTestForm({ onTestCreated }: { onTestCreated?: () =>
     validateOnBlur: false,
     validateOnChange: true,
     onSubmit: async (values) => {
+      if (hasActiveTest) {
+        showError("A test is already running");
+        return;
+      }
+
       const specimen = specimens.find((item) => item.id === values.specimenId);
       const preset = presets.find((item) => item.id === values.presetId);
       if (!specimen || !preset) {
@@ -95,6 +102,11 @@ export default function QuickTestForm({ onTestCreated }: { onTestCreated?: () =>
 
       try {
         const connectedMachine = await getConnectedMachine();
+        if (!connectedMachine) {
+          showError("Connect to a machine before starting a test");
+          return;
+        }
+
         const testId = await createTest({
           name: values.name.trim(),
           machineIP: connectedMachine?.ipAddress ?? null,
@@ -118,6 +130,18 @@ export default function QuickTestForm({ onTestCreated }: { onTestCreated?: () =>
           },
           customData: {},
         });
+        try {
+          await startTestRun({
+            testId,
+            preset: {
+              type: preset.type,
+              velocity: preset.velocity,
+              targets: [...(preset.targets ?? [])],
+            },
+          });
+        } catch (error) {
+          showError(`Test saved, but the PLC could not start it: ${String(error)}`);
+        }
         onTestCreated?.();
         navigate(`/tests/${testId}`);
       } catch (error) {
@@ -237,7 +261,7 @@ export default function QuickTestForm({ onTestCreated }: { onTestCreated?: () =>
 
       {loadError && <Typography className='text-error'>{loadError}</Typography>}
       <Button
-        disabled={isLoading || Boolean(loadError)}
+        disabled={isLoading || Boolean(loadError) || hasActiveTest}
         loading={formik.isSubmitting}
         loadingPosition='start'
         type='submit'

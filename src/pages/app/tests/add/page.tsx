@@ -28,6 +28,7 @@ import { LINKS } from "@/constants";
 import { useTranslation } from "react-i18next";
 import { useDb, type DataFieldDefinition, type DynamicDataValue, type PresetRecord, type SpecimenRecord, type UploadedImage } from "@/context/db-context";
 import useAppNotifications from "@/hooks/use-app-notifications";
+import { useTestRun } from "@/context/test-run-context";
 import { cn } from "@/lib/utils";
 
 interface TestFormValues {
@@ -120,6 +121,7 @@ export default function Page() {
   const navigate = useNavigate();
   const { getSpecimens, getPresets, getDataFields, getConnectedMachine, createTest } = useDb();
   const { showError } = useAppNotifications();
+  const { hasActiveTest, startTestRun } = useTestRun();
   const [specimens, setSpecimens] = useState<SpecimenRecord[]>([]);
   const [presets, setPresets] = useState<PresetRecord[]>([]);
   const [fields, setFields] = useState<DataFieldDefinition[]>([]);
@@ -170,6 +172,11 @@ export default function Page() {
     validateOnBlur: false,
     validateOnChange: true,
     onSubmit: async (values) => {
+      if (hasActiveTest) {
+        showError("A test is already running");
+        return;
+      }
+
       const connectedMachine = await getConnectedMachine();
       if (!connectedMachine) {
         setMachineConnectionError(true);
@@ -238,6 +245,18 @@ export default function Page() {
           },
           customData,
         });
+        try {
+          await startTestRun({
+            testId,
+            preset: {
+              type: preset.type,
+              velocity: preset.velocity,
+              targets: [...(preset.targets ?? [])],
+            },
+          });
+        } catch (error) {
+          showError(`Test saved, but the PLC could not start it: ${String(error)}`);
+        }
         navigate(`/tests/${testId}`);
       } catch (error) {
         await Promise.allSettled(savedImageIds.map((imageId) => window.electronAPI.deleteImage(imageId)));
@@ -491,7 +510,7 @@ export default function Page() {
                 </Alert>
               )}
               <Button
-                disabled={isLoading || Boolean(loadError) || isCheckingMachine}
+                disabled={isLoading || Boolean(loadError) || isCheckingMachine || hasActiveTest}
                 loading={formik.isSubmitting || isCheckingMachine}
                 loadingPosition='start'
                 type='submit'

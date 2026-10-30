@@ -16,7 +16,7 @@ const PLC_TEST_LOAD_LIMIT_ADDRESS = 4600;
 const PLC_TEST_LOAD_LIMIT_SCALE = 10;
 const PLC_TEST_LIMITS_REGISTER_COUNT = 4;
 const PLC_MANUAL_VELOCITY_ADDRESS = 4606;
-const PLC_MANUAL_VELOCITY_SCALE = 10;
+export const PLC_VELOCITY_SCALE = 10;
 const PLC_MANUAL_VELOCITY_MAX = 750;
 const PLC_TOP_DISTANCE_LIMIT_ADDRESS = 4608;
 const PLC_DISTANCE_LIMIT_SCALE = 10000;
@@ -37,7 +37,7 @@ function validateRegister(value: unknown, address: number): number {
   return value;
 }
 
-function decodeDvpDword(
+export function decodeDvpDword(
   firstWordValue: unknown,
   secondWordValue: unknown,
   address: number,
@@ -49,7 +49,7 @@ function decodeDvpDword(
   return unsignedValue >= 0x80000000 ? unsignedValue - 0x100000000 : unsignedValue;
 }
 
-function validateScaledSignedDword(
+export function validateScaledSignedDword(
   value: unknown,
   name: string,
   scale: number,
@@ -76,7 +76,7 @@ function validateScaledSignedDword(
   return integerValue;
 }
 
-function encodeDvpDword(value: number): [number, number] {
+export function encodeDvpDword(value: number): [number, number] {
   const unsignedValue = value < 0 ? value + 0x100000000 : value;
   return [unsignedValue % 0x10000, Math.floor(unsignedValue / 0x10000)];
 }
@@ -183,7 +183,7 @@ export async function readPlcAdjustments(client: PlcModbusClient): Promise<PlcAd
   return {
     manualVelocity:
       decodeDvpDword(firstRegisters[0], firstRegisters[1], PLC_MANUAL_VELOCITY_ADDRESS) /
-      PLC_MANUAL_VELOCITY_SCALE,
+      PLC_VELOCITY_SCALE,
     topDistanceLimit:
       decodeDvpDword(firstRegisters[2], firstRegisters[3], PLC_TOP_DISTANCE_LIMIT_ADDRESS) /
       PLC_DISTANCE_LIMIT_SCALE,
@@ -208,7 +208,7 @@ export async function writePlcAdjustments(client: PlcModbusClient, value: unknow
   const manualVelocity = validateScaledSignedDword(
     input.manualVelocity,
     'Manual Velocity',
-    PLC_MANUAL_VELOCITY_SCALE,
+    PLC_VELOCITY_SCALE,
     1,
     { max: PLC_MANUAL_VELOCITY_MAX },
   );

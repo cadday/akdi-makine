@@ -280,12 +280,10 @@ function createWindow() {
 }
 
 app.on("window-all-closed", () => {
-  shutdownPlcService();
-
-  if (process.platform !== "darwin") {
-    app.quit();
+  void shutdownPlcService().finally(() => {
+    if (process.platform !== "darwin") app.quit();
     mainWindow = null;
-  }
+  });
 });
 
 app.on("activate", () => {
