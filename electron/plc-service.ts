@@ -2,7 +2,14 @@ import { BrowserWindow, ipcMain } from "electron";
 import { randomUUID } from "node:crypto";
 import Modbus from "jsmodbus";
 import net from "node:net";
-import { readPlcWorkingStatus, setMoveDown, setMoveUp, triggerResetLoad, triggerResetStroke } from "./plc-operations";
+import {
+  readPlcOverviewValues,
+  readPlcWorkingStatus,
+  setMoveDown,
+  setMoveUp,
+  triggerResetLoad,
+  triggerResetStroke,
+} from "./plc-operations";
 
 const PLC_PORT = 502;
 const CONNECTION_TIMEOUT_MS = 5000;
@@ -331,7 +338,7 @@ async function connect(ipAddress: unknown) {
         error: getErrorMessage(error),
       });
     }
-    throw error;
+    return connectionStatus;
   }
 }
 
@@ -368,6 +375,15 @@ export function initializePlcService(window: BrowserWindow | null): void {
   ipcMain.handle("plc:get-status", (event) => {
     assertTrustedRequest(event.sender);
     return connectionStatus;
+  });
+
+  ipcMain.handle("plc:read-overview-values", async (event) => {
+    assertTrustedRequest(event.sender);
+    if (!activeClient || activeClient.connectionState !== "online" || connectionStatus.state !== "online") {
+      throw new Error("Cannot read overview values while the PLC is offline");
+    }
+
+    return readPlcOverviewValues(activeClient);
   });
 
   ipcMain.handle("plc:set-move-up", async (event, enabled: unknown) => {

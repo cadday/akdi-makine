@@ -18807,6 +18807,23 @@ const MOVE_UP_COIL_ADDRESS = 2050;
 const MOVE_DOWN_COIL_ADDRESS = 2048;
 const RESET_LOAD_COIL_ADDRESS = 2120;
 const RESET_STROKE_COIL_ADDRESS = 2106;
+const PLC_LOAD_REGISTER_ADDRESS = 4096;
+const PLC_DISTANCE_REGISTER_ADDRESS = 4098;
+const PLC_STATUS_REGISTER_ADDRESS = 4116;
+const PLC_OVERVIEW_REGISTER_COUNT = PLC_STATUS_REGISTER_ADDRESS - PLC_LOAD_REGISTER_ADDRESS + 1;
+const PLC_STATUS_REGISTER_INDEX = PLC_STATUS_REGISTER_ADDRESS - PLC_LOAD_REGISTER_ADDRESS;
+function validateRegister(value, address) {
+  if (typeof value !== "number" || !Number.isInteger(value) || value < 0 || value > 65535) {
+    throw new Error(`PLC returned an invalid value for holding register ${address}`);
+  }
+  return value;
+}
+function decodeDvpDword(firstWordValue, secondWordValue, address) {
+  const lowWord = validateRegister(firstWordValue, address);
+  const highWord = validateRegister(secondWordValue, address + 1);
+  const unsignedValue = highWord * 65536 + lowWord;
+  return unsignedValue >= 2147483648 ? unsignedValue - 4294967296 : unsignedValue;
+}
 async function readPlcWorkingStatus(client) {
   const response2 = await client.readCoils(PLC_WORKING_COIL_ADDRESS, 1);
   const coilValue = response2.response.body.valuesAsArray[0];
@@ -18814,6 +18831,20 @@ async function readPlcWorkingStatus(client) {
     throw new Error(`PLC returned an invalid value for coil ${PLC_WORKING_COIL_ADDRESS}`);
   }
   return coilValue === true || coilValue === 1;
+}
+async function readPlcOverviewValues(client) {
+  const response2 = await client.readHoldingRegisters(PLC_LOAD_REGISTER_ADDRESS, PLC_OVERVIEW_REGISTER_COUNT);
+  const registers = response2.response.body.valuesAsArray;
+  if (registers.length !== PLC_OVERVIEW_REGISTER_COUNT) {
+    throw new Error(`PLC returned ${registers.length} overview registers; expected ${PLC_OVERVIEW_REGISTER_COUNT}`);
+  }
+  const load2 = decodeDvpDword(registers[0], registers[1], PLC_LOAD_REGISTER_ADDRESS);
+  const distance = decodeDvpDword(registers[2], registers[3], PLC_DISTANCE_REGISTER_ADDRESS);
+  return {
+    load: load2,
+    distance,
+    status: validateRegister(registers[PLC_STATUS_REGISTER_INDEX], PLC_STATUS_REGISTER_ADDRESS)
+  };
 }
 async function setMoveUp(client, enabled) {
   await client.writeSingleCoil(MOVE_UP_COIL_ADDRESS, enabled);
@@ -19083,7 +19114,7 @@ async function connect(ipAddress) {
         error: getErrorMessage(error2)
       });
     }
-    throw error2;
+    return connectionStatus;
   }
 }
 function initializePlcService(window2) {
@@ -19113,6 +19144,13 @@ function initializePlcService(window2) {
   ipcMain.handle("plc:get-status", (event) => {
     assertTrustedRequest(event.sender);
     return connectionStatus;
+  });
+  ipcMain.handle("plc:read-overview-values", async (event) => {
+    assertTrustedRequest(event.sender);
+    if (!activeClient || activeClient.connectionState !== "online" || connectionStatus.state !== "online") {
+      throw new Error("Cannot read overview values while the PLC is offline");
+    }
+    return readPlcOverviewValues(activeClient);
   });
   ipcMain.handle("plc:set-move-up", async (event, enabled) => {
     assertTrustedRequest(event.sender);

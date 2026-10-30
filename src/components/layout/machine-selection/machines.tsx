@@ -44,6 +44,12 @@ const validationSchema = yup.object({
     }),
 });
 
+function isNetworkConnectionError(error: unknown) {
+  const message = String(error);
+  return /\b(?:ECONNREFUSED|ECONNRESET|ETIMEDOUT|EHOSTUNREACH|ENETUNREACH)\b/i.test(message)
+    || /connection to .* timed out|closed before it was established/i.test(message);
+}
+
 export default function Machines() {
   const { addMachine, deleteMachine, getMachineByIp, getMachines, setConnectedMachine } = useDb();
   const { showError } = useAppNotifications();
@@ -52,6 +58,7 @@ export default function Machines() {
   const [open, setOpen] = useState(false);
   const [screen, setScreen] = useState<FlowScreen>("initial");
   const [machines, setMachines] = useState<MachineRecord[]>([]);
+  const [connectingMachineId, setConnectingMachineId] = useState<string | null>(null);
   const [submittedIpAddress, setSubmittedIpAddress] = useState("");
   const [connectionError, setConnectionError] = useState("");
   const [submitted, setSubmitted] = useState(false);
@@ -94,7 +101,7 @@ export default function Machines() {
         setConnectionError("");
         setScreen("complete");
       } catch (error) {
-        setConnectionError(String(error));
+        setConnectionError(isNetworkConnectionError(error) ? "" : String(error));
         setScreen("error");
       }
     },
@@ -198,38 +205,46 @@ export default function Machines() {
       return;
     }
 
-    let token: string | null = null;
-    let selectionUpdated = false;
+    setConnectingMachineId(id);
     try {
-      const prepared = await window.plcAPI.prepareConnection(machine.ipAddress);
-      token = prepared.token;
-      await setConnectedMachine(id);
-      selectionUpdated = true;
-      await window.plcAPI.activateConnection(token);
-    } catch (error) {
-      const rollbackErrors: string[] = [];
-      if (selectionUpdated) {
-        try {
-          await setConnectedMachine(previousMachine?.id ?? null);
-        } catch (rollbackError) {
-          rollbackErrors.push(`Could not restore the previous machine selection: ${String(rollbackError)}`);
+      let token: string | null = null;
+      let selectionUpdated = false;
+      try {
+        const prepared = await window.plcAPI.prepareConnection(machine.ipAddress);
+        token = prepared.token;
+        await setConnectedMachine(id);
+        selectionUpdated = true;
+        await window.plcAPI.activateConnection(token);
+      } catch (error) {
+        const rollbackErrors: string[] = [];
+        if (selectionUpdated) {
+          try {
+            await setConnectedMachine(previousMachine?.id ?? null);
+          } catch (rollbackError) {
+            rollbackErrors.push(`Could not restore the previous machine selection: ${String(rollbackError)}`);
+          }
         }
-      }
-      if (token) {
-        try {
-          await window.plcAPI.cancelConnection(token);
-        } catch (rollbackError) {
-          rollbackErrors.push(`Could not cancel the prepared connection: ${String(rollbackError)}`);
+        if (token) {
+          try {
+            await window.plcAPI.cancelConnection(token);
+          } catch (rollbackError) {
+            rollbackErrors.push(`Could not cancel the prepared connection: ${String(rollbackError)}`);
+          }
         }
+        const connectionError = isNetworkConnectionError(error)
+          ? `Unable to connect to machine at ${machine.ipAddress}. Check that it is powered on and connected to the network.`
+          : `Failed to connect to machine at ${machine.ipAddress}: ${String(error)}`;
+        showError([connectionError, ...rollbackErrors].join(" "));
+        return;
       }
-      showError([`Failed to connect to machine at ${machine.ipAddress}: ${String(error)}`, ...rollbackErrors].join(" "));
-      return;
-    }
 
-    try {
-      await refreshMachines();
-    } catch (error) {
-      showError(`Machine at ${machine.ipAddress} is connected, but the machine list could not be refreshed: ${String(error)}`);
+      try {
+        await refreshMachines();
+      } catch (error) {
+        showError(`Machine at ${machine.ipAddress} is connected, but the machine list could not be refreshed: ${String(error)}`);
+      }
+    } finally {
+      setConnectingMachineId(null);
     }
   };
 
@@ -343,7 +358,11 @@ export default function Machines() {
         <List className='max-h-72 overflow-auto'>
           {machines.map((machine) => (
             <ListItem key={machine.id} className='py-0 px-0 relative items-center'>
-              <ListItemButton onClick={() => void handleSelectMachine(machine.id)} classes={{ root: "group items-center py-3! cursor-default" }}>
+              <ListItemButton
+                disabled={connectingMachineId !== null}
+                onClick={() => void handleSelectMachine(machine.id)}
+                classes={{ root: "group items-center py-3! cursor-default" }}
+              >
                 <ListItemAvatar className='me-2'>
                   {selectedMachineIsWorking ? (
                     <CheckCircle2 className='text-success' />
@@ -362,6 +381,9 @@ export default function Machines() {
                   <Tooltip title='Disconnect'>
                     <Button
                       onClick={() => void handleSelectMachine(null)}
+                      disabled={connectingMachineId !== null}
+                      loading={connectingMachineId === machine.id}
+                      loadingPosition='center'
                       className='hover:text-text-primary hover:bg-grey-100 min-w-22'
                       size='tiny'
                       color='grey'
@@ -373,6 +395,9 @@ export default function Machines() {
                 ) : (
                   <Button
                     onClick={() => void handleSelectMachine(machine.id)}
+                    disabled={connectingMachineId !== null}
+                    loading={connectingMachineId === machine.id}
+                    loadingPosition='center'
                     className='hover:text-text-primary hover:bg-grey-100 min-w-22'
                     size='tiny'
                     color='grey'
@@ -384,6 +409,7 @@ export default function Machines() {
                 <Tooltip title='Delete'>
                   <Button
                     onClick={() => handleDeleteMachine(machine)}
+                    disabled={connectingMachineId !== null}
                     className='icon-only hover:text-error hover:border-error-light/5 hover:bg-error-light/10'
                     size='tiny'
                     color='grey'

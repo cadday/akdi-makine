@@ -61,6 +61,7 @@ contextBridge.exposeInMainWorld("plcAPI", {
   setMoveDown: (enabled: boolean) => ipcRenderer.invoke("plc:set-move-down", enabled) as Promise<void>,
   resetLoad: () => ipcRenderer.invoke("plc:reset-load") as Promise<void>,
   resetStroke: () => ipcRenderer.invoke("plc:reset-stroke") as Promise<void>,
+  readOverviewValues: () => ipcRenderer.invoke("plc:read-overview-values") as Promise<PlcOverviewValues>,
   getStatus: () => ipcRenderer.invoke("plc:get-status") as Promise<PlcConnectionStatus>,
   onStatusChange: (callback: (status: PlcConnectionStatus) => void) => {
     const listener = (_event: Electron.IpcRendererEvent, status: PlcConnectionStatus) => callback(status);

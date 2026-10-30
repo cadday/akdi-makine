@@ -10,6 +10,7 @@ interface PlcAPI {
   setMoveDown: (enabled: boolean) => Promise<void>;
   resetLoad: () => Promise<void>;
   resetStroke: () => Promise<void>;
+  readOverviewValues: () => Promise<PlcOverviewValues>;
   getStatus: () => Promise<PlcConnectionStatus>;
   onStatusChange: (callback: (status: PlcConnectionStatus) => void) => () => void;
 }
@@ -39,6 +40,12 @@ declare global {
     plcWorking?: boolean | null;
     clearSelection?: boolean;
     error?: string;
+  }
+
+  interface PlcOverviewValues {
+    load: number;
+    distance: number;
+    status: number;
   }
 
   interface Window {
