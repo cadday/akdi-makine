@@ -408,12 +408,19 @@ export default function MachineControls() {
                 </Tooltip>
               ))}
           </Box>
-          <Box className="flex flex-row">
-            <Box className="p-2 min-w-20">
-              L: {displayedPlcValues ? (displayedPlcValues.load / PLC_LOAD_SCALE_DIVISOR).toFixed(1) : '—'} N
+          {/* <Box className="h-10 w-0.25 bg-grey-100 mx-4"></Box> */}
+          <Box className="flex flex-row items-center bg-grey-25 rounded-md px-4 ms-2">
+            <Box className="w-28 flex flex-row items-center justify-center gap-1">
+              {/* <Typography variant="subtitle1">Load</Typography> */}
+              <Weight />
+              {/* -20000.0 N */}
+              {displayedPlcValues ? (displayedPlcValues.load / PLC_LOAD_SCALE_DIVISOR).toFixed(1) : '—'} N
             </Box>
-            <Box className="p-2 min-w-30">
-              D: {displayedPlcValues ? (displayedPlcValues.distance / PLC_DISTANCE_SCALE_DIVISOR).toFixed(4) : '—'} mm
+            <Box className="min-w-34 flex flex-row items-center justify-center gap-1">
+              {/* <Typography variant="subtitle1">Distance</Typography> */}
+              <Ruler />
+              {/* -200.0000 mm */}
+              {displayedPlcValues ? (displayedPlcValues.distance / PLC_DISTANCE_SCALE_DIVISOR).toFixed(4) : '—'} mm
             </Box>
           </Box>
         </Box>
