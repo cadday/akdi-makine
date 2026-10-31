@@ -469,6 +469,17 @@ function ComparisonDetails({
             colors={colors}
             valueForTest={(test) => test.presetSnapshot.base ?? "-"}
           />
+          {tests.some((test) => test.presetSnapshot.base === "Load") && (
+            <ComparisonField
+              icon={<WeightTilde className='flex-none' />}
+              label='Preload'
+              tests={tests}
+              colors={colors}
+              valueForTest={(test) =>
+                test.presetSnapshot.base === "Load" ? `${(test.presetSnapshot.preload ?? 0).toFixed(1)} N` : "-"
+              }
+            />
+          )}
           {Array.from({ length: targetCount }, (_, index) => (
             <ComparisonField
               key={`preset-target-${index}`}
@@ -480,7 +491,9 @@ function ComparisonDetails({
                 const target = test.presetSnapshot.targets?.[index];
                 if (typeof target !== "number") return "-";
                 const unit = test.presetSnapshot.base === "Load" ? "N" : test.presetSnapshot.base === "Distance" ? "mm" : "";
-                return unit ? `${target} ${unit}` : String(target);
+                return unit
+                  ? `${test.presetSnapshot.base === "Load" ? target.toFixed(1) : target.toFixed(4)} ${unit}`
+                  : String(target);
               }}
             />
           ))}

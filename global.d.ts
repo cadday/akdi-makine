@@ -49,6 +49,7 @@ declare global {
     type: "Tensile" | "Compression";
     base: "Load" | "Distance";
     velocity: number;
+    preload?: number;
     targets: number[];
   }
 

@@ -1,7 +1,7 @@
 import { SyntheticEvent, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { Box, Breadcrumbs, Button, Card, CardContent, Grid, ListItemIcon, ListItemText, Menu, MenuItem, Tab, Tooltip, Typography } from "@mui/material";
-import { CalendarCog, CalendarPlus, ChevronLeft, ChevronRight, Crosshair, Ellipsis, Gauge, PencilRuler, Split, X } from "lucide-react";
+import { CalendarCog, CalendarPlus, ChevronLeft, ChevronRight, Crosshair, Ellipsis, Gauge, PencilRuler, Split, WeightTilde, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { DataGrid, type GridColDef, type GridRenderCellParams } from "@mui/x-data-grid";
 import TestDataGrid from "@/pages/app/tests/components/test-data-grid";
@@ -232,13 +232,24 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                                   <Typography>{preset.base ?? "-"}</Typography>
                                 </Box>
                               </Box>
+                              {preset.base === "Load" && (
+                                <Box className='flex flex-row gap-2'>
+                                  <WeightTilde className='flex-none' />
+                                  <Box className='flex flex-col gap-1'>
+                                    <Typography variant='subtitle1'>Preload</Typography>
+                                    <Typography>{`${(preset.preload ?? 0).toFixed(1)} N`}</Typography>
+                                  </Box>
+                                </Box>
+                              )}
                               {(preset.targets?.length ? preset.targets : [undefined]).map((target, index) => (
                                 <Box className='flex flex-row gap-2' key={`target-${index}`}>
                                   <Crosshair className='flex-none' />
                                   <Box className='flex flex-col gap-1'>
                                     <Typography variant='subtitle1'>Target {index + 1}</Typography>
                                     <Typography>
-                                      {typeof target === "number" ? `${target} ${preset.base === "Load" ? "N" : preset.base === "Distance" ? "mm" : ""}`.trim() : "-"}
+                                      {typeof target === "number"
+                                        ? `${preset.base === "Load" ? target.toFixed(1) : preset.base === "Distance" ? target.toFixed(4) : target} ${preset.base === "Load" ? "N" : preset.base === "Distance" ? "mm" : ""}`.trim()
+                                        : "-"}
                                     </Typography>
                                   </Box>
                                 </Box>

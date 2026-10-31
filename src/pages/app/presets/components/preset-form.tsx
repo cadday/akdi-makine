@@ -18,17 +18,18 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { Bookmark, ChevronDown, Crosshair, Gauge, PencilRuler, Plus, Save, Split, X, XSquare } from "lucide-react";
+import { Bookmark, ChevronDown, Crosshair, Gauge, PencilRuler, Plus, Save, Split, WeightTilde, X, XSquare } from "lucide-react";
 import type { PresetBase, PresetRecord, PresetType } from "@/context/db-context";
 import { PRESET_BASES, PRESET_TYPES } from "@/lib/db";
 import useAppNotifications from "@/hooks/use-app-notifications";
 import { cn } from "@/lib/utils";
 
 type PresetSaveInput = Omit<PresetRecord, "id" | "createdAt" | "updatedAt">;
-type PresetFormValues = Omit<PresetSaveInput, "type" | "base" | "velocity" | "targets"> & {
+type PresetFormValues = Omit<PresetSaveInput, "type" | "base" | "velocity" | "preload" | "targets"> & {
   type: PresetType | "";
   velocity: number | "";
   base: PresetBase | "";
+  preload: string;
   targets: Array<number | "">;
 };
 
@@ -45,6 +46,7 @@ function getInitialValues(preset?: PresetRecord): PresetFormValues {
     type: preset?.type ?? "",
     velocity: preset?.velocity ?? "",
     base: preset?.base ?? "",
+    preload: Math.abs(preset?.preload ?? 0).toFixed(1),
     targets: preset?.targets?.length ? preset.targets.map(Math.abs) : [""],
   };
 }
@@ -63,6 +65,16 @@ const validationSchema = yup.object({
     })
     .required("Velocity is required"),
   base: yup.string().oneOf(PRESET_BASES).required("Base is required"),
+  preload: yup
+    .number()
+    .transform((value, originalValue) => (originalValue === "" ? undefined : value))
+    .min(0, "Must be zero or greater")
+    .test("plc-precision", "Preload can have at most 1 decimal place", (value) => {
+      if (value === undefined) return true;
+      const scaled = value * 10;
+      return Math.abs(scaled - Math.round(scaled)) < 1e-8;
+    })
+    .optional(),
   targets: yup
     .array()
     .of(yup.number().typeError("Enter a number").moreThan(0, "Must be greater than zero").required("Target is required"))
@@ -90,6 +102,7 @@ export default function PresetForm({ onSave, preset, initialPreset, saveLabel = 
           type: values.type,
           velocity: Number(values.velocity),
           base: values.base,
+          preload: values.base === "Load" ? Number(values.preload || 0) * targetSign : undefined,
           targets: values.targets.map((target) => Number(target) * targetSign),
         });
       } catch (error) {
@@ -198,7 +211,10 @@ export default function PresetForm({ onSave, preset, initialPreset, saveLabel = 
                     onChange={(event) => {
                       const nextBase = event.target.value as PresetBase | "";
                       void formik.setFieldValue("base", nextBase);
-                      if (nextBase !== formik.values.base) void formik.setFieldValue("targets", [""]);
+                      if (nextBase !== formik.values.base) {
+                        void formik.setFieldValue("targets", [""]);
+                        void formik.setFieldValue("preload", "0.0");
+                      }
                     }}
                     IconComponent={ChevronDown}
                     MenuProps={{ className: "outlined" }}
@@ -211,6 +227,43 @@ export default function PresetForm({ onSave, preset, initialPreset, saveLabel = 
                   </Select>
                 </FormControl>
               </Box>
+              {formik.values.base === "Load" && (
+                <Box className='flex flex-row gap-2'>
+                  <WeightTilde className={cn("flex-none", fieldError("preload") && "text-error!")} />
+                  <FormControl className='outlined' variant='standard' size='small' fullWidth>
+                    <FormLabel component='label' className={fieldError("preload") ? "text-error!" : undefined}>
+                      Preload
+                    </FormLabel>
+                    <Input
+                      type='number'
+                      inputProps={{
+                        min: 0,
+                        step: "any",
+                        onKeyDown: (event) => {
+                          if (event.key === "-" || event.key === "+" || event.key === "Subtract" || event.key === "Add") {
+                            event.preventDefault();
+                          }
+                        },
+                        onPaste: (event) => {
+                          if (/^[+-]/.test(event.clipboardData.getData("text").trim())) event.preventDefault();
+                        },
+                      }}
+                      startAdornment={
+                        formik.values.type ? (
+                          <InputAdornment position='start'>{formik.values.type === "Compression" ? "-" : "+"}</InputAdornment>
+                        ) : undefined
+                      }
+                      endAdornment={<InputAdornment position='end'>N</InputAdornment>}
+                      value={formik.values.preload}
+                      onChange={(event) => {
+                        const value = event.target.value;
+                        if (/^[+-]/.test(value.trim()) || (value !== "" && Number(value) < 0)) return;
+                        void formik.setFieldValue("preload", value);
+                      }}
+                    />
+                  </FormControl>
+                </Box>
+              )}
               {formik.values.targets.map((target, index) => {
                 const targetErrors = Array.isArray(formik.errors.targets) ? formik.errors.targets : [];
                 const targetError = submitted && targetErrors[index];

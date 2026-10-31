@@ -28,6 +28,7 @@ import {
   Shapes,
   Split,
   Trash,
+  WeightTilde,
   X,
 } from "lucide-react";
 import { DynamicIcon } from "lucide-react/dynamic";
@@ -305,13 +306,24 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                                     <Typography>{preset.base ?? "-"}</Typography>
                                   </Box>
                                 </Box>
+                                {preset.base === "Load" && (
+                                  <Box className='flex flex-row gap-2'>
+                                    <WeightTilde className='flex-none' />
+                                    <Box className='flex flex-col gap-1'>
+                                      <Typography variant='subtitle1'>Preload</Typography>
+                                      <Typography>{`${(preset.preload ?? 0).toFixed(1)} N`}</Typography>
+                                    </Box>
+                                  </Box>
+                                )}
                                 {(preset.targets?.length ? preset.targets : [undefined]).map((target, index) => (
                                   <Box className='flex flex-row gap-2' key={`target-${index}`}>
                                     <Crosshair className='flex-none' />
                                     <Box className='flex flex-col gap-1'>
                                       <Typography variant='subtitle1'>Target {index + 1}</Typography>
                                       <Typography>
-                                        {typeof target === "number" ? `${target} ${preset.base === "Load" ? "N" : preset.base === "Distance" ? "mm" : ""}`.trim() : "-"}
+                                        {typeof target === "number"
+                                          ? `${preset.base === "Load" ? target.toFixed(1) : preset.base === "Distance" ? target.toFixed(4) : target} ${preset.base === "Load" ? "N" : preset.base === "Distance" ? "mm" : ""}`.trim()
+                                          : "-"}
                                       </Typography>
                                     </Box>
                                   </Box>

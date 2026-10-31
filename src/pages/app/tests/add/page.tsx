@@ -250,6 +250,7 @@ export default function Page() {
             type: preset.type,
             velocity: preset.velocity,
             base: preset.base,
+            preload: preset.base === "Load" ? (preset.preload ?? 0) : undefined,
             targets: [...(preset.targets ?? [])],
           },
           customData,
@@ -261,6 +262,7 @@ export default function Page() {
               type: preset.type,
               base: preset.base,
               velocity: preset.velocity,
+              preload: preset.base === "Load" ? (preset.preload ?? 0) : undefined,
               targets: [...(preset.targets ?? [])],
             },
           });

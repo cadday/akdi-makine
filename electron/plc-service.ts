@@ -385,6 +385,16 @@ function validateTestRunRequest(value: unknown): PlcTestRunRequest {
     if (typeof target !== "number" || !Number.isFinite(target)) throw new Error("Invalid PLC test targets");
     return target;
   });
+  let preload: number | undefined;
+  if (preset.base === "Load") {
+    if (preset.preload !== undefined && (typeof preset.preload !== "number" || !Number.isFinite(preset.preload))) {
+      throw new Error("Invalid PLC test preload");
+    }
+    preload = typeof preset.preload === "number" ? preset.preload : 0;
+    if ((preset.type === "Compression" && preload > 0) || (preset.type === "Tensile" && preload < 0)) {
+      throw new Error("PLC test preload sign does not match the test type");
+    }
+  }
 
   return {
     testId: request.testId,
@@ -392,6 +402,7 @@ function validateTestRunRequest(value: unknown): PlcTestRunRequest {
       type: preset.type,
       base: preset.base,
       velocity: preset.velocity,
+      ...(preload !== undefined ? { preload } : {}),
       targets,
     },
   };

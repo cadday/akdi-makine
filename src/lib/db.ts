@@ -92,6 +92,7 @@ export interface TestPresetSnapshot {
   type: PresetType;
   velocity?: number;
   base?: PresetBase;
+  preload?: number;
   targets?: number[];
 }
 
@@ -117,6 +118,7 @@ export interface PresetRecord {
   type: PresetType;
   velocity: number;
   base: PresetBase;
+  preload?: number;
   targets: number[];
   createdAt: number;
   updatedAt: number;

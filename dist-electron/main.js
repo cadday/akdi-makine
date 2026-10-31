@@ -19033,6 +19033,7 @@ async function triggerMachineResume(client) {
 const PLC_TEST_TYPE_COIL_ADDRESS = 2098;
 const PLC_TEST_LOAD_BASE_COIL_ADDRESS = 2059;
 const PLC_TEST_VELOCITY_ADDRESS = 4596;
+const PLC_TEST_LOAD_PRELOAD_ADDRESS = 4184;
 const PLC_TEST_DISTANCE_TARGET_ADDRESSES = [4120, 4122, 4124, 4128, 4130];
 const PLC_TEST_LOAD_TARGET_ADDRESSES = [4150, 4152, 4154, 4156, 4158];
 const PLC_TEST_START_COIL_ADDRESS = 2108;
@@ -19066,6 +19067,14 @@ async function writePlcTestPreset(client, preset) {
   const encodedTargets = preset.targets.map(
     (target, index) => encodeDvpDword(validateScaledSignedDword(target, `Target ${index + 1}`, targetScale, targetDecimalPlaces))
   );
+  let encodedPreload;
+  if (!isDistanceBase) {
+    const preload = preset.preload ?? 0;
+    if (preset.type === "Compression" && preload > 0 || preset.type === "Tensile" && preload < 0) {
+      throw new Error("Preload sign must match the test type");
+    }
+    encodedPreload = encodeDvpDword(validateScaledSignedDword(preload, "Preload", PLC_TEST_LOAD_SCALE, 1));
+  }
   await client.writeSingleCoil(PLC_TEST_TYPE_COIL_ADDRESS, preset.type === "Compression");
   await client.writeSingleCoil(PLC_TEST_LOAD_BASE_COIL_ADDRESS, !isDistanceBase);
   await client.writeMultipleRegisters(PLC_TEST_VELOCITY_ADDRESS, encodedVelocity);
@@ -19075,6 +19084,8 @@ async function writePlcTestPreset(client, preset) {
       await client.writeMultipleRegisters(PLC_TEST_DISTANCE_TARGET_ADDRESSES[3], encodedTargets.slice(3).flat());
     }
   } else {
+    if (!encodedPreload) throw new Error("Failed to encode PLC test preload");
+    await client.writeMultipleRegisters(PLC_TEST_LOAD_PRELOAD_ADDRESS, encodedPreload);
     const loadTargetRegisters = encodedTargets.flat();
     console.log("Writing PLC load targets", {
       address: PLC_TEST_LOAD_TARGET_ADDRESSES[0],
@@ -19645,12 +19656,23 @@ function validateTestRunRequest(value) {
     if (typeof target !== "number" || !Number.isFinite(target)) throw new Error("Invalid PLC test targets");
     return target;
   });
+  let preload;
+  if (preset.base === "Load") {
+    if (preset.preload !== void 0 && (typeof preset.preload !== "number" || !Number.isFinite(preset.preload))) {
+      throw new Error("Invalid PLC test preload");
+    }
+    preload = typeof preset.preload === "number" ? preset.preload : 0;
+    if (preset.type === "Compression" && preload > 0 || preset.type === "Tensile" && preload < 0) {
+      throw new Error("PLC test preload sign does not match the test type");
+    }
+  }
   return {
     testId: request2.testId,
     preset: {
       type: preset.type,
       base: preset.base,
       velocity: preset.velocity,
+      ...preload !== void 0 ? { preload } : {},
       targets
     }
   };
