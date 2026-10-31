@@ -70,6 +70,8 @@ export interface TestResults {
   elongation?: number | null;
   firstLength?: number | null;
   lastLength?: number | null;
+  maxLoad?: number | null;
+  maxDistance?: number | null;
   testDuration?: number | null;
   loadDisplacementData: LoadDisplacementPoint[];
   stressStrainData: StressStrainPoint[];
@@ -508,6 +510,8 @@ export async function appendTestSample(
     const results = test.results ?? { loadDisplacementData: [], stressStrainData: [] };
     results.loadDisplacementData.push(point);
     if (stressStrainPoint) results.stressStrainData.push(stressStrainPoint);
+    results.maxLoad = Math.max(results.maxLoad ?? point.load, point.load);
+    results.maxDistance = Math.max(results.maxDistance ?? point.displacement, point.displacement);
     results.finalized = false;
     results.testDuration = elapsedMs / 1000;
     test.results = results;

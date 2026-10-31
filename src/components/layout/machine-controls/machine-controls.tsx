@@ -238,7 +238,7 @@ export default function MachineControls() {
 
   return (
     // <Paper className="items-center flex flex-row p-2 fixed bottom-2 left-1/2 rounded-xl -translate-x-1/2 z-5005  gap-4 shadow-darker-md outline outline-grey-100">
-    <Paper className="no-drag items-center flex flex-row gap-4 bg-transparent me-4">
+    <Paper className="no-drag items-center flex flex-row gap-4 bg-transparent me-4 shadow-none!">
       {emergencyHaltActive ? (
         <Box className="text-error bg-error-light/10 h-10 font-semibold flex flex-row gap-2 items-center px-6 rounded-md">
           <OctagonX></OctagonX>

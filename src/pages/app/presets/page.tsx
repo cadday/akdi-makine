@@ -193,7 +193,7 @@ export default function Page() {
         }
       },
     },
-    { field: "velocity", headerName: "Velocity (mm/min)", minWidth: 150, type: "number", align: "left", headerAlign: "left" },
+    { field: "velocity", headerName: "Velocity mm/min", minWidth: 150, type: "number", align: "left", headerAlign: "left" },
     { field: "base", headerName: "Base", minWidth: 130 },
     {
       field: "targets",

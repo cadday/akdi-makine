@@ -41,7 +41,7 @@ function TestGraphTooltip({ x, y, graphType }: { x: number; y: number; graphType
           <Typography variant='subtitle1' className='text-text-primary'>
             {xLabel}
           </Typography>
-          <Typography className='text-text-primary'>{x.toFixed(graphType === "stress-strain" ? 3 : 3)} ({xUnit})</Typography>
+          <Typography className='text-text-primary'>{x.toFixed(graphType === "stress-strain" ? 3 : 3)} {xUnit}</Typography>
         </Box>
       </Box>
       <Box className='flex flex-row gap-2'>
@@ -50,7 +50,7 @@ function TestGraphTooltip({ x, y, graphType }: { x: number; y: number; graphType
           <Typography variant='subtitle1' className='text-text-primary'>
             {yLabel}
           </Typography>
-          <Typography className='text-text-primary'>{y.toFixed(2)} ({yUnit})</Typography>
+          <Typography className='text-text-primary'>{y.toFixed(2)} {yUnit}</Typography>
         </Box>
       </Box>
     </Box>
@@ -69,8 +69,8 @@ export default function TestResultsMachine({ test }: TestResultsMachineProps) {
     graphType === "stress-strain"
       ? stressStrainData.map(({ strain, stress }) => [strain, stress])
       : loadDisplacementData.map(({ displacement, load }) => [displacement, load]);
-  const xAxisLabel = graphType === "stress-strain" ? "Strain (%)" : "Displacement (mm)";
-  const yAxisLabel = graphType === "stress-strain" ? "Stress (MPa)" : "Load (N)";
+  const xAxisLabel = graphType === "stress-strain" ? "Strain %" : "Displacement mm";
+  const yAxisLabel = graphType === "stress-strain" ? "Stress MPa" : "Load N";
   const isTestRunning = test.runStatus === "starting" || test.runStatus === "running" || test.runStatus === "stopping";
 
   useEffect(() => {
@@ -184,6 +184,8 @@ export default function TestResultsMachine({ test }: TestResultsMachineProps) {
               Results
             </Typography>
             <Grid size={12} container spacing={2.5}>
+              {graphType === "stress-strain" && (
+                <>
               <Grid size={{ xl: 4, md: 6, xs: 12 }}>
                 <Card>
                   <CardContent className='flex flex-col gap-5'>
@@ -192,13 +194,51 @@ export default function TestResultsMachine({ test }: TestResultsMachineProps) {
                       <Box className='flex flex-col gap-1 flex-1'>
                         <Typography variant='subtitle1'>Yield Strength</Typography>
                         <Typography>
-                          {typeof results?.yieldStrength === "number" ? `${results.yieldStrength} (MPa)` : "-"}
+                          {typeof results?.yieldStrength === "number" ? `${results.yieldStrength} MPa` : "-"}
                         </Typography>
                       </Box>
                     </Box>
                   </CardContent>
                 </Card>
               </Grid>
+                </>
+              )}
+              {graphType === "load-displacement" && (
+                <>
+                  <Grid size={{ xl: 4, md: 6, xs: 12 }}>
+                    <Card>
+                      <CardContent className='flex flex-col gap-5'>
+                        <Box className='flex flex-row gap-2'>
+                          <WeightTilde className='flex-none' />
+                          <Box className='flex flex-col gap-1 flex-1'>
+                            <Typography variant='subtitle1'>Max Load</Typography>
+                            <Typography>
+                              {typeof results?.maxLoad === "number" ? `${results.maxLoad.toFixed(1)} N` : "-"}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid size={{ xl: 4, md: 6, xs: 12 }}>
+                    <Card>
+                      <CardContent className='flex flex-col gap-5'>
+                        <Box className='flex flex-row gap-2'>
+                          <RulerDimensionLine className='flex-none' />
+                          <Box className='flex flex-col gap-1 flex-1'>
+                            <Typography variant='subtitle1'>Max Distance</Typography>
+                            <Typography>
+                              {typeof results?.maxDistance === "number" ? `${results.maxDistance.toFixed(4)} mm` : "-"}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                </>
+              )}
+              {graphType === "stress-strain" && (
+                <>
               <Grid size={{ xl: 4, md: 6, xs: 12 }}>
                 <Card>
                   <CardContent className='flex flex-col gap-5'>
@@ -207,13 +247,17 @@ export default function TestResultsMachine({ test }: TestResultsMachineProps) {
                       <Box className='flex flex-col gap-1 flex-1'>
                         <Typography variant='subtitle1'>Tensile Strength</Typography>
                         <Typography>
-                          {typeof results?.tensileStrength === "number" ? `${results.tensileStrength} (MPa)` : "-"}
+                          {typeof results?.tensileStrength === "number" ? `${results.tensileStrength} MPa` : "-"}
                         </Typography>
                       </Box>
                     </Box>
                   </CardContent>
                 </Card>
               </Grid>
+                </>
+              )}
+              {graphType === "stress-strain" && (
+                <>
               <Grid size={{ xl: 4, md: 6, xs: 12 }}>
                 <Card>
                   <CardContent className='flex flex-col gap-5'>
@@ -222,7 +266,7 @@ export default function TestResultsMachine({ test }: TestResultsMachineProps) {
                       <Box className='flex flex-col gap-1 flex-1'>
                         <Typography variant='subtitle1'>Elongation</Typography>
                         <Typography>
-                          {typeof results?.elongation === "number" ? `${results.elongation} (%)` : "-"}
+                          {typeof results?.elongation === "number" ? `${results.elongation} %` : "-"}
                         </Typography>
                       </Box>
                     </Box>
@@ -237,7 +281,7 @@ export default function TestResultsMachine({ test }: TestResultsMachineProps) {
                       <Box className='flex flex-col gap-1 flex-1'>
                         <Typography variant='subtitle1'>First Length</Typography>
                         <Typography>
-                          {typeof results?.firstLength === "number" ? `${results.firstLength} (mm)` : "-"}
+                          {typeof results?.firstLength === "number" ? `${results.firstLength} mm` : "-"}
                         </Typography>
                       </Box>
                     </Box>
@@ -252,13 +296,15 @@ export default function TestResultsMachine({ test }: TestResultsMachineProps) {
                       <Box className='flex flex-col gap-1 flex-1'>
                         <Typography variant='subtitle1'>Last Length</Typography>
                         <Typography>
-                          {typeof results?.lastLength === "number" ? `${results.lastLength} (mm)` : "-"}
+                          {typeof results?.lastLength === "number" ? `${results.lastLength} mm` : "-"}
                         </Typography>
                       </Box>
                     </Box>
                   </CardContent>
                 </Card>
               </Grid>
+                </>
+              )}
               <Grid size={{ xl: 4, md: 6, xs: 12 }}>
                 <Card>
                   <CardContent className='flex flex-col gap-5'>
@@ -267,7 +313,7 @@ export default function TestResultsMachine({ test }: TestResultsMachineProps) {
                       <Box className='flex flex-col gap-1 flex-1'>
                         <Typography variant='subtitle1'>Test Duration</Typography>
                         <Typography>
-                          {typeof results?.testDuration === "number" ? `${results.testDuration} (s)` : "-"}
+                          {typeof results?.testDuration === "number" ? `${results.testDuration} s` : "-"}
                         </Typography>
                       </Box>
                     </Box>

@@ -57,7 +57,7 @@ interface RawGraphDataRow {
 }
 
 function getRawGraphDataColumns(graphType: "load-displacement" | "stress-strain"): GridColDef<RawGraphDataRow>[] {
-  const [xLabel, yLabel] = graphType === "stress-strain" ? ["Strain (%)", "Stress (MPa)"] : ["Displacement (mm)", "Load (N)"];
+  const [xLabel, yLabel] = graphType === "stress-strain" ? ["Strain %", "Stress MPa"] : ["Displacement mm", "Load N"];
   return [
     {
       field: "x",

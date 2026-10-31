@@ -83,7 +83,7 @@ function LatestTestsGraphTooltip({
               <Box key={`${label}-${point.id}`} className="flex min-w-0 items-center gap-1.5">
                 <Box className="h-2.5 w-2.5 flex-none rounded-full" style={{ backgroundColor: point.color }} />
                 <Typography className="text-text-primary">
-                  {value(point).toFixed(digits)} ({unit})
+                  {value(point).toFixed(digits)} {unit}
                 </Typography>
               </Box>
             ))}
@@ -168,7 +168,7 @@ export default function LatestStressStrainGraphs({
           : [];
       });
     const [xAxisLabel, yAxisLabel] =
-      graphType === 'stress-strain' ? ['Strain (%)', 'Stress (MPa)'] : ['Displacement (mm)', 'Load (N)'];
+      graphType === 'stress-strain' ? ['Strain %', 'Stress MPa'] : ['Displacement mm', 'Load N'];
     const option: EChartsOption = {
       animation: false,
       color: colors,
