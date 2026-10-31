@@ -14,7 +14,6 @@ import { LINKS } from '@/constants';
 import Expand from '../expand/expand';
 import RouterNav from '../router-nav/router-nav';
 import Machines from '../machine-selection/machines';
-import MachineControls from '../machine-controls/machine-controls';
 
 export default function Header({ minimal = false }: { minimal?: boolean }) {
   const { showLeftInMobile, showLeftMobileButton, leftPrimaryCurrent, leftShowBackdrop } = useLayoutContext();
@@ -65,7 +64,7 @@ export default function Header({ minimal = false }: { minimal?: boolean }) {
           </Box>
         </Box>
 
-        <MachineControls />
+        {/* <MachineControls /> */}
 
         {!minimal && (
           <Box className="flex flex-row gap-1  no-drag">

@@ -19038,6 +19038,7 @@ const PLC_TEST_DISTANCE_TARGET_ADDRESSES = [4120, 4122, 4124, 4128, 4130];
 const PLC_TEST_LOAD_TARGET_ADDRESSES = [4150, 4152, 4154, 4156, 4158];
 const PLC_TEST_START_COIL_ADDRESS = 2108;
 const PLC_TEST_STATUS_COIL_ADDRESS = 2137;
+const PLC_TEST_DATA_COLLECTION_START_COIL_ADDRESS = 2109;
 const PLC_TEST_STOP_COIL_ADDRESS = 2110;
 const PLC_TEST_LOAD_ADDRESS = 4096;
 const PLC_TEST_DISTANCE_ADDRESS = 4098;
@@ -19110,6 +19111,9 @@ async function triggerPlcTestStop(client) {
 async function readPlcTestStatus(client) {
   return readPlcCoil(client, PLC_TEST_STATUS_COIL_ADDRESS);
 }
+async function readPlcTestDataCollectionStatus(client) {
+  return readPlcCoil(client, PLC_TEST_DATA_COLLECTION_START_COIL_ADDRESS);
+}
 async function readPlcTestStopStatus(client) {
   return readPlcCoil(client, PLC_TEST_STOP_COIL_ADDRESS);
 }
@@ -19131,15 +19135,16 @@ async function readPlcTestCycle(client) {
   if (emergencyHaltActive) {
     return {
       running: false,
-      emergencyHaltActive,
-      sample: null
+      dataCollectionStarted: false,
+      emergencyHaltActive
     };
   }
   const running = await readPlcTestStatus(client);
+  const dataCollectionStarted = await readPlcTestDataCollectionStatus(client);
   return {
     running,
-    emergencyHaltActive,
-    sample: running ? await readPlcTestSample(client) : null
+    dataCollectionStarted,
+    emergencyHaltActive
   };
 }
 class PlcTestRunManager {
@@ -19158,7 +19163,8 @@ class PlcTestRunManager {
     const run = {
       testId: request2.testId,
       client,
-      startedAt: 0,
+      startedAt: null,
+      monitoringStartedAt: 0,
       sawRunning: false,
       startCommandSent: false,
       startCommandPromise: null,
@@ -19185,7 +19191,7 @@ class PlcTestRunManager {
       run.startCommandPromise = triggerPlcTestStart(client);
       await run.startCommandPromise;
       run.startCommandSent = true;
-      run.startedAt = Date.now();
+      run.monitoringStartedAt = Date.now();
       if (this.activeRun !== run) return;
       if (run.stopRequested) await this.writeStopCommand(run);
       this.schedulePoll(run);
@@ -19264,6 +19270,9 @@ class PlcTestRunManager {
         this.finishRunWhenIdle(run, "stopped");
         return;
       }
+      if (cycle.dataCollectionStarted && run.startedAt === null) {
+        run.startedAt = Date.now();
+      }
       const stopSignal = run.stopRequested ? await readPlcTestStopStatus(run.client) : false;
       if (stopSignal) run.stopSignalWasObserved = true;
       if (run.stopRequested && run.stopCommandWrittenAt !== null && Date.now() - run.stopCommandWrittenAt >= PLC_TEST_STOP_TIMEOUT_MS) {
@@ -19277,14 +19286,15 @@ class PlcTestRunManager {
           run.state = "running";
           this.publishUpdate({ testId: run.testId, state: run.state });
         }
-        if (cycle.sample) {
+        if (run.startedAt !== null) {
+          const sample = await readPlcTestSample(run.client);
           this.publishUpdate({
             testId: run.testId,
             state: run.state,
             sample: {
               elapsedMs: Date.now() - run.startedAt,
-              load: cycle.sample.load,
-              displacement: cycle.sample.displacement
+              load: sample.load,
+              displacement: sample.displacement
             }
           });
         }
@@ -19297,7 +19307,7 @@ class PlcTestRunManager {
           this.finishRunWhenIdle(run, "stopped");
           return;
         }
-      } else if (Date.now() - run.startedAt >= PLC_TEST_START_TIMEOUT_MS) {
+      } else if (Date.now() - run.monitoringStartedAt >= PLC_TEST_START_TIMEOUT_MS) {
         throw new Error("The PLC did not start the test");
       }
       this.schedulePoll(run);
