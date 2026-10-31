@@ -29,6 +29,7 @@ import { useTranslation } from "react-i18next";
 import { useDb, type DataFieldDefinition, type DynamicDataValue, type PresetRecord, type SpecimenRecord, type UploadedImage } from "@/context/db-context";
 import useAppNotifications from "@/hooks/use-app-notifications";
 import { useTestRun } from "@/context/test-run-context";
+import { isMachineInterlocked, usePlcData } from "@/context/plc-context";
 import { cn } from "@/lib/utils";
 
 interface TestFormValues {
@@ -122,6 +123,7 @@ export default function Page() {
   const { getSpecimens, getPresets, getDataFields, getConnectedMachine, createTest } = useDb();
   const { showError } = useAppNotifications();
   const { hasActiveTest, startTestRun } = useTestRun();
+  const { connectionStatus, interlockStatus } = usePlcData();
   const [specimens, setSpecimens] = useState<SpecimenRecord[]>([]);
   const [presets, setPresets] = useState<PresetRecord[]>([]);
   const [fields, setFields] = useState<DataFieldDefinition[]>([]);
@@ -130,6 +132,8 @@ export default function Page() {
   const [submitted, setSubmitted] = useState(false);
   const [machineConnectionError, setMachineConnectionError] = useState(false);
   const [isCheckingMachine, setIsCheckingMachine] = useState(false);
+  const testCreationDisabled =
+    isMachineInterlocked(interlockStatus) || (connectionStatus.state === "online" && !interlockStatus);
   const [defaultTestName] = useState(() => {
     const now = new Date();
     const twoDigits = (value: number) => String(value).padStart(2, "0");
@@ -172,6 +176,11 @@ export default function Page() {
     validateOnBlur: false,
     validateOnChange: true,
     onSubmit: async (values) => {
+      if (testCreationDisabled) {
+        showError("Cannot create or start a test while the machine is halted or emergency halt is active.");
+        return;
+      }
+
       if (hasActiveTest) {
         showError("A test is already running");
         return;
@@ -303,6 +312,10 @@ export default function Page() {
           onSubmit={(event) => {
             event.preventDefault();
             setSubmitted(true);
+            if (testCreationDisabled) {
+              showError("Cannot create or start a test while the machine is halted or emergency halt is active.");
+              return;
+            }
             setIsCheckingMachine(true);
             void getConnectedMachine()
               .then((connectedMachine) => {
@@ -511,7 +524,7 @@ export default function Page() {
                 </Alert>
               )}
               <Button
-                disabled={isLoading || Boolean(loadError) || isCheckingMachine || hasActiveTest}
+                disabled={isLoading || Boolean(loadError) || isCheckingMachine || hasActiveTest || testCreationDisabled}
                 loading={formik.isSubmitting || isCheckingMachine}
                 loadingPosition='start'
                 type='submit'

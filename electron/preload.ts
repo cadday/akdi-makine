@@ -59,6 +59,8 @@ contextBridge.exposeInMainWorld("plcAPI", {
   disconnect: () => ipcRenderer.invoke("plc:disconnect") as Promise<PlcConnectionStatus>,
   setMoveUp: (enabled: boolean) => ipcRenderer.invoke("plc:set-move-up", enabled) as Promise<void>,
   setMoveDown: (enabled: boolean) => ipcRenderer.invoke("plc:set-move-down", enabled) as Promise<void>,
+  haltMachine: () => ipcRenderer.invoke("plc:halt-machine") as Promise<void>,
+  resumeMachine: () => ipcRenderer.invoke("plc:resume-machine") as Promise<void>,
   resetLoad: () => ipcRenderer.invoke("plc:reset-load") as Promise<void>,
   resetStroke: () => ipcRenderer.invoke("plc:reset-stroke") as Promise<void>,
   readOverviewValues: () => ipcRenderer.invoke("plc:read-overview-values") as Promise<PlcOverviewValues>,

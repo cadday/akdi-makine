@@ -39,9 +39,10 @@ interface TestDataGridProps {
   dataFields: DataFieldDefinition[];
   onTestsChange: Dispatch<SetStateAction<TestRecord[]>>;
   onAddItem?: () => void;
+  addDisabled?: boolean;
 }
 
-export default function TestDataGrid({ tests, dataFields, onTestsChange, onAddItem }: TestDataGridProps) {
+export default function TestDataGrid({ tests, dataFields, onTestsChange, onAddItem, addDisabled }: TestDataGridProps) {
   const navigate = useNavigate();
   const { deleteTest, deleteTests, duplicateTest, duplicateTests } = useDb();
   const { showError } = useAppNotifications();
@@ -267,7 +268,7 @@ export default function TestDataGrid({ tests, dataFields, onTestsChange, onAddIt
               deleteRows,
               duplicateRows,
               onCompare: handleCompare,
-              ...(onAddItem ? { onAddItem, addLabel: "Add Test", addIcon: <Play /> } : {}),
+              ...(onAddItem ? { onAddItem, addDisabled, addLabel: "Add Test", addIcon: <Play /> } : {}),
             },
           }}
           classes={{ main: "overflow-visible" }}

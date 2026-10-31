@@ -2,6 +2,7 @@
 import { createContext, type PropsWithChildren, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { getStressStrainPoint } from "@/lib/db";
 import { useDb } from "@/context/db-context";
+import { isMachineInterlocked, usePlcData } from "@/context/plc-context";
 import useAppNotifications from "@/hooks/use-app-notifications";
 
 interface TestRunContextValue {
@@ -14,6 +15,7 @@ const TestRunContext = createContext<TestRunContextValue | null>(null);
 
 export function TestRunProvider({ children }: PropsWithChildren) {
   const { appendTestSample, getTest, updateTestRunStatus } = useDb();
+  const { connectionStatus, interlockStatus } = usePlcData();
   const { showError, showSuccess } = useAppNotifications();
   const activeTestIdRef = useRef<string | null>(null);
   const updateQueueRef = useRef<Promise<void>>(Promise.resolve());
@@ -101,6 +103,13 @@ export function TestRunProvider({ children }: PropsWithChildren) {
       setActiveTestId(request.testId);
 
       try {
+        if (
+          isMachineInterlocked(interlockStatus) ||
+          (connectionStatus.state === "online" && !interlockStatus)
+        ) {
+          throw new Error("Cannot start a test while the machine is halted or emergency halt is active.");
+        }
+
         const updatedCount = await updateTestRunStatus(request.testId, "starting");
         if (updatedCount === 0) throw new Error("The test record could not be found");
         await window.plcAPI.startTestRun(request);
@@ -118,7 +127,7 @@ export function TestRunProvider({ children }: PropsWithChildren) {
         throw error;
       }
     },
-    [updateTestRunStatus],
+    [connectionStatus.state, interlockStatus, updateTestRunStatus],
   );
 
   const stopActiveTest = useCallback(async () => {

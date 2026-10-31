@@ -8,6 +8,8 @@ interface PlcAPI {
   disconnect: () => Promise<PlcConnectionStatus>;
   setMoveUp: (enabled: boolean) => Promise<void>;
   setMoveDown: (enabled: boolean) => Promise<void>;
+  haltMachine: () => Promise<void>;
+  resumeMachine: () => Promise<void>;
   resetLoad: () => Promise<void>;
   resetStroke: () => Promise<void>;
   readOverviewValues: () => Promise<PlcOverviewValues>;
@@ -80,6 +82,8 @@ declare global {
     load: number;
     distance: number;
     status: number;
+    emergencyHaltActive: boolean;
+    machineHalted: boolean;
   }
 
   interface PlcAdjustmentValues {

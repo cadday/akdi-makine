@@ -3,6 +3,8 @@ import {
   decodeDvpDword,
   encodeDvpDword,
   type PlcModbusClient,
+  readPlcCoil,
+  readPlcEmergencyHaltStatus,
   PLC_VELOCITY_SCALE,
   validateScaledSignedDword,
 } from "./plc-operations";
@@ -28,6 +30,7 @@ const PLC_TEST_STOP_ACK_DELAY_MS = PLC_TEST_SAMPLE_INTERVAL_MS * 3;
 
 export interface PlcTestCycle {
   running: boolean;
+  emergencyHaltActive: boolean;
   sample: LoadDisplacementPoint | null;
 }
 
@@ -103,22 +106,11 @@ export async function triggerPlcTestStop(client: PlcModbusClient): Promise<void>
 }
 
 export async function readPlcTestStatus(client: PlcModbusClient): Promise<boolean> {
-  return readPlcTestCoil(client, PLC_TEST_STATUS_COIL_ADDRESS);
-}
-
-async function readPlcTestCoil(client: PlcModbusClient, address: number): Promise<boolean> {
-  const response = await client.readCoils(address, 1);
-  const statusValue: unknown = response.response.body.valuesAsArray[0];
-
-  if (statusValue !== true && statusValue !== false && statusValue !== 0 && statusValue !== 1) {
-    throw new Error(`PLC returned an invalid value for coil ${address}`);
-  }
-
-  return statusValue === true || statusValue === 1;
+  return readPlcCoil(client, PLC_TEST_STATUS_COIL_ADDRESS);
 }
 
 export async function readPlcTestStopStatus(client: PlcModbusClient): Promise<boolean> {
-  return readPlcTestCoil(client, PLC_TEST_STOP_COIL_ADDRESS);
+  return readPlcCoil(client, PLC_TEST_STOP_COIL_ADDRESS);
 }
 
 export async function readPlcTestSample(client: PlcModbusClient): Promise<LoadDisplacementPoint> {
@@ -138,9 +130,19 @@ export async function readPlcTestSample(client: PlcModbusClient): Promise<LoadDi
 }
 
 export async function readPlcTestCycle(client: PlcModbusClient): Promise<PlcTestCycle> {
+  const emergencyHaltActive = await readPlcEmergencyHaltStatus(client);
+  if (emergencyHaltActive) {
+    return {
+      running: false,
+      emergencyHaltActive,
+      sample: null,
+    };
+  }
+
   const running = await readPlcTestStatus(client);
   return {
     running,
+    emergencyHaltActive,
     sample: running ? await readPlcTestSample(client) : null,
   };
 }
@@ -280,6 +282,11 @@ export class PlcTestRunManager {
     try {
       const cycle = await readPlcTestCycle(run.client);
       if (this.activeRun !== run) return;
+      if (cycle.emergencyHaltActive) {
+        this.finishRunWhenIdle(run, "stopped");
+        return;
+      }
+
       const stopSignal = run.stopRequested ? await readPlcTestStopStatus(run.client) : false;
       if (stopSignal) run.stopSignalWasObserved = true;
 

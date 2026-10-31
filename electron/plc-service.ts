@@ -9,6 +9,8 @@ import {
   readPlcWorkingStatus,
   setMoveDown,
   setMoveUp,
+  triggerMachineHalt,
+  triggerMachineResume,
   triggerResetLoad,
   triggerResetStroke,
   writePlcAdjustments,
@@ -509,6 +511,24 @@ export function initializePlcService(window: BrowserWindow | null): void {
     }
 
     return setMoveDown(activeClient, enabled);
+  });
+
+  ipcMain.handle("plc:halt-machine", async (event) => {
+    assertTrustedRequest(event.sender);
+    if (!activeClient || activeClient.connectionState !== "online" || connectionStatus.state !== "online") {
+      throw new Error("Cannot halt machine while the PLC is offline");
+    }
+
+    return triggerMachineHalt(activeClient);
+  });
+
+  ipcMain.handle("plc:resume-machine", async (event) => {
+    assertTrustedRequest(event.sender);
+    if (!activeClient || activeClient.connectionState !== "online" || connectionStatus.state !== "online") {
+      throw new Error("Cannot resume machine while the PLC is offline");
+    }
+
+    return triggerMachineResume(activeClient);
   });
 
   ipcMain.handle("plc:reset-load", async (event) => {

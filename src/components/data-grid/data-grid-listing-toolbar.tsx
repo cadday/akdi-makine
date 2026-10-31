@@ -35,6 +35,7 @@ export type ListingToolbarProps = {
   duplicateRows?: (ids: string[]) => Promise<void>;
   onCompare?: (ids: string[]) => void;
   onAddItem?: () => void;
+  addDisabled?: boolean;
   addLabel?: string;
   addIcon?: ReactNode;
 };
@@ -45,6 +46,7 @@ export const DataGridListingToolbar = ({
   duplicateRows,
   onCompare,
   onAddItem,
+  addDisabled = false,
   addLabel = "Add",
   addIcon = <Plus />,
 }: ListingToolbarProps) => {
@@ -226,7 +228,7 @@ export const DataGridListingToolbar = ({
           </Menu>
 
           {onAddItem && (
-            <Button size='large' className='surface-standard' color='text-primary' variant='surface' onClick={onAddItem} startIcon={addIcon}>
+            <Button size='large' className='surface-standard' color='text-primary' variant='surface' onClick={onAddItem} disabled={addDisabled} startIcon={addIcon}>
               {addLabel}
             </Button>
           )}

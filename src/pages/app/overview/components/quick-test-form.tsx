@@ -19,6 +19,7 @@ import {
 import { Bookmark, ChevronDown, DraftingCompass, Play, SlidersVertical, X, XSquare } from "lucide-react";
 import { useDb, type PresetRecord, type SpecimenRecord } from "@/context/db-context";
 import { useTestRun } from "@/context/test-run-context";
+import { isMachineInterlocked, usePlcData } from "@/context/plc-context";
 import useAppNotifications from "@/hooks/use-app-notifications";
 import { cn } from "@/lib/utils";
 
@@ -44,6 +45,7 @@ export default function QuickTestForm({ onTestCreated }: { onTestCreated?: () =>
   const navigate = useNavigate();
   const { getSpecimens, getPresets, getConnectedMachine, createTest } = useDb();
   const { hasActiveTest, startTestRun } = useTestRun();
+  const { connectionStatus, interlockStatus } = usePlcData();
   const { showError } = useAppNotifications();
   const [specimens, setSpecimens] = useState<SpecimenRecord[]>([]);
   const [presets, setPresets] = useState<PresetRecord[]>([]);
@@ -51,6 +53,8 @@ export default function QuickTestForm({ onTestCreated }: { onTestCreated?: () =>
   const [loadError, setLoadError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [defaultTestName] = useState(createDefaultTestName);
+  const testCreationDisabled =
+    isMachineInterlocked(interlockStatus) || (connectionStatus.state === "online" && !interlockStatus);
 
   useEffect(() => {
     let cancelled = false;
@@ -88,6 +92,11 @@ export default function QuickTestForm({ onTestCreated }: { onTestCreated?: () =>
     validateOnBlur: false,
     validateOnChange: true,
     onSubmit: async (values) => {
+      if (testCreationDisabled) {
+        showError("Cannot create or start a test while the machine is halted or emergency halt is active.");
+        return;
+      }
+
       if (hasActiveTest) {
         showError("A test is already running");
         return;
@@ -262,7 +271,7 @@ export default function QuickTestForm({ onTestCreated }: { onTestCreated?: () =>
 
       {loadError && <Typography className='text-error'>{loadError}</Typography>}
       <Button
-        disabled={isLoading || Boolean(loadError) || hasActiveTest}
+        disabled={isLoading || Boolean(loadError) || hasActiveTest || testCreationDisabled}
         loading={formik.isSubmitting}
         loadingPosition='start'
         type='submit'

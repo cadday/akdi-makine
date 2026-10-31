@@ -12,7 +12,6 @@ import useAppNotifications from '@/hooks/use-app-notifications';
 import LatestStressStrainGraphs from '@/pages/app/overview/components/latest-stress-strain-graphs';
 import LatestTests from '@/pages/app/overview/components/latest-tests';
 import QuickTest from '@/pages/app/overview/components/quick-test';
-import RealTimeValues from '@/pages/app/overview/components/real-time-values';
 import Summary, { type OverviewCounts } from '@/pages/app/overview/components/summary';
 
 export default function Page() {
@@ -86,7 +85,6 @@ export default function Page() {
           </Grid>
           <Grid container spacing={5} size={{ lg: 4, xs: 12 }}>
             <QuickTest specimenCount={counts.specimens} presetCount={counts.presets} />
-            <RealTimeValues />
           </Grid>
         </Grid>
       </ContentWrapper>

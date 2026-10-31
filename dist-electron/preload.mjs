@@ -53,6 +53,8 @@ electron.contextBridge.exposeInMainWorld("plcAPI", {
   disconnect: () => electron.ipcRenderer.invoke("plc:disconnect"),
   setMoveUp: (enabled) => electron.ipcRenderer.invoke("plc:set-move-up", enabled),
   setMoveDown: (enabled) => electron.ipcRenderer.invoke("plc:set-move-down", enabled),
+  haltMachine: () => electron.ipcRenderer.invoke("plc:halt-machine"),
+  resumeMachine: () => electron.ipcRenderer.invoke("plc:resume-machine"),
   resetLoad: () => electron.ipcRenderer.invoke("plc:reset-load"),
   resetStroke: () => electron.ipcRenderer.invoke("plc:reset-stroke"),
   readOverviewValues: () => electron.ipcRenderer.invoke("plc:read-overview-values"),

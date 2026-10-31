@@ -9,16 +9,20 @@ import TitleWrapper from "@/components/layout/containers/title-wrapper";
 import { LINKS } from "@/constants";
 import { useDb, type DataFieldDefinition, type TestRecord } from "@/context/db-context";
 import useAppNotifications from "@/hooks/use-app-notifications";
+import { isMachineInterlocked, usePlcData } from "@/context/plc-context";
 
 export default function Page() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { getTests, getDataFields } = useDb();
   const { showError } = useAppNotifications();
+  const { connectionStatus, interlockStatus } = usePlcData();
   const [tests, setTests] = useState<TestRecord[]>([]);
   const [dataFields, setDataFields] = useState<DataFieldDefinition[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const addTestDisabled =
+    isMachineInterlocked(interlockStatus) || (connectionStatus.state === "online" && !interlockStatus);
 
   const loadTests = useCallback(async () => {
     setIsLoading(true);
@@ -99,7 +103,15 @@ export default function Page() {
                 </Button>
               </Box>
             ) : (
-              !isLoading && <TestDataGrid tests={tests} dataFields={dataFields} onTestsChange={setTests} onAddItem={handleAddItem} />
+              !isLoading && (
+                <TestDataGrid
+                  tests={tests}
+                  dataFields={dataFields}
+                  onTestsChange={setTests}
+                  onAddItem={handleAddItem}
+                  addDisabled={addTestDisabled}
+                />
+              )
             )}
           </Grid>
         </Grid>

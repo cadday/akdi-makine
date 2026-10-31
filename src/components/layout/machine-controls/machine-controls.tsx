@@ -13,13 +13,17 @@ import {
   Typography,
 } from '@mui/material';
 import { liveQuery } from 'dexie';
-import { ArrowBigDown, ArrowBigUp, OctagonX, Play, Ruler, Square, Weight } from 'lucide-react';
+import { ArrowBigDown, ArrowBigUp, OctagonX, Play, Ruler, Square, TriangleAlert, Weight } from 'lucide-react';
 import QuickTestForm from '@/pages/app/overview/components/quick-test-form';
 import { useTestRun } from '@/context/test-run-context';
 import { useDb } from '@/context/db-context';
 import useAppNotifications from '@/hooks/use-app-notifications';
 import { NoWayToTest } from '@/pages/app/components/no-entity-found';
-import { usePlcData } from '@/context/plc-context';
+import { isMachineInterlocked, usePlcData } from '@/context/plc-context';
+
+const PLC_OVERVIEW_POLL_INTERVAL_MS = 100;
+const PLC_LOAD_SCALE_DIVISOR = 10;
+const PLC_DISTANCE_SCALE_DIVISOR = 10000;
 
 export default function MachineControls() {
   const [quickTestOpen, setQuickTestOpen] = useState(false);
@@ -28,15 +32,70 @@ export default function MachineControls() {
   const [isLoadingCounts, setIsLoadingCounts] = useState(false);
   const [countsLoadError, setCountsLoadError] = useState(false);
   const [hasConnectedMachine, setHasConnectedMachine] = useState(false);
+  const [plcValues, setPlcValues] = useState<{ ipAddress: string; values: PlcOverviewValues } | null>(null);
+  const [emergencyHaltActive, setEmergencyHaltActive] = useState(false);
   const quickTestAnchorRef = useRef<HTMLButtonElement>(null);
   const moveUpPressedRef = useRef(false);
   const moveDownPressedRef = useRef(false);
+  const readInFlightRef = useRef(false);
   const { db, getRecordCounts } = useDb();
   const { showError } = useAppNotifications();
-  const { connectionStatus } = usePlcData();
+  const { connectionStatus, interlockStatus, updateInterlockStatus } = usePlcData();
   const { pathname } = useLocation();
   const { hasActiveTest, stopActiveTest } = useTestRun();
   const machineControlsDisabled = !hasConnectedMachine || connectionStatus.state !== 'online';
+  const machineInterlocked = isMachineInterlocked(interlockStatus) || emergencyHaltActive;
+  const interlockStatusUnavailable = connectionStatus.state === 'online' && !interlockStatus;
+  const testCreationDisabled = machineInterlocked || interlockStatusUnavailable;
+  const manualControlsDisabled =
+    machineControlsDisabled || hasActiveTest || machineInterlocked || interlockStatusUnavailable;
+
+  useEffect(() => {
+    const { ipAddress, state } = connectionStatus;
+    if (state !== 'online' || !ipAddress) return;
+
+    let cancelled = false;
+    let hasReportedReadError = false;
+    const readValues = async () => {
+      if (cancelled || readInFlightRef.current) return;
+      readInFlightRef.current = true;
+
+      try {
+        const values = await window.plcAPI.readOverviewValues();
+        if (cancelled) return;
+        setPlcValues({ ipAddress, values });
+        setEmergencyHaltActive(values.emergencyHaltActive);
+        updateInterlockStatus(ipAddress, {
+          emergencyHaltActive: values.emergencyHaltActive,
+          machineHalted: values.machineHalted,
+        });
+        hasReportedReadError = false;
+      } catch (error: unknown) {
+        if (!cancelled) updateInterlockStatus(ipAddress, null);
+        if (!cancelled && !hasReportedReadError) {
+          showError(`Failed to read PLC overview values: ${String(error)}`);
+          hasReportedReadError = true;
+        }
+      } finally {
+        readInFlightRef.current = false;
+      }
+    };
+
+    void readValues();
+    const intervalId = window.setInterval(() => {
+      void readValues();
+    }, PLC_OVERVIEW_POLL_INTERVAL_MS);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+    };
+  }, [connectionStatus, showError, updateInterlockStatus]);
+
+  const displayedPlcValues =
+    connectionStatus.state === 'online' && plcValues?.ipAddress === connectionStatus.ipAddress
+      ? plcValues.values
+      : null;
 
   useEffect(() => {
     const subscription = liveQuery(async () =>
@@ -100,7 +159,7 @@ export default function MachineControls() {
   }, [showError]);
 
   const pressMoveUp = useCallback(() => {
-    if (machineControlsDisabled || moveUpPressedRef.current) return;
+    if (manualControlsDisabled || moveUpPressedRef.current) return;
     moveUpPressedRef.current = true;
     void window.plcAPI.setMoveUp(true).catch((error: unknown) => {
       const releaseAfterFailure = moveUpPressedRef.current;
@@ -112,10 +171,10 @@ export default function MachineControls() {
       }
       showError(`Failed to start upward movement: ${String(error)}`);
     });
-  }, [machineControlsDisabled, showError]);
+  }, [manualControlsDisabled, showError]);
 
   const pressMoveDown = useCallback(() => {
-    if (machineControlsDisabled || moveDownPressedRef.current) return;
+    if (manualControlsDisabled || moveDownPressedRef.current) return;
     moveDownPressedRef.current = true;
     void window.plcAPI.setMoveDown(true).catch((error: unknown) => {
       const releaseAfterFailure = moveDownPressedRef.current;
@@ -129,24 +188,40 @@ export default function MachineControls() {
       }
       showError(`Failed to start downward movement: ${String(error)}`);
     });
-  }, [machineControlsDisabled, showError]);
+  }, [manualControlsDisabled, showError]);
 
   const triggerResetLoad = useCallback(() => {
-    if (machineControlsDisabled) return;
-    void window.plcAPI.resetLoad().catch((error: unknown) => showError(`Failed to activate Reset Load: ${String(error)}`));
-  }, [machineControlsDisabled, showError]);
+    if (manualControlsDisabled) return;
+    void window.plcAPI
+      .resetLoad()
+      .catch((error: unknown) => showError(`Failed to activate Reset Load: ${String(error)}`));
+  }, [manualControlsDisabled, showError]);
 
   const triggerResetStroke = useCallback(() => {
-    if (machineControlsDisabled) return;
-    void window.plcAPI.resetStroke().catch((error: unknown) => showError(`Failed to activate Reset Stroke: ${String(error)}`));
-  }, [machineControlsDisabled, showError]);
+    if (manualControlsDisabled) return;
+    void window.plcAPI
+      .resetStroke()
+      .catch((error: unknown) => showError(`Failed to activate Reset Stroke: ${String(error)}`));
+  }, [manualControlsDisabled, showError]);
+
+  const handleMachineHalt = useCallback(() => {
+    if (machineControlsDisabled || !interlockStatus || isMachineInterlocked(interlockStatus)) return;
+    void window.plcAPI.haltMachine().catch((error: unknown) => showError(`Failed to halt machine: ${String(error)}`));
+  }, [interlockStatus, machineControlsDisabled, showError]);
+
+  const handleMachineResume = useCallback(() => {
+    if (machineControlsDisabled || !interlockStatus?.machineHalted || interlockStatus.emergencyHaltActive) return;
+    void window.plcAPI
+      .resumeMachine()
+      .catch((error: unknown) => showError(`Failed to resume machine: ${String(error)}`));
+  }, [interlockStatus, machineControlsDisabled, showError]);
 
   useEffect(() => {
-    if (machineControlsDisabled) {
+    if (manualControlsDisabled) {
       releaseMoveUp();
       releaseMoveDown();
     }
-  }, [machineControlsDisabled, releaseMoveDown, releaseMoveUp]);
+  }, [manualControlsDisabled, releaseMoveDown, releaseMoveUp]);
 
   // Clear a held command if the user leaves the window or the controls unmount.
   useEffect(() => {
@@ -162,156 +237,194 @@ export default function MachineControls() {
   }, [releaseMoveDown, releaseMoveUp]);
 
   return (
-    <Paper className="flex flex-col p-2 fixed right-0 top-1/2 -translate-y-1/2 mt-7 z-5005 rounded-e-2xs gap-4 shadow-darker-xs outline outline-grey-25">
-      <Box className="flex flex-col">
-        <Tooltip title="Quick Test" placement="left" open={quickTestTooltipOpen}>
-          <span
-            className="inline-flex"
-            onMouseEnter={() => setQuickTestTooltipOpen(true)}
-            onMouseLeave={() => setQuickTestTooltipOpen(false)}
-          >
-            <Button
-              ref={quickTestAnchorRef}
-              onClick={() => {
-                setQuickTestTooltipOpen(false);
-                setQuickTestOpen((open) => !open);
-              }}
-              disabled={machineControlsDisabled || hasActiveTest}
-              variant="text"
-              size="large"
-              color="grey"
-              className="icon-only"
-              startIcon={<Play />}
-            />
-          </span>
-        </Tooltip>
-        <Tooltip title="Stop Test" placement="left">
-          <span className="inline-flex">
-            <Button
-              onClick={stopActiveTest}
-              disabled={machineControlsDisabled || !hasActiveTest}
-              variant="text"
-              size="large"
-              color="grey"
-              className="icon-only"
-              startIcon={<Square size={18} />}
-            />
-          </span>
-        </Tooltip>
-      </Box>
+    <Paper className="items-center flex flex-row p-2 fixed bottom-2 left-1/2 rounded-xl -translate-x-1/2 z-5005  gap-4 shadow-darker-md outline outline-grey-100">
+      {emergencyHaltActive ? (
+        <Box className="text-error bg-error-light/10 h-10 font-semibold flex flex-row gap-2 items-center px-6 rounded-md">
+          <OctagonX></OctagonX>
+          <Box>Emergency halt is active, release it on the machine if it is safe!</Box>
+        </Box>
+      ) : (
+        <Box className={'flex flex-row'}>
+          <Box className="flex flex-row">
+            <Tooltip title="Quick Test" placement="top" open={quickTestTooltipOpen}>
+              <span
+                className="inline-flex"
+                onMouseEnter={() => setQuickTestTooltipOpen(true)}
+                onMouseLeave={() => setQuickTestTooltipOpen(false)}
+              >
+                <Button
+                  ref={quickTestAnchorRef}
+                  onClick={() => {
+                    setQuickTestTooltipOpen(false);
+                    setQuickTestOpen((open) => !open);
+                  }}
+                  disabled={machineControlsDisabled || hasActiveTest || testCreationDisabled}
+                  variant="text"
+                  size="large"
+                  color="grey"
+                  className="icon-only"
+                  startIcon={<Play />}
+                />
+              </span>
+            </Tooltip>
+            <Tooltip title="Stop Test" placement="top">
+              <span className="inline-flex">
+                <Button
+                  onClick={stopActiveTest}
+                  disabled={machineControlsDisabled || !hasActiveTest}
+                  variant="text"
+                  size="large"
+                  color="grey"
+                  className="icon-only"
+                  startIcon={<Square size={18} />}
+                />
+              </span>
+            </Tooltip>
+          </Box>
+          <Box className="flex flex-row">
+            <Tooltip title="Reset Load" placement="top">
+              <span className="inline-flex">
+                <Button
+                  type="button"
+                  aria-label="Reset Load"
+                  disabled={manualControlsDisabled}
+                  onClick={triggerResetLoad}
+                  variant="text"
+                  size="large"
+                  color="grey"
+                  className="icon-only"
+                  startIcon={<Weight />}
+                />
+              </span>
+            </Tooltip>
+            <Tooltip title="Reset Stroke" placement="top">
+              <span className="inline-flex">
+                <Button
+                  type="button"
+                  aria-label="Reset Stroke"
+                  disabled={manualControlsDisabled}
+                  onClick={triggerResetStroke}
+                  variant="text"
+                  size="large"
+                  color="grey"
+                  className="icon-only"
+                  startIcon={<Ruler />}
+                />
+              </span>
+            </Tooltip>
+          </Box>
+          <Box className="flex flex-row">
+            <Tooltip title="Move Up" placement="top">
+              <span className="inline-flex">
+                <Button
+                  type="button"
+                  disabled={manualControlsDisabled}
+                  onPointerDown={(event) => {
+                    if (event.button === 0) pressMoveUp();
+                  }}
+                  onPointerUp={releaseMoveUp}
+                  onPointerLeave={releaseMoveUp}
+                  onPointerCancel={releaseMoveUp}
+                  onKeyDown={(event) => {
+                    if (event.key === ' ' || event.key === 'Enter') {
+                      event.preventDefault();
+                      pressMoveUp();
+                    }
+                  }}
+                  onKeyUp={(event) => {
+                    if (event.key === ' ' || event.key === 'Enter') releaseMoveUp();
+                  }}
+                  onBlur={releaseMoveUp}
+                  variant="text"
+                  size="large"
+                  color="grey"
+                  className="icon-only"
+                  startIcon={<ArrowBigUp />}
+                />
+              </span>
+            </Tooltip>
+            <Tooltip title="Move Down" placement="top">
+              <span className="inline-flex">
+                <Button
+                  type="button"
+                  disabled={manualControlsDisabled}
+                  onPointerDown={(event) => {
+                    if (event.button === 0) pressMoveDown();
+                  }}
+                  onPointerUp={releaseMoveDown}
+                  onPointerLeave={releaseMoveDown}
+                  onPointerCancel={releaseMoveDown}
+                  onKeyDown={(event) => {
+                    if (event.key === ' ' || event.key === 'Enter') {
+                      event.preventDefault();
+                      pressMoveDown();
+                    }
+                  }}
+                  onKeyUp={(event) => {
+                    if (event.key === ' ' || event.key === 'Enter') releaseMoveDown();
+                  }}
+                  onBlur={releaseMoveDown}
+                  variant="text"
+                  size="large"
+                  color="grey"
+                  className="icon-only"
+                  startIcon={<ArrowBigDown />}
+                />
+              </span>
+            </Tooltip>
+            {displayedPlcValues &&
+              (displayedPlcValues.machineHalted ? (
+                <Tooltip title="Resume" placement="top">
+                  <span className="inline-flex">
+                    <Button
+                      onClick={handleMachineResume}
+                      disabled={
+                        machineControlsDisabled ||
+                        !interlockStatus?.machineHalted ||
+                        interlockStatus.emergencyHaltActive ||
+                        emergencyHaltActive
+                      }
+                      variant="text"
+                      size="large"
+                      color="warning"
+                      className="icon-only"
+                      startIcon={<TriangleAlert />}
+                    />
+                  </span>
+                </Tooltip>
+              ) : (
+                <Tooltip title="Halt" placement="top">
+                  <span className="inline-flex">
+                    <Button
+                      onClick={handleMachineHalt}
+                      disabled={machineControlsDisabled || !interlockStatus || machineInterlocked}
+                      variant="text"
+                      size="large"
+                      color="error"
+                      className="icon-only"
+                      startIcon={<OctagonX />}
+                    />
+                  </span>
+                </Tooltip>
+              ))}
+          </Box>
+          <Box className="flex flex-row">
+            <Box className="p-2 min-w-20">
+              L: {displayedPlcValues ? (displayedPlcValues.load / PLC_LOAD_SCALE_DIVISOR).toFixed(1) : '—'} N
+            </Box>
+            <Box className="p-2 min-w-30">
+              D: {displayedPlcValues ? (displayedPlcValues.distance / PLC_DISTANCE_SCALE_DIVISOR).toFixed(4) : '—'} mm
+            </Box>
+          </Box>
+        </Box>
+      )}
 
-      <Box className="flex flex-col">
-        <Tooltip title="Reset Load" placement="left">
-          <span className="inline-flex">
-            <Button
-              type="button"
-              aria-label="Reset Load"
-              disabled={machineControlsDisabled}
-              onClick={triggerResetLoad}
-              variant="text"
-              size="large"
-              color="grey"
-              className="icon-only"
-              startIcon={<Weight />}
-            />
-          </span>
-        </Tooltip>
-        <Tooltip title="Reset Stroke" placement="left">
-          <span className="inline-flex">
-            <Button
-              type="button"
-              aria-label="Reset Stroke"
-              disabled={machineControlsDisabled}
-              onClick={triggerResetStroke}
-              variant="text"
-              size="large"
-              color="grey"
-              className="icon-only"
-              startIcon={<Ruler />}
-            />
-          </span>
-        </Tooltip>
-      </Box>
-
-      <Box className="flex flex-col">
-        <Tooltip title="Move Up" placement="left">
-          <span className="inline-flex">
-            <Button
-              type="button"
-              disabled={machineControlsDisabled}
-              onPointerDown={(event) => {
-                if (event.button === 0) pressMoveUp();
-              }}
-              onPointerUp={releaseMoveUp}
-              onPointerLeave={releaseMoveUp}
-              onPointerCancel={releaseMoveUp}
-              onKeyDown={(event) => {
-                if (event.key === ' ' || event.key === 'Enter') {
-                  event.preventDefault();
-                  pressMoveUp();
-                }
-              }}
-              onKeyUp={(event) => {
-                if (event.key === ' ' || event.key === 'Enter') releaseMoveUp();
-              }}
-              onBlur={releaseMoveUp}
-              variant="text"
-              size="large"
-              color="grey"
-              className="icon-only"
-              startIcon={<ArrowBigUp />}
-            />
-          </span>
-        </Tooltip>
-        <Tooltip title="Move Down" placement="left">
-          <span className="inline-flex">
-            <Button
-              type="button"
-              disabled={machineControlsDisabled}
-              onPointerDown={(event) => {
-                if (event.button === 0) pressMoveDown();
-              }}
-              onPointerUp={releaseMoveDown}
-              onPointerLeave={releaseMoveDown}
-              onPointerCancel={releaseMoveDown}
-              onKeyDown={(event) => {
-                if (event.key === ' ' || event.key === 'Enter') {
-                  event.preventDefault();
-                  pressMoveDown();
-                }
-              }}
-              onKeyUp={(event) => {
-                if (event.key === ' ' || event.key === 'Enter') releaseMoveDown();
-              }}
-              onBlur={releaseMoveDown}
-              variant="text"
-              size="large"
-              color="grey"
-              className="icon-only"
-              startIcon={<ArrowBigDown />}
-            />
-          </span>
-        </Tooltip>
-        <Tooltip title="Halt" placement="left">
-          <span className="inline-flex">
-            <Button
-              onClick={stopActiveTest}
-              disabled={machineControlsDisabled}
-              variant="text"
-              size="large"
-              color="error"
-              className="icon-only"
-              startIcon={<OctagonX />}
-            />
-          </span>
-        </Tooltip>
-      </Box>
       <Popper
         open={quickTestOpen}
         anchorEl={quickTestAnchorRef.current}
-        placement="left-start"
+        placement="bottom-start"
         transition
-        className="me-2! z-5006"
+        className="mb-2! z-5006"
         modifiers={[{ name: 'offset', options: { offset: [-8, 4] } }]}
       >
         {({ TransitionProps }) => (

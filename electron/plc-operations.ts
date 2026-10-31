@@ -1,6 +1,10 @@
 import Modbus from "jsmodbus";
 
 const PLC_WORKING_COIL_ADDRESS = 3048;
+const PLC_EMERGENCY_HALT_COIL_ADDRESS = 2063;
+const PLC_MACHINE_HALTED_COIL_ADDRESS = 2051;
+const PLC_MACHINE_HALT_COMMAND_COIL_ADDRESS = 2049;
+const PLC_MACHINE_RESUME_COMMAND_COIL_ADDRESS = 2105;
 const MOVE_UP_COIL_ADDRESS = 2050;
 const MOVE_DOWN_COIL_ADDRESS = 2048;
 const RESET_LOAD_COIL_ADDRESS = 2120;
@@ -81,15 +85,32 @@ export function encodeDvpDword(value: number): [number, number] {
   return [unsignedValue % 0x10000, Math.floor(unsignedValue / 0x10000)];
 }
 
-export async function readPlcWorkingStatus(client: PlcModbusClient): Promise<boolean> {
-  const response = await client.readCoils(PLC_WORKING_COIL_ADDRESS, 1);
-  const coilValue: unknown = response.response.body.valuesAsArray[0];
+export async function readPlcCoil(client: PlcModbusClient, address: number): Promise<boolean> {
+  const response = await client.readCoils(address, 1);
+  const coilValues = response.response.body.valuesAsArray;
+  if (coilValues.length === 0) {
+    throw new Error(`PLC returned no values for coil ${address}`);
+  }
+  // Modbus responses may pad coil values to a full byte.
+  const coilValue: unknown = coilValues[0];
 
   if (coilValue !== true && coilValue !== false && coilValue !== 0 && coilValue !== 1) {
-    throw new Error(`PLC returned an invalid value for coil ${PLC_WORKING_COIL_ADDRESS}`);
+    throw new Error(`PLC returned an invalid value for coil ${address}`);
   }
 
   return coilValue === true || coilValue === 1;
+}
+
+export async function readPlcWorkingStatus(client: PlcModbusClient): Promise<boolean> {
+  return readPlcCoil(client, PLC_WORKING_COIL_ADDRESS);
+}
+
+export async function readPlcEmergencyHaltStatus(client: PlcModbusClient): Promise<boolean> {
+  return readPlcCoil(client, PLC_EMERGENCY_HALT_COIL_ADDRESS);
+}
+
+export async function readPlcMachineHaltedStatus(client: PlcModbusClient): Promise<boolean> {
+  return readPlcCoil(client, PLC_MACHINE_HALTED_COIL_ADDRESS);
 }
 
 export async function readPlcOverviewValues(client: PlcModbusClient): Promise<PlcOverviewValues> {
@@ -102,11 +123,15 @@ export async function readPlcOverviewValues(client: PlcModbusClient): Promise<Pl
 
   const load = decodeDvpDword(registers[0], registers[1], PLC_LOAD_REGISTER_ADDRESS);
   const distance = decodeDvpDword(registers[2], registers[3], PLC_DISTANCE_REGISTER_ADDRESS);
+  const emergencyHaltActive = await readPlcEmergencyHaltStatus(client);
+  const machineHalted = await readPlcMachineHaltedStatus(client);
 
   return {
     load,
     distance,
     status: validateRegister(registers[PLC_STATUS_REGISTER_INDEX], PLC_STATUS_REGISTER_ADDRESS),
+    emergencyHaltActive,
+    machineHalted,
   };
 }
 
@@ -262,4 +287,12 @@ export async function triggerResetLoad(client: PlcModbusClient): Promise<void> {
 // The PLC clears Reset Stroke after handling it; the UI only triggers it.
 export async function triggerResetStroke(client: PlcModbusClient): Promise<void> {
   await client.writeSingleCoil(RESET_STROKE_COIL_ADDRESS, true);
+}
+
+export async function triggerMachineHalt(client: PlcModbusClient): Promise<void> {
+  await client.writeSingleCoil(PLC_MACHINE_HALT_COMMAND_COIL_ADDRESS, true);
+}
+
+export async function triggerMachineResume(client: PlcModbusClient): Promise<void> {
+  await client.writeSingleCoil(PLC_MACHINE_RESUME_COMMAND_COIL_ADDRESS, true);
 }

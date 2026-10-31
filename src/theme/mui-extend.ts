@@ -9,6 +9,7 @@ declare module "@mui/x-data-grid" {
     duplicateRows?: (ids: string[]) => Promise<void>;
     onCompare?: (ids: string[]) => void;
     onAddItem?: () => void;
+    addDisabled?: boolean;
     addLabel?: string;
     addIcon?: ReactNode;
   }
@@ -520,4 +521,3 @@ declare module "@mui/material/IconButton" {
     sizeTiny: string;
   }
 }
-

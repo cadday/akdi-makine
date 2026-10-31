@@ -18806,6 +18806,10 @@ modbus.UserRequest = user_request_1.default;
 var user_request_metrics_1 = userRequestMetrics;
 modbus.UserRequestMetrics = user_request_metrics_1.UserRequestMetrics;
 const PLC_WORKING_COIL_ADDRESS = 3048;
+const PLC_EMERGENCY_HALT_COIL_ADDRESS = 2063;
+const PLC_MACHINE_HALTED_COIL_ADDRESS = 2051;
+const PLC_MACHINE_HALT_COMMAND_COIL_ADDRESS = 2049;
+const PLC_MACHINE_RESUME_COMMAND_COIL_ADDRESS = 2105;
 const MOVE_UP_COIL_ADDRESS = 2050;
 const MOVE_DOWN_COIL_ADDRESS = 2048;
 const RESET_LOAD_COIL_ADDRESS = 2120;
@@ -18861,13 +18865,26 @@ function encodeDvpDword(value) {
   const unsignedValue = value < 0 ? value + 4294967296 : value;
   return [unsignedValue % 65536, Math.floor(unsignedValue / 65536)];
 }
-async function readPlcWorkingStatus(client) {
-  const response2 = await client.readCoils(PLC_WORKING_COIL_ADDRESS, 1);
-  const coilValue = response2.response.body.valuesAsArray[0];
+async function readPlcCoil(client, address) {
+  const response2 = await client.readCoils(address, 1);
+  const coilValues = response2.response.body.valuesAsArray;
+  if (coilValues.length === 0) {
+    throw new Error(`PLC returned no values for coil ${address}`);
+  }
+  const coilValue = coilValues[0];
   if (coilValue !== true && coilValue !== false && coilValue !== 0 && coilValue !== 1) {
-    throw new Error(`PLC returned an invalid value for coil ${PLC_WORKING_COIL_ADDRESS}`);
+    throw new Error(`PLC returned an invalid value for coil ${address}`);
   }
   return coilValue === true || coilValue === 1;
+}
+async function readPlcWorkingStatus(client) {
+  return readPlcCoil(client, PLC_WORKING_COIL_ADDRESS);
+}
+async function readPlcEmergencyHaltStatus(client) {
+  return readPlcCoil(client, PLC_EMERGENCY_HALT_COIL_ADDRESS);
+}
+async function readPlcMachineHaltedStatus(client) {
+  return readPlcCoil(client, PLC_MACHINE_HALTED_COIL_ADDRESS);
 }
 async function readPlcOverviewValues(client) {
   const response2 = await client.readHoldingRegisters(PLC_LOAD_REGISTER_ADDRESS, PLC_OVERVIEW_REGISTER_COUNT);
@@ -18877,10 +18894,14 @@ async function readPlcOverviewValues(client) {
   }
   const load2 = decodeDvpDword(registers[0], registers[1], PLC_LOAD_REGISTER_ADDRESS);
   const distance = decodeDvpDword(registers[2], registers[3], PLC_DISTANCE_REGISTER_ADDRESS);
+  const emergencyHaltActive = await readPlcEmergencyHaltStatus(client);
+  const machineHalted = await readPlcMachineHaltedStatus(client);
   return {
     load: load2,
     distance,
-    status: validateRegister(registers[PLC_STATUS_REGISTER_INDEX], PLC_STATUS_REGISTER_ADDRESS)
+    status: validateRegister(registers[PLC_STATUS_REGISTER_INDEX], PLC_STATUS_REGISTER_ADDRESS),
+    emergencyHaltActive,
+    machineHalted
   };
 }
 async function readPlcLimits(client) {
@@ -19003,6 +19024,12 @@ async function triggerResetLoad(client) {
 async function triggerResetStroke(client) {
   await client.writeSingleCoil(RESET_STROKE_COIL_ADDRESS, true);
 }
+async function triggerMachineHalt(client) {
+  await client.writeSingleCoil(PLC_MACHINE_HALT_COMMAND_COIL_ADDRESS, true);
+}
+async function triggerMachineResume(client) {
+  await client.writeSingleCoil(PLC_MACHINE_RESUME_COMMAND_COIL_ADDRESS, true);
+}
 const PLC_TEST_TYPE_COIL_ADDRESS = 2098;
 const PLC_TEST_LOAD_BASE_COIL_ADDRESS = 2059;
 const PLC_TEST_VELOCITY_ADDRESS = 4596;
@@ -19070,18 +19097,10 @@ async function triggerPlcTestStop(client) {
   await client.writeSingleCoil(PLC_TEST_STOP_COIL_ADDRESS, true);
 }
 async function readPlcTestStatus(client) {
-  return readPlcTestCoil(client, PLC_TEST_STATUS_COIL_ADDRESS);
-}
-async function readPlcTestCoil(client, address) {
-  const response2 = await client.readCoils(address, 1);
-  const statusValue = response2.response.body.valuesAsArray[0];
-  if (statusValue !== true && statusValue !== false && statusValue !== 0 && statusValue !== 1) {
-    throw new Error(`PLC returned an invalid value for coil ${address}`);
-  }
-  return statusValue === true || statusValue === 1;
+  return readPlcCoil(client, PLC_TEST_STATUS_COIL_ADDRESS);
 }
 async function readPlcTestStopStatus(client) {
-  return readPlcTestCoil(client, PLC_TEST_STOP_COIL_ADDRESS);
+  return readPlcCoil(client, PLC_TEST_STOP_COIL_ADDRESS);
 }
 async function readPlcTestSample(client) {
   const response2 = await client.readHoldingRegisters(PLC_TEST_LOAD_ADDRESS, PLC_TEST_SAMPLE_REGISTER_COUNT);
@@ -19097,9 +19116,18 @@ async function readPlcTestSample(client) {
   };
 }
 async function readPlcTestCycle(client) {
+  const emergencyHaltActive = await readPlcEmergencyHaltStatus(client);
+  if (emergencyHaltActive) {
+    return {
+      running: false,
+      emergencyHaltActive,
+      sample: null
+    };
+  }
   const running = await readPlcTestStatus(client);
   return {
     running,
+    emergencyHaltActive,
     sample: running ? await readPlcTestSample(client) : null
   };
 }
@@ -19221,6 +19249,10 @@ class PlcTestRunManager {
     try {
       const cycle = await readPlcTestCycle(run.client);
       if (this.activeRun !== run) return;
+      if (cycle.emergencyHaltActive) {
+        this.finishRunWhenIdle(run, "stopped");
+        return;
+      }
       const stopSignal = run.stopRequested ? await readPlcTestStopStatus(run.client) : false;
       if (stopSignal) run.stopSignalWasObserved = true;
       if (run.stopRequested && run.stopCommandWrittenAt !== null && Date.now() - run.stopCommandWrittenAt >= PLC_TEST_STOP_TIMEOUT_MS) {
@@ -19714,6 +19746,20 @@ function initializePlcService(window2) {
       throw new Error("Cannot control Move Down while the PLC is offline");
     }
     return setMoveDown(activeClient, enabled);
+  });
+  ipcMain.handle("plc:halt-machine", async (event) => {
+    assertTrustedRequest(event.sender);
+    if (!activeClient || activeClient.connectionState !== "online" || connectionStatus.state !== "online") {
+      throw new Error("Cannot halt machine while the PLC is offline");
+    }
+    return triggerMachineHalt(activeClient);
+  });
+  ipcMain.handle("plc:resume-machine", async (event) => {
+    assertTrustedRequest(event.sender);
+    if (!activeClient || activeClient.connectionState !== "online" || connectionStatus.state !== "online") {
+      throw new Error("Cannot resume machine while the PLC is offline");
+    }
+    return triggerMachineResume(activeClient);
   });
   ipcMain.handle("plc:reset-load", async (event) => {
     assertTrustedRequest(event.sender);
