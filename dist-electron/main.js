@@ -19967,7 +19967,7 @@ function createWindow() {
       preload: path$n.join(__dirname$1, "preload.mjs"),
       devTools: !app.isPackaged
     },
-    minWidth: 1e3,
+    minWidth: 1100,
     minHeight: 600,
     autoHideMenuBar: true,
     show: false,

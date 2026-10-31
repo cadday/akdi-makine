@@ -237,7 +237,8 @@ export default function MachineControls() {
   }, [releaseMoveDown, releaseMoveUp]);
 
   return (
-    <Paper className="items-center flex flex-row p-2 fixed bottom-2 left-1/2 rounded-xl -translate-x-1/2 z-5005  gap-4 shadow-darker-md outline outline-grey-100">
+    // <Paper className="items-center flex flex-row p-2 fixed bottom-2 left-1/2 rounded-xl -translate-x-1/2 z-5005  gap-4 shadow-darker-md outline outline-grey-100">
+    <Paper className="no-drag items-center flex flex-row gap-4 bg-transparent me-4">
       {emergencyHaltActive ? (
         <Box className="text-error bg-error-light/10 h-10 font-semibold flex flex-row gap-2 items-center px-6 rounded-md">
           <OctagonX></OctagonX>
@@ -409,14 +410,14 @@ export default function MachineControls() {
               ))}
           </Box>
           {/* <Box className="h-10 w-0.25 bg-grey-100 mx-4"></Box> */}
-          <Box className="flex flex-row items-center bg-grey-25 rounded-md px-4 ms-2">
-            <Box className="w-28 flex flex-row items-center justify-center gap-1">
+          <Box className="hidden lg:flex flex-row items-center outline outline-grey-100 -outline-offset-1 rounded-lg px-4 ms-2">
+            <Box className="w-28 flex flex-row items-center gap-1 px-1">
               {/* <Typography variant="subtitle1">Load</Typography> */}
               <Weight />
               {/* -20000.0 N */}
               {displayedPlcValues ? (displayedPlcValues.load / PLC_LOAD_SCALE_DIVISOR).toFixed(1) : '—'} N
             </Box>
-            <Box className="min-w-34 flex flex-row items-center justify-center gap-1">
+            <Box className="min-w-34 flex flex-row items-center gap-1 px-1">
               {/* <Typography variant="subtitle1">Distance</Typography> */}
               <Ruler />
               {/* -200.0000 mm */}
@@ -431,7 +432,7 @@ export default function MachineControls() {
         anchorEl={quickTestAnchorRef.current}
         placement="bottom-start"
         transition
-        className="mb-2! z-5006"
+        className="ms-2! z-5006"
         modifiers={[{ name: 'offset', options: { offset: [-8, 4] } }]}
       >
         {({ TransitionProps }) => (

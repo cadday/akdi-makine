@@ -45,7 +45,7 @@ function getInitialValues(preset?: PresetRecord): PresetFormValues {
     type: preset?.type ?? "",
     velocity: preset?.velocity ?? "",
     base: preset?.base ?? "",
-    targets: preset?.targets?.length ? [...preset.targets] : [""],
+    targets: preset?.targets?.length ? preset.targets.map(Math.abs) : [""],
   };
 }
 
@@ -65,7 +65,7 @@ const validationSchema = yup.object({
   base: yup.string().oneOf(PRESET_BASES).required("Base is required"),
   targets: yup
     .array()
-    .of(yup.number().typeError("Enter a number").required("Target is required"))
+    .of(yup.number().typeError("Enter a number").moreThan(0, "Must be greater than zero").required("Target is required"))
     .min(1, "At least one target is required")
     .max(5, "A maximum of five targets is allowed")
     .required("At least one target is required"),
@@ -84,12 +84,13 @@ export default function PresetForm({ onSave, preset, initialPreset, saveLabel = 
       if (!values.type || !values.base || values.velocity === "" || values.targets.some((target) => target === "")) return;
 
       try {
+        const targetSign = values.type === "Compression" ? -1 : 1;
         await onSave({
           name: values.name.trim(),
           type: values.type,
           velocity: Number(values.velocity),
           base: values.base,
-          targets: values.targets.map(Number),
+          targets: values.targets.map((target) => Number(target) * targetSign),
         });
       } catch (error) {
         showError(`Failed to save preset: ${String(error)}`);
@@ -156,10 +157,23 @@ export default function PresetForm({ onSave, preset, initialPreset, saveLabel = 
                   </FormLabel>
                   <Input
                     type='number'
-                    inputProps={{ min: 0, step: "any" }}
+                    inputProps={{
+                      min: 0,
+                      step: "any",
+                      onKeyDown: (event) => {
+                        if (event.key === "-" || event.key === "Subtract") event.preventDefault();
+                      },
+                      onPaste: (event) => {
+                        if (event.clipboardData.getData("text").trim().startsWith("-")) event.preventDefault();
+                      },
+                    }}
                     endAdornment={<InputAdornment position='end'>mm/min</InputAdornment>}
                     value={formik.values.velocity}
-                    onChange={(event) => void formik.setFieldValue("velocity", event.target.value === "" ? "" : Number(event.target.value))}
+                    onChange={(event) => {
+                      const value = event.target.value;
+                      if (value.trimStart().startsWith("-") || (value !== "" && Number(value) < 0)) return;
+                      void formik.setFieldValue("velocity", value === "" ? "" : Number(value));
+                    }}
                   />
                 </FormControl>
               </Box>
@@ -209,14 +223,32 @@ export default function PresetForm({ onSave, preset, initialPreset, saveLabel = 
                       </FormLabel>
                       <Input
                         type='number'
-                        inputProps={{ min: 0, step: "any" }}
+                        inputProps={{
+                          min: 0,
+                          step: "any",
+                          onKeyDown: (event) => {
+                            if (event.key === "-" || event.key === "+" || event.key === "Subtract" || event.key === "Add") {
+                              event.preventDefault();
+                            }
+                          },
+                          onPaste: (event) => {
+                            if (/^[+-]/.test(event.clipboardData.getData("text").trim())) event.preventDefault();
+                          },
+                        }}
+                        startAdornment={
+                          formik.values.type ? (
+                            <InputAdornment position='start'>{formik.values.type === "Compression" ? "-" : "+"}</InputAdornment>
+                          ) : undefined
+                        }
                         endAdornment={
                           <InputAdornment position='end'>{formik.values.base === "Load" ? "N" : formik.values.base === "Distance" ? "mm" : ""}</InputAdornment>
                         }
                         value={target}
                         onChange={(event) => {
+                          const value = event.target.value;
+                          if (/^[+-]/.test(value.trim()) || (value !== "" && Number(value) < 0)) return;
                           const targets = [...formik.values.targets];
-                          targets[index] = event.target.value === "" ? "" : Number(event.target.value);
+                          targets[index] = value === "" ? "" : Number(value);
                           void formik.setFieldValue("targets", targets);
                         }}
                       />
