@@ -15,7 +15,7 @@
     }
 
     .outlined {
-      @apply text-grey-200;
+      @apply text-grey-300;
     }
 
     &.Mui-checked {

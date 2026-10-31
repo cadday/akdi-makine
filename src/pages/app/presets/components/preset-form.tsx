@@ -248,7 +248,7 @@ export default function PresetForm({ onSave, preset, initialPreset, saveLabel = 
               })}
               {formik.values.targets.length < 5 && (
                 <Button
-                  className='ms-6.5 self-start mb-4'
+                  className='ms-6.5 self-start mb-4 hidden'
                   variant='pastel'
                   color='grey'
                   startIcon={<Plus size={16} />}

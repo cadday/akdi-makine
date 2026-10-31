@@ -35,7 +35,7 @@
 
   .MuiRating-icon.MuiRating-iconEmpty svg,
   .MuiRating-icon.MuiRating-iconEmpty svg.outlined {
-    @apply text-grey-200;
+    @apply text-grey-300;
   }
 
   .MuiRating-icon.MuiRating-iconEmpty svg.contained {
@@ -48,7 +48,7 @@
 
   .MuiRating-icon.MuiRating-iconEmpty svg,
   .MuiRating-icon.MuiRating-iconEmpty svg.outlined {
-    @apply text-grey-200!;
+    @apply text-grey-300!;
   }
 
   .MuiRating-icon.MuiRating-iconEmpty svg.contained {

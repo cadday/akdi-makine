@@ -19006,11 +19006,8 @@ async function triggerResetStroke(client) {
 const PLC_TEST_TYPE_COIL_ADDRESS = 2098;
 const PLC_TEST_LOAD_BASE_COIL_ADDRESS = 2059;
 const PLC_TEST_VELOCITY_ADDRESS = 4596;
-const PLC_M_COIL_ADDRESS_OFFSET = 2048;
 const PLC_TEST_DISTANCE_TARGET_ADDRESSES = [4120, 4122, 4124, 4128, 4130];
 const PLC_TEST_LOAD_TARGET_ADDRESSES = [4150, 4152, 4154, 4156, 4158];
-const PLC_TEST_DISTANCE_TARGET_MARKERS = [24, 25, 26, 27, 28];
-const PLC_TEST_LOAD_TARGET_MARKERS = [36, 37, 38, 39, 40];
 const PLC_TEST_START_COIL_ADDRESS = 2108;
 const PLC_TEST_STATUS_COIL_ADDRESS = 2109;
 const PLC_TEST_STOP_COIL_ADDRESS = 2110;
@@ -19037,7 +19034,6 @@ async function writePlcTestPreset(client, preset) {
     validateScaledSignedDword(preset.velocity, "Preset Velocity", PLC_VELOCITY_SCALE, 1, { min: 1 })
   );
   const isDistanceBase = preset.base === "Distance";
-  const targetMarkers = isDistanceBase ? PLC_TEST_DISTANCE_TARGET_MARKERS : PLC_TEST_LOAD_TARGET_MARKERS;
   const targetScale = isDistanceBase ? PLC_TEST_DISTANCE_SCALE : PLC_TEST_LOAD_SCALE;
   const targetDecimalPlaces = isDistanceBase ? 4 : 1;
   const encodedTargets = preset.targets.map(
@@ -19065,9 +19061,6 @@ async function writePlcTestPreset(client, preset) {
       registers: loadTargetRegisters
     });
     await client.writeMultipleRegisters(PLC_TEST_LOAD_TARGET_ADDRESSES[0], loadTargetRegisters);
-  }
-  for (const marker of targetMarkers.slice(0, encodedTargets.length)) {
-    await client.writeSingleCoil(PLC_M_COIL_ADDRESS_OFFSET + marker, true);
   }
 }
 async function triggerPlcTestStart(client) {
@@ -19097,8 +19090,10 @@ async function readPlcTestSample(client) {
     throw new Error(`PLC returned ${registers.length} test sample registers; expected ${PLC_TEST_SAMPLE_REGISTER_COUNT}`);
   }
   return {
-    load: decodeDvpDword(registers[0], registers[1], PLC_TEST_LOAD_ADDRESS) / PLC_TEST_LOAD_SCALE,
-    displacement: decodeDvpDword(registers[2], registers[3], PLC_TEST_DISTANCE_ADDRESS) / PLC_TEST_DISTANCE_SCALE
+    load: Math.abs(decodeDvpDword(registers[0], registers[1], PLC_TEST_LOAD_ADDRESS) / PLC_TEST_LOAD_SCALE),
+    displacement: Math.abs(
+      decodeDvpDword(registers[2], registers[3], PLC_TEST_DISTANCE_ADDRESS) / PLC_TEST_DISTANCE_SCALE
+    )
   };
 }
 async function readPlcTestCycle(client) {
