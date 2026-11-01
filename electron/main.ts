@@ -240,7 +240,7 @@ function createWindow() {
       preload: path.join(__dirname, "preload.mjs"),
       devTools: !app.isPackaged,
     },
-    minWidth: 1100,
+    minWidth: 960,
     minHeight: 600,
     autoHideMenuBar: true,
     show: false,
@@ -249,7 +249,6 @@ function createWindow() {
   });
   initializePlcService(mainWindow);
 
-  // mainWindow.removeMenu();
 
   // External link handling
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
