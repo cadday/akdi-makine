@@ -409,18 +409,13 @@ export default function MachineControls() {
                 </Tooltip>
               ))}
           </Box>
-          {/* <Box className="h-10 w-0.25 bg-grey-100 mx-4"></Box> */}
           <Box className="hidden lg:flex bg-grey-50 flex-row items-center  rounded-lg px-4 ms-2">
             <Box className="w-28 flex flex-row items-center gap-1 px-1">
-              {/* <Typography variant="subtitle1">Load</Typography> */}
               <Weight />
-              {/* -20000.0 N */}
               {displayedPlcValues ? (displayedPlcValues.load / PLC_LOAD_SCALE_DIVISOR).toFixed(1) : '—'} N
             </Box>
             <Box className="min-w-34 flex flex-row items-center gap-1 px-1">
-              {/* <Typography variant="subtitle1">Distance</Typography> */}
               <Ruler />
-              {/* -200.0000 mm */}
               {displayedPlcValues ? (displayedPlcValues.distance / PLC_DISTANCE_SCALE_DIVISOR).toFixed(4) : '—'} mm
             </Box>
           </Box>

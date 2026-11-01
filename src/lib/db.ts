@@ -56,8 +56,25 @@ export interface StressStrainPoint {
   stress: number;
 }
 
+export interface YieldStrengthCalculation {
+  yieldStrength: number;
+  elasticModulus: number;
+  offsetStrainPercent: number;
+  elasticRegionEndStrain: number;
+  yieldPoint: StressStrainPoint;
+}
+
+export interface StressStrainMaximums {
+  maxStress: number;
+  maxStrain: number;
+}
+
 export type TestGraphType = "load-displacement" | "stress-strain";
 export type TestRunStatus = "starting" | "running" | "stopping" | "completed" | "stopped" | "failed";
+
+const YIELD_STRAIN_OFFSET_PERCENT = 0.2;
+const MIN_ELASTIC_FIT_POINTS = 5;
+const MIN_ELASTIC_FIT_R_SQUARED = 0.9995;
 
 export function getTestGraphType(geometry?: SpecimenGeometry): TestGraphType {
   return geometry === "Cylindrical" || geometry === "Rectangular" ? "stress-strain" : "load-displacement";
@@ -490,12 +507,119 @@ export function getStressStrainPoint(
   };
 }
 
+export function getStressStrainMaximums(points: StressStrainPoint[]): StressStrainMaximums | null {
+  const validPoints = points.filter(
+    ({ strain, stress }) =>
+      Number.isFinite(strain) && Number.isFinite(stress) && strain >= 0 && stress >= 0,
+  );
+  if (validPoints.length === 0) return null;
+
+  return validPoints.reduce(
+    (maximums, point) => ({
+      maxStress: Math.max(maximums.maxStress, point.stress),
+      maxStrain: Math.max(maximums.maxStrain, point.strain),
+    }),
+    { maxStress: validPoints[0].stress, maxStrain: validPoints[0].strain },
+  );
+}
+
+export function getYieldStrengthCalculation(points: StressStrainPoint[]): YieldStrengthCalculation | null {
+  const validPoints = points.filter(
+    ({ strain, stress }) =>
+      Number.isFinite(strain) && Number.isFinite(stress) && strain >= 0 && stress >= 0,
+  );
+  if (validPoints.length < MIN_ELASTIC_FIT_POINTS) return null;
+
+  let calculation: YieldStrengthCalculation | null = null;
+  let hasElasticFit = false;
+  for (let endIndex = MIN_ELASTIC_FIT_POINTS - 1; endIndex < validPoints.length; endIndex += 1) {
+    const elasticPoints = validPoints.slice(0, endIndex + 1);
+    if (elasticPoints[elasticPoints.length - 1].strain > YIELD_STRAIN_OFFSET_PERCENT) break;
+    if (new Set(elasticPoints.map(({ strain }) => strain)).size < MIN_ELASTIC_FIT_POINTS) continue;
+
+    const meanStrain = elasticPoints.reduce((sum, point) => sum + point.strain, 0) / elasticPoints.length;
+    const meanStress = elasticPoints.reduce((sum, point) => sum + point.stress, 0) / elasticPoints.length;
+    const strainVariance = elasticPoints.reduce((sum, point) => sum + (point.strain - meanStrain) ** 2, 0);
+    const stressVariance = elasticPoints.reduce((sum, point) => sum + (point.stress - meanStress) ** 2, 0);
+    if (strainVariance <= 0 || stressVariance <= 0) continue;
+
+    const covariance = elasticPoints.reduce(
+      (sum, point) => sum + (point.strain - meanStrain) * (point.stress - meanStress),
+      0,
+    );
+    const elasticModulus = covariance / strainVariance;
+    if (!Number.isFinite(elasticModulus) || elasticModulus <= 0) continue;
+
+    const intercept = meanStress - elasticModulus * meanStrain;
+    const residualVariance = elasticPoints.reduce(
+      (sum, point) => sum + (point.stress - (intercept + elasticModulus * point.strain)) ** 2,
+      0,
+    );
+    const rSquared = 1 - residualVariance / stressVariance;
+    if (rSquared < MIN_ELASTIC_FIT_R_SQUARED) {
+      if (hasElasticFit) break;
+      continue;
+    }
+    hasElasticFit = true;
+
+    for (let index = endIndex + 1; index < validPoints.length; index += 1) {
+      const previous = validPoints[index - 1];
+      const current = validPoints[index];
+      if (current.strain <= previous.strain) continue;
+
+      const previousDifference =
+        previous.stress - elasticModulus * (previous.strain - YIELD_STRAIN_OFFSET_PERCENT);
+      const currentDifference = current.stress - elasticModulus * (current.strain - YIELD_STRAIN_OFFSET_PERCENT);
+      if (previousDifference < 0 || currentDifference > 0) continue;
+
+      const differenceRange = previousDifference - currentDifference;
+      if (differenceRange <= 0) continue;
+      const interpolation = previousDifference / differenceRange;
+      const yieldPoint = {
+        strain: previous.strain + interpolation * (current.strain - previous.strain),
+        stress: previous.stress + interpolation * (current.stress - previous.stress),
+      };
+      if (
+        yieldPoint.strain <= YIELD_STRAIN_OFFSET_PERCENT ||
+        !Number.isFinite(yieldPoint.stress) ||
+        yieldPoint.stress <= 0
+      ) {
+        continue;
+      }
+
+      calculation = {
+        yieldStrength: yieldPoint.stress,
+        elasticModulus,
+        offsetStrainPercent: YIELD_STRAIN_OFFSET_PERCENT,
+        elasticRegionEndStrain: elasticPoints[elasticPoints.length - 1].strain,
+        yieldPoint,
+      };
+      break;
+    }
+  }
+
+  return calculation;
+}
+
 export async function updateTestRunStatus(id: string, runStatus: TestRunStatus, runError?: string) {
   return db.tests.where("id").equals(id).modify((test) => {
     test.runStatus = runStatus;
     test.runError = runError;
     const results = test.results ?? { loadDisplacementData: [], stressStrainData: [] };
     results.finalized = runStatus === "completed" || runStatus === "stopped";
+    if (results.finalized) {
+      if (getTestGraphType(test.specimenSnapshot?.geometry) === "stress-strain") {
+        const stressStrainData = results.stressStrainData ?? [];
+        results.yieldStrength = getYieldStrengthCalculation(stressStrainData)?.yieldStrength ?? null;
+        const maximums = getStressStrainMaximums(stressStrainData);
+        results.tensileStrength = maximums?.maxStress ?? null;
+        results.elongation = maximums?.maxStrain ?? null;
+      } else {
+        results.yieldStrength = null;
+        results.tensileStrength = null;
+        results.elongation = null;
+      }
+    }
     test.results = results;
     test.updatedAt = Date.now();
   });

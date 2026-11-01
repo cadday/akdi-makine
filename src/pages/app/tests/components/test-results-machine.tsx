@@ -3,9 +3,9 @@ import * as echarts from "echarts";
 import type { EChartsOption } from "echarts";
 import { renderToStaticMarkup } from "react-dom/server";
 import { useEffect, useRef } from "react";
-import { ArrowUpFromLine, ArrowUpToLine, ArrowUpWideNarrow, RulerDimensionLine, TicketPercent, Timer, WeightTilde } from "lucide-react";
+import { ArrowUpWideNarrow, RulerDimensionLine, TicketPercent, Timer, WeightTilde } from "lucide-react";
 import type { TestRecord } from "@/context/db-context";
-import { getTestGraphType } from "@/lib/db";
+import { getStressStrainMaximums, getTestGraphType, getYieldStrengthCalculation } from "@/lib/db";
 import TestProgress from "./test-progress";
 import { useThemeContext } from "@/theme/theme-provider";
 import { cn } from "@/lib/utils";
@@ -22,12 +22,18 @@ const chartColors = {
     hoverLabelBackground: hslToRgb("hsl(0, 0%, 90%)"),
     secondaryText: hslToRgb("hsl(0, 0%, 60%)"),
     primary: hslToRgb("hsl(199, 100%, 43%)"),
+    elasticFit: hslToRgb("hsl(145, 63%, 38%)"),
+    offsetLine: hslToRgb("hsl(35, 95%, 48%)"),
+    yieldPoint: hslToRgb("hsl(0, 78%, 52%)"),
   },
   dark: {
     divider: hslToRgb("hsl(226, 4%, 20%)"),
     hoverLabelBackground: hslToRgb("hsl(226, 4%, 20%)"),
     secondaryText: hslToRgb("hsl(0, 0%, 60%)"),
     primary: hslToRgb("hsl(199, 100%, 43%)"),
+    elasticFit: hslToRgb("hsl(145, 63%, 48%)"),
+    offsetLine: hslToRgb("hsl(35, 95%, 58%)"),
+    yieldPoint: hslToRgb("hsl(0, 78%, 62%)"),
   },
 } as const;
 
@@ -69,6 +75,16 @@ export default function TestResultsMachine({ test }: TestResultsMachineProps) {
     graphType === "stress-strain"
       ? stressStrainData.map(({ strain, stress }) => [strain, stress])
       : loadDisplacementData.map(({ displacement, load }) => [displacement, load]);
+  const yieldCalculation =
+    graphType === "stress-strain" && results?.finalized
+      ? getYieldStrengthCalculation(stressStrainData)
+      : null;
+  const stressStrainMaximums =
+    graphType === "stress-strain" && results?.finalized ? getStressStrainMaximums(stressStrainData) : null;
+  const tensileStrength =
+    typeof results?.tensileStrength === "number" ? results.tensileStrength : stressStrainMaximums?.maxStress;
+  const elongation =
+    typeof results?.elongation === "number" ? results.elongation : stressStrainMaximums?.maxStrain;
   const xAxisLabel = graphType === "stress-strain" ? "Strain %" : "Displacement mm";
   const yAxisLabel = graphType === "stress-strain" ? "Stress MPa" : "Load N";
   const isTestRunning = test.runStatus === "starting" || test.runStatus === "running" || test.runStatus === "stopping";
@@ -92,7 +108,12 @@ export default function TestResultsMachine({ test }: TestResultsMachineProps) {
     const colors = isDarkMode ? chartColors.dark : chartColors.light;
     const option: EChartsOption = {
       animation: false,
-      grid: { top: 10, right: 10, bottom: 10, left: 10 },
+      grid: { top: yieldCalculation ? 32 : 10, right: 10, bottom: 10, left: 10 },
+      legend: {
+        show: Boolean(yieldCalculation),
+        top: 0,
+        textStyle: { color: colors.secondaryText },
+      },
       tooltip: {
         trigger: "axis",
         renderMode: "html",
@@ -152,17 +173,68 @@ export default function TestResultsMachine({ test }: TestResultsMachineProps) {
           lineStyle: { width: 2, color: colors.primary },
           itemStyle: { color: colors.primary, borderWidth: 0 },
         },
+        {
+          name: "Elastic fit",
+          type: "line",
+          showSymbol: false,
+          lineStyle: { width: 2, color: colors.elasticFit },
+          itemStyle: { color: colors.elasticFit },
+        },
+        {
+          name: "0.2% offset",
+          type: "line",
+          showSymbol: false,
+          lineStyle: { width: 2, type: "dashed", color: colors.offsetLine },
+          itemStyle: { color: colors.offsetLine },
+        },
+        {
+          name: "Yield strength",
+          type: "scatter",
+          symbol: "circle",
+          symbolSize: 10,
+          itemStyle: { color: colors.yieldPoint },
+          label: { show: true, formatter: "Yield strength", position: "top" },
+        },
       ],
     };
 
     chartRef.current?.setOption(option, { lazyUpdate: true });
-  }, [graphType, isDarkMode, xAxisLabel, yAxisLabel]);
+  }, [graphType, isDarkMode, yieldCalculation, xAxisLabel, yAxisLabel]);
 
   useEffect(() => {
     chartRef.current?.setOption({
-      series: [{ type: "line", data: chartData }],
+      series: [
+        { type: "line", data: chartData },
+        {
+          type: "line",
+          data: yieldCalculation
+            ? [
+                [0, 0],
+                [
+                  yieldCalculation.elasticRegionEndStrain,
+                  yieldCalculation.elasticModulus * yieldCalculation.elasticRegionEndStrain,
+                ],
+              ]
+            : [],
+        },
+        {
+          type: "line",
+          data: yieldCalculation
+            ? [
+                [yieldCalculation.offsetStrainPercent, 0],
+                [yieldCalculation.yieldPoint.strain, yieldCalculation.yieldPoint.stress],
+              ]
+            : [],
+        },
+        {
+          type: "scatter",
+          data: yieldCalculation
+            ? [[yieldCalculation.yieldPoint.strain, yieldCalculation.yieldPoint.stress]]
+            : [],
+        },
+      ],
     });
-  }, [chartData]);
+  }, [chartData, yieldCalculation]);
 
   return (
     <>
@@ -203,40 +275,6 @@ export default function TestResultsMachine({ test }: TestResultsMachineProps) {
               </Grid>
                 </>
               )}
-              {graphType === "load-displacement" && (
-                <>
-                  <Grid size={{ xl: 4, md: 6, xs: 12 }}>
-                    <Card>
-                      <CardContent className='flex flex-col gap-5'>
-                        <Box className='flex flex-row gap-2'>
-                          <WeightTilde className='flex-none' />
-                          <Box className='flex flex-col gap-1 flex-1'>
-                            <Typography variant='subtitle1'>Max Load</Typography>
-                            <Typography>
-                              {typeof results?.maxLoad === "number" ? `${results.maxLoad.toFixed(1)} N` : "-"}
-                            </Typography>
-                          </Box>
-                        </Box>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                  <Grid size={{ xl: 4, md: 6, xs: 12 }}>
-                    <Card>
-                      <CardContent className='flex flex-col gap-5'>
-                        <Box className='flex flex-row gap-2'>
-                          <RulerDimensionLine className='flex-none' />
-                          <Box className='flex flex-col gap-1 flex-1'>
-                            <Typography variant='subtitle1'>Max Distance</Typography>
-                            <Typography>
-                              {typeof results?.maxDistance === "number" ? `${results.maxDistance.toFixed(4)} mm` : "-"}
-                            </Typography>
-                          </Box>
-                        </Box>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                </>
-              )}
               {graphType === "stress-strain" && (
                 <>
               <Grid size={{ xl: 4, md: 6, xs: 12 }}>
@@ -247,7 +285,7 @@ export default function TestResultsMachine({ test }: TestResultsMachineProps) {
                       <Box className='flex flex-col gap-1 flex-1'>
                         <Typography variant='subtitle1'>Tensile Strength</Typography>
                         <Typography>
-                          {typeof results?.tensileStrength === "number" ? `${results.tensileStrength} MPa` : "-"}
+                          {typeof tensileStrength === "number" ? `${tensileStrength.toFixed(1)} MPa` : "-"}
                         </Typography>
                       </Box>
                     </Box>
@@ -266,37 +304,7 @@ export default function TestResultsMachine({ test }: TestResultsMachineProps) {
                       <Box className='flex flex-col gap-1 flex-1'>
                         <Typography variant='subtitle1'>Elongation</Typography>
                         <Typography>
-                          {typeof results?.elongation === "number" ? `${results.elongation} %` : "-"}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </CardContent>
-                </Card>
-              </Grid>
-              <Grid size={{ xl: 4, md: 6, xs: 12 }}>
-                <Card>
-                  <CardContent className='flex flex-col gap-5'>
-                    <Box className='flex flex-row gap-2'>
-                      <ArrowUpFromLine className='flex-none' />
-                      <Box className='flex flex-col gap-1 flex-1'>
-                        <Typography variant='subtitle1'>First Length</Typography>
-                        <Typography>
-                          {typeof results?.firstLength === "number" ? `${results.firstLength} mm` : "-"}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </CardContent>
-                </Card>
-              </Grid>
-              <Grid size={{ xl: 4, md: 6, xs: 12 }}>
-                <Card>
-                  <CardContent className='flex flex-col gap-5'>
-                    <Box className='flex flex-row gap-2'>
-                      <ArrowUpToLine className='flex-none' />
-                      <Box className='flex flex-col gap-1 flex-1'>
-                        <Typography variant='subtitle1'>Last Length</Typography>
-                        <Typography>
-                          {typeof results?.lastLength === "number" ? `${results.lastLength} mm` : "-"}
+                          {typeof elongation === "number" ? `${elongation.toFixed(1)} %` : "-"}
                         </Typography>
                       </Box>
                     </Box>
@@ -305,6 +313,36 @@ export default function TestResultsMachine({ test }: TestResultsMachineProps) {
               </Grid>
                 </>
               )}
+              <Grid size={{ xl: 4, md: 6, xs: 12 }}>
+                <Card>
+                  <CardContent className='flex flex-col gap-5'>
+                    <Box className='flex flex-row gap-2'>
+                      <WeightTilde className='flex-none' />
+                      <Box className='flex flex-col gap-1 flex-1'>
+                        <Typography variant='subtitle1'>Max Load</Typography>
+                        <Typography>
+                          {typeof results?.maxLoad === "number" ? `${results.maxLoad.toFixed(1)} N` : "-"}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid size={{ xl: 4, md: 6, xs: 12 }}>
+                <Card>
+                  <CardContent className='flex flex-col gap-5'>
+                    <Box className='flex flex-row gap-2'>
+                      <RulerDimensionLine className='flex-none' />
+                      <Box className='flex flex-col gap-1 flex-1'>
+                        <Typography variant='subtitle1'>Max Distance</Typography>
+                        <Typography>
+                          {typeof results?.maxDistance === "number" ? `${results.maxDistance.toFixed(4)} mm` : "-"}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
               <Grid size={{ xl: 4, md: 6, xs: 12 }}>
                 <Card>
                   <CardContent className='flex flex-col gap-5'>

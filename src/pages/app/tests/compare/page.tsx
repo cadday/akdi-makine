@@ -22,8 +22,6 @@ import { renderToStaticMarkup } from "react-dom/server";
 import * as echarts from "echarts";
 import type { EChartsOption } from "echarts";
 import {
-  ArrowUpFromLine,
-  ArrowUpToLine,
   ArrowUpWideNarrow,
   Bookmark,
   CalendarCog,
@@ -56,7 +54,7 @@ import { useThemeContext } from "@/theme/theme-provider";
 import { Tensile } from "@/icons/custom-lucide-icons/tensile";
 import { Yeild } from "@/icons/custom-lucide-icons/yield";
 import { Machine } from "@/icons/custom-lucide-icons/machine";
-import { getTestGraphType, type TestGraphType } from "@/lib/db";
+import { getStressStrainMaximums, getTestGraphType, type TestGraphType } from "@/lib/db";
 
 interface ComparisonTooltipPoint {
   id: string;
@@ -146,6 +144,26 @@ function getTestGraphData(test: TestRecord, graphType: TestGraphType): TestGraph
   return graphType === "stress-strain"
     ? (test.results?.stressStrainData ?? []).map(({ strain, stress }) => ({ x: strain, y: stress }))
     : (test.results?.loadDisplacementData ?? []).map(({ displacement, load }) => ({ x: displacement, y: load }));
+}
+
+function formatTestTensileStrength(test: TestRecord) {
+  const maximum =
+    typeof test.results?.tensileStrength === "number"
+      ? test.results.tensileStrength
+      : test.results?.finalized
+        ? (getStressStrainMaximums(test.results.stressStrainData ?? [])?.maxStress ?? null)
+        : null;
+  return maximum === null ? "-" : `${maximum.toFixed(1)} MPa`;
+}
+
+function formatTestElongation(test: TestRecord) {
+  const maximum =
+    typeof test.results?.elongation === "number"
+      ? test.results.elongation
+      : test.results?.finalized
+        ? (getStressStrainMaximums(test.results.stressStrainData ?? [])?.maxStrain ?? null)
+        : null;
+  return maximum === null ? "-" : `${maximum.toFixed(1)} %`;
 }
 
 function ComparisonField({
@@ -277,7 +295,7 @@ function ComparisonDetails({
                             style={{ backgroundColor: colors[index] }}
                           />
                           <Typography variant='body1' component='div' className='min-w-0 flex-1'>
-                            {typeof test.results?.tensileStrength === "number" ? `${test.results.tensileStrength} MPa` : "-"}
+                            {formatTestTensileStrength(test)}
                           </Typography>
                         </Box>
                       ))}
@@ -286,60 +304,6 @@ function ComparisonDetails({
                 </CardContent>
               </Card>
             </Grid>
-              </>
-            )}
-            {graphType === "load-displacement" && (
-              <>
-                <Grid size={{ xl: 4, md: 6, xs: 12 }}>
-                  <Card>
-                    <CardContent className='flex flex-col gap-5'>
-                      <Box className='flex flex-row gap-2'>
-                        <WeightTilde className='flex-none' />
-                        <Box className='flex min-w-0 flex-1 flex-col gap-1'>
-                          <Typography variant='subtitle1'>Max Load</Typography>
-                          {tests.map((test, index) => (
-                            <Box key={test.id} className='flex min-w-0 items-start gap-2'>
-                              <Box
-                                aria-label={`${test.name} comparison color`}
-                                title={test.name}
-                                className='mt-1.5 h-2.5 w-2.5 flex-none rounded-full'
-                                style={{ backgroundColor: colors[index] }}
-                              />
-                              <Typography variant='body1' component='div' className='min-w-0 flex-1'>
-                                {typeof test.results?.maxLoad === "number" ? `${test.results.maxLoad.toFixed(1)} N` : "-"}
-                              </Typography>
-                            </Box>
-                          ))}
-                        </Box>
-                      </Box>
-                    </CardContent>
-                  </Card>
-                </Grid>
-                <Grid size={{ xl: 4, md: 6, xs: 12 }}>
-                  <Card>
-                    <CardContent className='flex flex-col gap-5'>
-                      <Box className='flex flex-row gap-2'>
-                        <RulerDimensionLine className='flex-none' />
-                        <Box className='flex min-w-0 flex-1 flex-col gap-1'>
-                          <Typography variant='subtitle1'>Max Distance</Typography>
-                          {tests.map((test, index) => (
-                            <Box key={test.id} className='flex min-w-0 items-start gap-2'>
-                              <Box
-                                aria-label={`${test.name} comparison color`}
-                                title={test.name}
-                                className='mt-1.5 h-2.5 w-2.5 flex-none rounded-full'
-                                style={{ backgroundColor: colors[index] }}
-                              />
-                              <Typography variant='body1' component='div' className='min-w-0 flex-1'>
-                                {typeof test.results?.maxDistance === "number" ? `${test.results.maxDistance.toFixed(4)} mm` : "-"}
-                              </Typography>
-                            </Box>
-                          ))}
-                        </Box>
-                      </Box>
-                    </CardContent>
-                  </Card>
-                </Grid>
               </>
             )}
             {graphType === "stress-strain" && (
@@ -360,7 +324,7 @@ function ComparisonDetails({
                             style={{ backgroundColor: colors[index] }}
                           />
                           <Typography variant='body1' component='div' className='min-w-0 flex-1'>
-                            {typeof test.results?.elongation === "number" ? `${test.results.elongation} %` : "-"}
+                            {formatTestElongation(test)}
                           </Typography>
                         </Box>
                       ))}
@@ -371,14 +335,13 @@ function ComparisonDetails({
             </Grid>
               </>
             )}
-            {graphType === "stress-strain" && (
-              <Grid size={{ xl: 4, md: 6, xs: 12 }}>
+            <Grid size={{ xl: 4, md: 6, xs: 12 }}>
                 <Card>
                   <CardContent className='flex flex-col gap-5'>
                     <Box className='flex flex-row gap-2'>
-                      <ArrowUpFromLine className='flex-none' />
+                      <WeightTilde className='flex-none' />
                       <Box className='flex min-w-0 flex-1 flex-col gap-1'>
-                        <Typography variant='subtitle1'>First Length</Typography>
+                        <Typography variant='subtitle1'>Max Load</Typography>
                         {tests.map((test, index) => (
                           <Box key={test.id} className='flex min-w-0 items-start gap-2'>
                             <Box
@@ -388,7 +351,7 @@ function ComparisonDetails({
                               style={{ backgroundColor: colors[index] }}
                             />
                             <Typography variant='body1' component='div' className='min-w-0 flex-1'>
-                              {typeof test.results?.firstLength === "number" ? `${test.results.firstLength} mm` : "-"}
+                              {typeof test.results?.maxLoad === "number" ? `${test.results.maxLoad.toFixed(1)} N` : "-"}
                             </Typography>
                           </Box>
                         ))}
@@ -397,15 +360,13 @@ function ComparisonDetails({
                   </CardContent>
                 </Card>
               </Grid>
-            )}
-            {graphType === "stress-strain" && (
-              <Grid size={{ xl: 4, md: 6, xs: 12 }}>
+            <Grid size={{ xl: 4, md: 6, xs: 12 }}>
                 <Card>
                   <CardContent className='flex flex-col gap-5'>
                     <Box className='flex flex-row gap-2'>
-                      <ArrowUpToLine className='flex-none' />
+                      <RulerDimensionLine className='flex-none' />
                       <Box className='flex min-w-0 flex-1 flex-col gap-1'>
-                        <Typography variant='subtitle1'>Last Length</Typography>
+                        <Typography variant='subtitle1'>Max Distance</Typography>
                         {tests.map((test, index) => (
                           <Box key={test.id} className='flex min-w-0 items-start gap-2'>
                             <Box
@@ -415,7 +376,7 @@ function ComparisonDetails({
                               style={{ backgroundColor: colors[index] }}
                             />
                             <Typography variant='body1' component='div' className='min-w-0 flex-1'>
-                              {typeof test.results?.lastLength === "number" ? `${test.results.lastLength} mm` : "-"}
+                              {typeof test.results?.maxDistance === "number" ? `${test.results.maxDistance.toFixed(4)} mm` : "-"}
                             </Typography>
                           </Box>
                         ))}
@@ -424,7 +385,6 @@ function ComparisonDetails({
                   </CardContent>
                 </Card>
               </Grid>
-            )}
             <Grid size={{ xl: 4, md: 6, xs: 12 }}>
               <Card>
                 <CardContent className='flex flex-col gap-5'>

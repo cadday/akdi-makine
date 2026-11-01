@@ -15,10 +15,9 @@ import {
   InputAdornment,
   MenuItem,
   Select,
-  Tooltip,
   Typography,
 } from "@mui/material";
-import { Bookmark, ChevronDown, Crosshair, Gauge, PencilRuler, Plus, Save, Split, WeightTilde, X, XSquare } from "lucide-react";
+import { Bookmark, ChevronDown, Crosshair, Gauge, PencilRuler, Plus, Save, Split, WeightTilde, XSquare } from "lucide-react";
 import type { PresetBase, PresetRecord, PresetType } from "@/context/db-context";
 import { PRESET_BASES, PRESET_TYPES } from "@/lib/db";
 import useAppNotifications from "@/hooks/use-app-notifications";
@@ -306,28 +305,6 @@ export default function PresetForm({ onSave, preset, initialPreset, saveLabel = 
                         }}
                       />
                     </FormControl>
-                    <Tooltip title={`Remove Target ${index + 1}`} placement='bottom'>
-                      <span>
-                        <Button
-                          disabled={index === 0}
-                          aria-label={`Remove Target ${index + 1}`}
-                          className='mt-7 icon-only hover:text-error hover:border-error-light/5 hover:bg-error-light/10'
-                          color='grey'
-                          variant='outlined'
-                          onClick={() =>
-                            void formik.setFieldValue(
-                              "targets",
-                              formik.values.targets.filter((_, targetIndex) => targetIndex !== index),
-                            )
-                          }
-                          startIcon={
-                            <Box className='flex h-5 w-5 items-center justify-center'>
-                              <X size={14} />
-                            </Box>
-                          }
-                        />
-                      </span>
-                    </Tooltip>
                   </Box>
                 );
               })}
