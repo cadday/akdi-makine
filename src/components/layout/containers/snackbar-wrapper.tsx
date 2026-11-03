@@ -3,6 +3,7 @@ import { PropsWithChildren } from "react";
 
 import { CheckCircle, CircleAlert, CircleX, Info, X } from "lucide-react";
 import { Button } from "@mui/material";
+import { useTranslation } from "react-i18next";
 
 const iconVariants = {
   success: <CheckCircle className='me-2' />,
@@ -12,6 +13,7 @@ const iconVariants = {
 };
 
 export default function SnackbarWrapper({ children }: PropsWithChildren) {
+  const { t } = useTranslation();
   return (
     <SnackbarProvider
       maxSnack={4}
@@ -19,7 +21,7 @@ export default function SnackbarWrapper({ children }: PropsWithChildren) {
       iconVariant={iconVariants}
       classes={{ containerAnchorOriginBottomRight: "snackbar-container-bottom-right" }}
       action={(snackbarId) => (
-        <Button className='icon-only' color='grey' variant='text' size='tiny' aria-label='close' onClick={() => closeSnackbar(snackbarId)}>
+        <Button className='icon-only' color='grey' variant='text' size='tiny' aria-label={t("close")} onClick={() => closeSnackbar(snackbarId)}>
           <X size={12} className='text-text-primary' />
         </Button>
       )}

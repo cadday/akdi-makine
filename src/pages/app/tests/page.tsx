@@ -32,13 +32,13 @@ export default function Page() {
       setTests(testData);
       setDataFields(fieldData);
     } catch (loadError) {
-      const message = `Failed to load tests: ${String(loadError)}`;
+      const message = t("listing-load-tests-error", { error: String(loadError) });
       setError(message);
       showError(message);
     } finally {
       setIsLoading(false);
     }
-  }, [getDataFields, getTests, showError]);
+  }, [getDataFields, getTests, showError, t]);
 
   useEffect(() => {
     let cancelled = false;
@@ -53,7 +53,7 @@ export default function Page() {
         }
       } catch (loadError) {
         if (!cancelled) {
-          const message = `Failed to load tests: ${String(loadError)}`;
+          const message = t("listing-load-tests-error", { error: String(loadError) });
           setError(message);
           showError(message);
         }
@@ -66,7 +66,7 @@ export default function Page() {
     return () => {
       cancelled = true;
     };
-  }, [getDataFields, getTests, showError]);
+  }, [getDataFields, getTests, showError, t]);
 
   const handleAddItem = useCallback(() => navigate("/tests/add"), [navigate]);
 
@@ -76,13 +76,13 @@ export default function Page() {
         <Grid size={12} container spacing={2.5}>
           <Grid size={{ xs: 12, md: "grow" }}>
             <Typography variant='h1' component='h1' className='mb-0'>
-              {t("menu-tests")}
+              {t("tests")}
             </Typography>
             <Breadcrumbs>
               <Link color='inherit' to={LINKS.home}>
                 {t("menu-home")}
               </Link>
-              <Typography variant='body2'>{t("menu-tests")}</Typography>
+              <Typography variant='body2'>{t("tests")}</Typography>
             </Breadcrumbs>
           </Grid>
         </Grid>
@@ -99,7 +99,7 @@ export default function Page() {
                   </Box>
                 </Box>
                 <Button size='large' variant='outlined' color='grey' startIcon={<Repeat2 />} onClick={() => void loadTests()}>
-                  Retry
+                  {t("retry")}
                 </Button>
               </Box>
             ) : (

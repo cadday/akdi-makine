@@ -72,7 +72,7 @@ export default function Page() {
                   {t("menu-home")}
                 </Link>
                 <Link color='inherit' to='/presets'>
-                  {t("menu-presets")}
+                  {t("presets")}
                 </Link>
                 {preset && <Link color='inherit' to={`/presets/${preset.id}`}>{preset.name}</Link>}
                 <Typography variant='body2'>Edit Preset</Typography>

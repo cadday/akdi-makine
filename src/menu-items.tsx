@@ -10,19 +10,19 @@ export const leftMenuItems: MenuItem[] = [
   {
     id: "tests",
     icon: "flask-conical",
-    label: "menu-tests",
+    label: "tests",
     href: "/tests",
   },
   {
     id: "specimens",
     icon: "drafting-compass",
-    label: "menu-specimens",
+    label: "specimens",
     href: "/specimens",
   },
   {
     id: "presets",
     icon: "sliders-vertical",
-    label: "menu-presets",
+    label: "presets",
     href: "/presets",
   },
 ];
@@ -30,7 +30,7 @@ export const leftMenuItems: MenuItem[] = [
 export const leftMenuBottomItems: MenuItem[] = [
   {
     id: "data-fields",
-    label: "menu-data-fields",
+    label: "data-fields",
     href: "/data-fields",
     icon: "network",
   },

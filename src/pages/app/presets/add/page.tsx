@@ -27,7 +27,7 @@ export default function Page() {
                 {t("menu-home")}
               </Link>
               <Link color='inherit' to='/presets'>
-                {t("menu-presets")}
+                {t("presets")}
               </Link>
               <Typography variant='body2'>Add Preset</Typography>
             </Breadcrumbs>

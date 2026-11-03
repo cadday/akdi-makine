@@ -2,6 +2,7 @@ import { Box, Button, Tooltip } from "@mui/material";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate, useNavigationType } from "react-router";
+import { useTranslation } from "react-i18next";
 
 import { cn } from "@/lib/utils";
 
@@ -11,6 +12,7 @@ const getHistoryIndex = () => {
 };
 
 export default function RouterNav() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const navigationType = useNavigationType();
@@ -30,13 +32,13 @@ export default function RouterNav() {
 
   return (
     <Box className='flex flex-row gap-1'>
-      <Tooltip title={"Back"} placement='bottom'>
+      <Tooltip title={t("back")} placement='bottom'>
         <span>
           <Button
             variant='text'
             size='large'
             color='text-primary'
-            aria-label='Backward'
+            aria-label={t("back")}
             disabled={!canGoBack}
             className={cn("icon-only [&.active]:text-primary hover:bg-grey-75")}
             onClick={() => navigate(-1)}
@@ -48,13 +50,13 @@ export default function RouterNav() {
           />
         </span>
       </Tooltip>
-      <Tooltip title={"Forward"} placement='bottom'>
+      <Tooltip title={t("forward")} placement='bottom'>
         <span>
           <Button
             variant='text'
             size='large'
             color='text-primary'
-            aria-label='Forward'
+            aria-label={t("forward")}
             disabled={!canGoForward}
             className={cn("icon-only [&.active]:text-primary hover:bg-grey-75")}
             onClick={() => navigate(1)}

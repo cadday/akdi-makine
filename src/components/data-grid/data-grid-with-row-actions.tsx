@@ -1,8 +1,16 @@
 import { useCallback, useMemo, useState } from "react";
 import { Box, Button, ListItemIcon, ListItemText, Menu, MenuItem } from "@mui/material";
 import { DataGrid, type DataGridProps, type GridColDef, type GridValidRowModel } from "@mui/x-data-grid";
+import { enUS, trTR } from "@mui/x-data-grid/locales";
 import { Ellipsis } from "lucide-react";
 import type { MouseEvent as ReactMouseEvent, ReactNode } from "react";
+import { useTranslation } from "react-i18next";
+
+const commonActionKeys: Record<string, string> = {
+  view: "view",
+  duplicate: "duplicate",
+  delete: "delete",
+};
 
 export interface DataGridRowAction {
   key: string;
@@ -26,6 +34,8 @@ export interface DataGridWithRowActionsProps<Row extends GridValidRowModel> exte
 }
 
 export default function DataGridWithRowActions<Row extends GridValidRowModel>({ columns, getRowActions, ...gridProps }: DataGridWithRowActionsProps<Row>) {
+  const { t, i18n } = useTranslation();
+  const localeText = (i18n.language.startsWith("tr") ? trTR : enUS).components.MuiDataGrid.defaultProps.localeText;
   const [rowMenu, setRowMenu] = useState<RowMenuState | null>(null);
   const activeRowId = rowMenu?.open ? rowMenu.rowId : null;
   const closeRowMenu = useCallback(() => {
@@ -48,7 +58,7 @@ export default function DataGridWithRowActions<Row extends GridValidRowModel>({ 
       ...columns,
       {
         field: "actions",
-        headerName: "Actions",
+        headerName: t("actions"),
         minWidth: 80,
         flex: 1,
         align: "right",
@@ -58,7 +68,7 @@ export default function DataGridWithRowActions<Row extends GridValidRowModel>({ 
         disableColumnMenu: true,
         renderCell: (params) => (
           <Button
-            aria-label={`Actions for ${String((params.row as { name?: string }).name ?? params.id)}`}
+            aria-label={t("actions-for", { name: String((params.row as { name?: string }).name ?? params.id) })}
             aria-haspopup='menu'
             aria-expanded={activeRowId === String(params.id)}
             className='icon-only'
@@ -78,7 +88,7 @@ export default function DataGridWithRowActions<Row extends GridValidRowModel>({ 
         ),
       },
     ],
-    [activeRowId, closeRowMenu, columns],
+    [activeRowId, closeRowMenu, columns, t],
   );
 
   return (
@@ -86,6 +96,7 @@ export default function DataGridWithRowActions<Row extends GridValidRowModel>({ 
       <Box onContextMenu={handleRowContextMenu}>
         <DataGrid
           {...gridProps}
+          localeText={localeText}
           columns={columnsWithActions}
           getRowClassName={(params) => (String(params.id) === activeRowId ? "outline-primary-light/40 outline-2" : "")}
         />
@@ -118,7 +129,7 @@ export default function DataGridWithRowActions<Row extends GridValidRowModel>({ 
               }}
             >
               <ListItemIcon>{action.icon}</ListItemIcon>
-              <ListItemText>{action.label}</ListItemText>
+              <ListItemText>{commonActionKeys[action.key] ? t(commonActionKeys[action.key]) : action.label}</ListItemText>
             </MenuItem>
           ))}
       </Menu>

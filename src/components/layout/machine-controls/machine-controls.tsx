@@ -410,13 +410,13 @@ export default function MachineControls() {
               ))}
           </Box>
           <Box className="hidden lg:flex bg-grey-50 flex-row items-center  rounded-lg px-4 ms-2">
-            <Box className="w-28 flex flex-row items-center gap-1 px-1">
+            <Box className="w-28 flex flex-row items-center gap-2 px-1">
               <Weight />
-              {displayedPlcValues ? (displayedPlcValues.load / PLC_LOAD_SCALE_DIVISOR).toFixed(1) : '—'} N
+              {displayedPlcValues ? (displayedPlcValues.load / PLC_LOAD_SCALE_DIVISOR).toFixed(1) : '0.0'} N
             </Box>
-            <Box className="min-w-34 flex flex-row items-center gap-1 px-1">
+            <Box className="min-w-36 flex flex-row items-center gap-2 px-1">
               <Ruler />
-              {displayedPlcValues ? (displayedPlcValues.distance / PLC_DISTANCE_SCALE_DIVISOR).toFixed(4) : '—'} mm
+              {displayedPlcValues ? (displayedPlcValues.distance / PLC_DISTANCE_SCALE_DIVISOR).toFixed(4) : '0.0000'} mm
             </Box>
           </Box>
         </Box>

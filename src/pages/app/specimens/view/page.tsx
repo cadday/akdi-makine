@@ -146,7 +146,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                         {t("menu-home")}
                       </Link>
                       <Link color='inherit' to='/specimens'>
-                        {t("menu-specimens")}
+                        {t("specimens")}
                       </Link>
                       {specimen && <Typography variant='body2'>{specimen.name}</Typography>}
                     </Breadcrumbs>

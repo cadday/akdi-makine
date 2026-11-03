@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
+import { useTranslation } from 'react-i18next';
 import {
   Alert,
   AlertTitle,
@@ -27,16 +28,6 @@ interface LimitValues {
   testLoadLimit: string;
 }
 
-const limitFieldLabels: Record<string, string> = {
-  testDistanceLimit: 'Test Distance Limit',
-  testLoadLimit: 'Test Load Limit',
-};
-
-const validationSchema = yup.object({
-  testDistanceLimit: requiredScaledNumber('Test Distance Limit', 10000, 4, 0, PLC_INT32_MAX / 10000),
-  testLoadLimit: requiredScaledNumber('Test Load Limit', 10, 1, 0, PLC_INT32_MAX / 10),
-});
-
 const initialValues: LimitValues = {
   testDistanceLimit: '',
   testLoadLimit: '',
@@ -59,6 +50,7 @@ function toPlcLimitValues(values: LimitValues): PlcLimitsValues | null {
 }
 
 export default function Limits() {
+  const { t, i18n } = useTranslation();
   const [submitted, setSubmitted] = useState(false);
   const [hasLoadedValues, setHasLoadedValues] = useState(false);
   const [isReading, setIsReading] = useState(false);
@@ -66,6 +58,27 @@ export default function Limits() {
   const { connectionStatus } = usePlcData();
   const { ipAddress, state } = connectionStatus;
   const isPlcOnline = state === 'online' && Boolean(ipAddress);
+  const limitFieldLabels: Record<string, string> = {
+    testDistanceLimit: t('settings-limits-test-distance-limit'),
+    testLoadLimit: t('settings-limits-test-load-limit'),
+  };
+  const validationMessages = (label: string, decimalPlaces: number) => ({
+    typeError: t('settings-validation-number', { label }),
+    precisionError: t('settings-validation-precision', { label, decimalPlaces }),
+    minError: t('settings-validation-below-range', { label }),
+    maxError: t('settings-validation-above-range', { label }),
+    required: t('settings-validation-required', { label }),
+  });
+  const validationSchema = yup.object({
+    testDistanceLimit: requiredScaledNumber(
+      10000,
+      4,
+      0,
+      PLC_INT32_MAX / 10000,
+      validationMessages(limitFieldLabels.testDistanceLimit, 4),
+    ),
+    testLoadLimit: requiredScaledNumber(10, 1, 0, PLC_INT32_MAX / 10, validationMessages(limitFieldLabels.testLoadLimit, 1)),
+  });
   const formik = useFormik<LimitValues>({
     initialValues,
     validationSchema,
@@ -79,13 +92,17 @@ export default function Limits() {
         await window.plcAPI.writeLimits(limits);
         helpers.resetForm({ values: fromPlcLimitValues(limits) });
         setSubmitted(false);
-        showSuccess('PLC limits saved.');
+        showSuccess(t('settings-limits-saved'));
       } catch (error) {
-        showError(`Failed to save PLC limits: ${String(error)}`);
+        showError(t('settings-limits-save-error', { error: String(error) }));
       }
     },
   });
-  const { resetForm } = formik;
+  const { resetForm, validateForm } = formik;
+
+  useEffect(() => {
+    void validateForm();
+  }, [validateForm, i18n.language]);
 
   useEffect(() => {
     let cancelled = false;
@@ -108,7 +125,7 @@ export default function Limits() {
         resetForm({ values: fromPlcLimitValues(values) });
         setHasLoadedValues(true);
       } catch (error) {
-        if (!cancelled) showError(`Failed to read PLC limits: ${String(error)}`);
+        if (!cancelled) showError(i18n.t('settings-limits-read-error', { error: String(error) }));
       } finally {
         if (!cancelled) setIsReading(false);
       }
@@ -119,7 +136,7 @@ export default function Limits() {
     return () => {
       cancelled = true;
     };
-  }, [ipAddress, isPlcOnline, resetForm, showError]);
+  }, [ipAddress, isPlcOnline, i18n, resetForm, showError]);
 
   const fieldError = (field: keyof LimitValues) => submitted && formik.errors[field];
   const handleMaskedInputAccept = (field: keyof LimitValues) => (value: string, event?: InputEvent) => {
@@ -131,7 +148,7 @@ export default function Limits() {
   return (
     <Grid size={12}>
       <Typography variant="h6" component="h2" className="mb-3">
-        Limits
+        {t('settings-limits-title')}
       </Typography>
       <Card>
         <CardContent>
@@ -154,7 +171,7 @@ export default function Limits() {
                     component="label"
                     className={fieldError('testDistanceLimit') ? 'text-error!' : undefined}
                   >
-                    Test Distance Limit
+                    {t('settings-limits-test-distance-limit')}
                   </FormLabel>
                   <Input
                     name="testDistanceLimit"
@@ -178,7 +195,7 @@ export default function Limits() {
                 <WeightTilde className={cn('flex-none', fieldError('testLoadLimit') && 'text-error!')} />
                 <FormControl className="outlined" variant="standard" size="small" fullWidth required disabled={formDisabled}>
                   <FormLabel component="label" className={fieldError('testLoadLimit') ? 'text-error!' : undefined}>
-                    Test Load Limit
+                    {t('settings-limits-test-load-limit')}
                   </FormLabel>
                   <Input
                     name="testLoadLimit"
@@ -201,7 +218,7 @@ export default function Limits() {
               {submitted && !formik.isValid && (
                 <Alert severity="error" icon={<XSquare />} className="neutral rounded-3xl! bg-transparent! mb-2 mt-2 p-5">
                   <AlertTitle variant="subtitle1" className="pt-0.5">
-                    The following inputs have errors!
+                    {t('settings-validation-error-summary')}
                   </AlertTitle>
                   {Object.entries(formik.errors).map(([field, error]) => (
                     <Box className="flex flex-row gap-0.5" key={field}>
@@ -221,7 +238,7 @@ export default function Limits() {
                 type="submit"
                 startIcon={<Save />}
               >
-                Save
+                {t('save')}
               </Button>
             </Grid>
           </Grid>

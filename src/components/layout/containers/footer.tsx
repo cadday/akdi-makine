@@ -5,8 +5,10 @@ import { Box, Button } from "@mui/material";
 import { cn } from "@/lib/utils";
 import { useThemeContext } from "@/theme/theme-provider";
 import { ContentType } from "@/types/types";
+import { useTranslation } from "react-i18next";
 
 export default function Footer() {
+  const { t } = useTranslation();
   const { content } = useThemeContext();
 
   return (
@@ -35,7 +37,7 @@ export default function Footer() {
             to='https://www.youtube.com/@AKDIMAKINE'
             target='_blank'
           >
-            Videos
+            {t("videos")}
           </Button>
           <Button
             size='tiny'
@@ -46,7 +48,7 @@ export default function Footer() {
             to='https://akdimakine.com/iletisim/'
             target='_blank'
           >
-            Contact
+            {t("contact")}
           </Button>
         </Box>
       </Box>

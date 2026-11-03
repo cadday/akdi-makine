@@ -1,15 +1,17 @@
 import { useCallback, useState, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from "@mui/material";
 import useAppNotifications from "@/hooks/use-app-notifications";
 
 interface DeleteConfirmationOptions {
   title: string;
   message: ReactNode;
-  errorMessage: string;
+  errorMessage: string | ((error: unknown) => string);
   onConfirm: () => Promise<void>;
 }
 
 export default function useDeleteConfirmation() {
+  const { t } = useTranslation();
   const { showError } = useAppNotifications();
   const [request, setRequest] = useState<DeleteConfirmationOptions | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -30,7 +32,7 @@ export default function useDeleteConfirmation() {
       await request.onConfirm();
       setRequest(null);
     } catch (error) {
-      showError(`${request.errorMessage} ${String(error)}`);
+      showError(typeof request.errorMessage === "function" ? request.errorMessage(error) : `${request.errorMessage} ${String(error)}`);
     } finally {
       setIsDeleting(false);
     }
@@ -44,10 +46,10 @@ export default function useDeleteConfirmation() {
       </DialogContent>
       <DialogActions>
         <Button onClick={closeDialog} disabled={isDeleting} color='grey'>
-          Cancel
+          {t("cancel")}
         </Button>
         <Button onClick={() => void confirmDelete()} loading={isDeleting} color='error' variant='pastel'>
-          Delete
+          {t("delete")}
         </Button>
       </DialogActions>
     </Dialog>

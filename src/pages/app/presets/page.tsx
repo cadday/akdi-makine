@@ -39,7 +39,7 @@ import { NoPresetsFound } from "../components/no-entity-found";
 type PresetGridRow = PresetRecord;
 
 export default function Page() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { getPresets, deletePreset, deletePresets } = useDb();
   const { showError } = useAppNotifications();
@@ -56,13 +56,13 @@ export default function Page() {
       const data = await getPresets();
       setPresets(data);
     } catch (err) {
-      const message = "Failed to load presets: " + err;
+      const message = t("listing-load-presets-error", { error: String(err) });
       setError(message);
       showError(message);
     } finally {
       setIsLoading(false);
     }
-  }, [getPresets, showError]);
+  }, [getPresets, showError, t]);
 
   useEffect(() => {
     let cancelled = false;
@@ -76,7 +76,7 @@ export default function Page() {
         if (!cancelled) setPresets(data);
       } catch (err) {
         if (!cancelled) {
-          const message = "Failed to load presets: " + err;
+          const message = t("listing-load-presets-error", { error: String(err) });
           setError(message);
           showError(message);
         }
@@ -89,16 +89,16 @@ export default function Page() {
     return () => {
       cancelled = true;
     };
-  }, [getPresets, showError]);
+  }, [getPresets, showError, t]);
 
   const deleteRows = useCallback(
     (ids: string[]) => {
       if (ids.length === 0) return;
 
       return requestDelete({
-        title: ids.length === 1 ? "Delete Preset" : "Delete Presets",
-        message: ids.length === 1 ? "Delete this preset? This action cannot be undone." : `Delete ${ids.length} presets? This action cannot be undone.`,
-        errorMessage: "Failed to delete preset(s):",
+        title: t(ids.length === 1 ? "listing-delete-preset-title" : "listing-delete-presets-title"),
+        message: ids.length === 1 ? t("listing-delete-preset-confirm") : t("listing-delete-presets-confirm", { count: ids.length }),
+        errorMessage: (error) => t("listing-delete-preset-error", { error: String(error) }),
         onConfirm: async () => {
           if (ids.length === 1) await deletePreset(ids[0]);
           else await deletePresets(ids);
@@ -108,7 +108,7 @@ export default function Page() {
         },
       });
     },
-    [deletePreset, deletePresets, requestDelete],
+    [deletePreset, deletePresets, requestDelete, t],
   );
 
   const deleteRow = useCallback((id: string) => async () => deleteRows([id]), [deleteRows]);
@@ -119,23 +119,23 @@ export default function Page() {
       if (!preset) return [];
 
       return [
-        { key: "view", icon: <Send size={16} />, label: "View", onClick: () => navigate(`/presets/${id}`) },
+        { key: "view", icon: <Send size={16} />, label: t("view"), onClick: () => navigate(`/presets/${id}`) },
         {
           key: "duplicate",
           icon: <Copy size={16} />,
-          label: "Duplicate",
+          label: t("duplicate"),
           onClick: () => navigate("/presets/add", { state: { initialPreset: { ...preset, name: `${preset.name} (Copy)` } } }),
         },
         {
           key: "delete",
           icon: <XSquare size={16} />,
-          label: "Delete",
+          label: t("delete"),
           onClick: deleteRow(id),
           className: "hover:bg-error-light/10 hover:text-error",
         },
       ];
     },
-    [deleteRow, navigate, presets],
+    [deleteRow, navigate, presets, t],
   );
 
   const handleAddItem = useCallback(() => {
@@ -152,10 +152,10 @@ export default function Page() {
   const rows = useMemo<PresetGridRow[]>(() => presets.map((preset) => ({ ...preset })), [presets]);
 
   const columns: GridColDef<PresetGridRow>[] = [
-    { field: "id", headerName: "ID", width: 90, filterable: false },
+    { field: "id", headerName: t("listing-id"), width: 90, filterable: false },
     {
       field: "name",
-      headerName: "Name",
+      headerName: t("listing-name"),
       minWidth: 240,
       renderCell: (params) => (
         <Link
@@ -168,20 +168,20 @@ export default function Page() {
     },
     {
       field: "type",
-      headerName: "Type",
+      headerName: t("listing-type"),
       minWidth: 150,
       renderCell: (params: GridRenderCellParams<any, string>) => {
         const value = params.value;
         if (value === "Tensile") {
           return (
             <Button className='pointer-events-none self-center py-1 rounded-2xs' size='tiny' color='primary' variant='outlined'>
-              {value}
+              {value === "Tensile" ? t("listing-tensile") : t("listing-compression")}
             </Button>
           );
         } else if (value === "Compression") {
           return (
             <Button className='pointer-events-none self-center py-1 rounded-2xs' size='tiny' color='secondary' variant='outlined'>
-              {value}
+              {t("listing-compression")}
             </Button>
           );
         } else {
@@ -193,11 +193,11 @@ export default function Page() {
         }
       },
     },
-    { field: "velocity", headerName: "Velocity mm/min", minWidth: 150, type: "number", align: "left", headerAlign: "left" },
-    { field: "base", headerName: "Base", minWidth: 130 },
+    { field: "velocity", headerName: t("listing-velocity"), minWidth: 150, type: "number", align: "left", headerAlign: "left" },
+    { field: "base", headerName: t("listing-base"), minWidth: 130, valueFormatter: (value) => (value === "Load" ? t("listing-load") : t("listing-distance")) },
     {
       field: "targets",
-      headerName: "Targets",
+      headerName: t("listing-targets"),
       minWidth: 180,
       valueGetter: (_value, row) =>
         (row.targets ?? [])
@@ -206,10 +206,10 @@ export default function Page() {
     },
     {
       field: "createdAt",
-      headerName: "Created",
+      headerName: t("listing-created"),
       minWidth: 180,
       valueFormatter: (value) =>
-        new Date(Number(value)).toLocaleString("en-GB", {
+        new Date(Number(value)).toLocaleString(i18n.language, {
           dateStyle: "short",
           timeStyle: "short",
         }),
@@ -220,10 +220,10 @@ export default function Page() {
     },
     {
       field: "updatedAt",
-      headerName: "Updated",
+      headerName: t("listing-updated"),
       minWidth: 180,
       valueFormatter: (value) =>
-        new Date(Number(value)).toLocaleString("en-GB", {
+        new Date(Number(value)).toLocaleString(i18n.language, {
           dateStyle: "short",
           timeStyle: "short",
         }),
@@ -241,13 +241,13 @@ export default function Page() {
         <Grid size={12} container spacing={2.5}>
           <Grid size={{ xs: 12, md: "grow" }}>
             <Typography variant='h1' component='h1' className='mb-0'>
-              {t("menu-presets")}
+              {t("presets")}
             </Typography>
             <Breadcrumbs>
               <Link color='inherit' to={LINKS.home}>
                 {t("menu-home")}
               </Link>
-              <Typography variant='body2'>{t("menu-presets")}</Typography>
+              <Typography variant='body2'>{t("presets")}</Typography>
             </Breadcrumbs>
           </Grid>
         </Grid>
@@ -264,7 +264,7 @@ export default function Page() {
                   </Box>
                 </Box>
                 <Button size='large' variant='outlined' color='grey' startIcon={<Repeat2 />} onClick={() => void loadPresets()}>
-                  Retry
+                  {t("retry")}
                 </Button>
               </Box>
             ) : isLoading ? (

@@ -28,6 +28,7 @@ import {
 import { ChevronRight, Columns, Copy, Download, FileText, Filter, GitCompareArrows, Plus, Search, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 export type ListingToolbarProps = {
   rowSelectionModel?: GridRowSelectionModel;
@@ -47,9 +48,10 @@ export const DataGridListingToolbar = ({
   onCompare,
   onAddItem,
   addDisabled = false,
-  addLabel = "Add",
+  addLabel,
   addIcon = <Plus />,
 }: ListingToolbarProps) => {
+  const { t } = useTranslation();
   const [anchorElExport, setAnchorElExport] = useState<EventTarget | Element | PopoverVirtualElement | null>(null);
   const openExport = Boolean(anchorElExport);
   const handleClickExport = (event: Event | SyntheticEvent) => {
@@ -83,7 +85,7 @@ export const DataGridListingToolbar = ({
                     inputRef={ref}
                     variant='standard'
                     className='surface-standard w-full'
-                    placeholder='Search'
+                    placeholder={t("search")}
                     size='medium'
                     slotProps={{
                       input: {
@@ -118,7 +120,7 @@ export const DataGridListingToolbar = ({
                 onClick={handleClickSelection}
                 endIcon={<ChevronRight size={16} className={cn("transition-transform rtl:rotate-180", openSelection && "rotate-90 rtl:rotate-90")} />}
               >
-                {selectedCount > 1 ? selectedCount + " Items" : selectedCount + " Item"}
+                {selectedCount > 1 ? t("selected-items", { count: selectedCount }) : t("selected-item", { count: selectedCount })}
               </Button>
 
               <Menu
@@ -139,7 +141,7 @@ export const DataGridListingToolbar = ({
                     <ListItemIcon>
                       <Copy size={16} />
                     </ListItemIcon>
-                    <ListItemText>Duplicate</ListItemText>
+                    <ListItemText>{t("duplicate")}</ListItemText>
                   </MenuItem>
                 )}
                 {onCompare && rowSelectionModel && selectedCount >= 2 && (
@@ -152,7 +154,7 @@ export const DataGridListingToolbar = ({
                     <ListItemIcon>
                       <GitCompareArrows size={16} />
                     </ListItemIcon>
-                    <ListItemText>Compare</ListItemText>
+                    <ListItemText>{t("compare")}</ListItemText>
                   </MenuItem>
                 )}
                 {deleteRows && rowSelectionModel && (
@@ -166,14 +168,14 @@ export const DataGridListingToolbar = ({
                     <ListItemIcon>
                       <X size={16} />
                     </ListItemIcon>
-                    <ListItemText>Delete</ListItemText>
+                    <ListItemText>{t("delete")}</ListItemText>
                   </MenuItem>
                 )}
               </Menu>
             </>
           )}
 
-          <Tooltip title='Columns'>
+          <Tooltip title={t("columns")}>
             <ColumnsPanelTrigger
               render={(props) => (
                 <Button size='large' {...props} className='icon-only surface-standard flex-none' variant='surface' color='text-primary'>
@@ -183,7 +185,7 @@ export const DataGridListingToolbar = ({
             />
           </Tooltip>
 
-          <Tooltip title='Filters'>
+          <Tooltip title={t("filters")}>
             <FilterPanelTrigger
               render={(props, state) => (
                 <Button size='large' {...props} className='icon-only surface-standard flex-none' variant='surface' color='text-primary'>
@@ -195,7 +197,7 @@ export const DataGridListingToolbar = ({
             />
           </Tooltip>
 
-          <Tooltip title='Export'>
+          <Tooltip title={t("export")}>
             <Button
               className='icon-only surface-standard flex-none'
               color='text-primary'
@@ -220,7 +222,7 @@ export const DataGridListingToolbar = ({
                   <ListItemIcon>
                     <FileText size={16} />
                   </ListItemIcon>
-                  <ListItemText>Save as CSV</ListItemText>
+                  <ListItemText>{t("save-csv")}</ListItemText>
                 </MenuItem>
               }
               onClick={handleCloseExport}
@@ -229,7 +231,7 @@ export const DataGridListingToolbar = ({
 
           {onAddItem && (
             <Button size='large' className='surface-standard' color='text-primary' variant='surface' onClick={onAddItem} disabled={addDisabled} startIcon={addIcon}>
-              {addLabel}
+              {addLabel ?? t("add")}
             </Button>
           )}
         </Grid>

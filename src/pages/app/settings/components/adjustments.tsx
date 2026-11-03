@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
+import { useTranslation } from 'react-i18next';
 import {
   Alert,
   AlertTitle,
@@ -30,30 +31,7 @@ interface AdjustmentValues {
   bottomLoadLimit: string;
 }
 
-const adjustmentFieldLabels: Record<string, string> = {
-  manualVelocity: 'Manual Velocity',
-  topDistanceLimit: 'Top Distance Limit',
-  bottomDistanceLimit: 'Bottom Distance Limit',
-  topLoadLimit: 'Top Load Limit',
-  bottomLoadLimit: 'Bottom Load Limit',
-};
-
 const manualVelocityMaximum = 75;
-
-const validationSchema = yup.object({
-  manualVelocity: requiredScaledNumber(
-    'Manual Velocity',
-    10,
-    1,
-    PLC_INT32_MIN / 10,
-    manualVelocityMaximum,
-    'Manual Velocity cannot exceed 75.0',
-  ),
-  topDistanceLimit: requiredScaledNumber('Top Distance Limit', 10000, 4, 0, PLC_INT32_MAX / 10000),
-  bottomDistanceLimit: requiredScaledNumber('Bottom Distance Limit', 10000, 4, 0, -PLC_INT32_MIN / 10000),
-  topLoadLimit: requiredScaledNumber('Top Load Limit', 10, 1, 0, PLC_INT32_MAX / 10),
-  bottomLoadLimit: requiredScaledNumber('Bottom Load Limit', 10, 1, 0, -PLC_INT32_MIN / 10),
-});
 
 const initialValues: AdjustmentValues = {
   manualVelocity: '',
@@ -86,6 +64,7 @@ function toPlcAdjustmentValues(values: AdjustmentValues): PlcAdjustmentValues | 
 }
 
 export default function Adjustments() {
+  const { t, i18n } = useTranslation();
   const [submitted, setSubmitted] = useState(false);
   const [hasLoadedValues, setHasLoadedValues] = useState(false);
   const [isReading, setIsReading] = useState(false);
@@ -93,6 +72,65 @@ export default function Adjustments() {
   const { connectionStatus } = usePlcData();
   const { ipAddress, state } = connectionStatus;
   const isPlcOnline = state === 'online' && Boolean(ipAddress);
+  const adjustmentFieldLabels: Record<string, string> = {
+    manualVelocity: t('settings-adjustments-manual-velocity'),
+    topDistanceLimit: t('settings-adjustments-top-distance-limit'),
+    bottomDistanceLimit: t('settings-adjustments-bottom-distance-limit'),
+    topLoadLimit: t('settings-adjustments-top-load-limit'),
+    bottomLoadLimit: t('settings-adjustments-bottom-load-limit'),
+  };
+  const validationMessages = (label: string, decimalPlaces: number, maxError: string) => ({
+    typeError: t('settings-validation-number', { label }),
+    precisionError: t('settings-validation-precision', { label, decimalPlaces }),
+    minError: t('settings-validation-below-range', { label }),
+    maxError,
+    required: t('settings-validation-required', { label }),
+  });
+  const validationSchema = yup.object({
+    manualVelocity: requiredScaledNumber(
+      10,
+      1,
+      PLC_INT32_MIN / 10,
+      manualVelocityMaximum,
+      validationMessages(
+        adjustmentFieldLabels.manualVelocity,
+        1,
+        t('settings-validation-velocity-max', {
+          max: new Intl.NumberFormat(i18n.language, { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(
+            manualVelocityMaximum,
+          ),
+        }),
+      ),
+    ),
+    topDistanceLimit: requiredScaledNumber(
+      10000,
+      4,
+      0,
+      PLC_INT32_MAX / 10000,
+      validationMessages(adjustmentFieldLabels.topDistanceLimit, 4, t('settings-validation-above-range', { label: adjustmentFieldLabels.topDistanceLimit })),
+    ),
+    bottomDistanceLimit: requiredScaledNumber(
+      10000,
+      4,
+      0,
+      -PLC_INT32_MIN / 10000,
+      validationMessages(adjustmentFieldLabels.bottomDistanceLimit, 4, t('settings-validation-above-range', { label: adjustmentFieldLabels.bottomDistanceLimit })),
+    ),
+    topLoadLimit: requiredScaledNumber(
+      10,
+      1,
+      0,
+      PLC_INT32_MAX / 10,
+      validationMessages(adjustmentFieldLabels.topLoadLimit, 1, t('settings-validation-above-range', { label: adjustmentFieldLabels.topLoadLimit })),
+    ),
+    bottomLoadLimit: requiredScaledNumber(
+      10,
+      1,
+      0,
+      -PLC_INT32_MIN / 10,
+      validationMessages(adjustmentFieldLabels.bottomLoadLimit, 1, t('settings-validation-above-range', { label: adjustmentFieldLabels.bottomLoadLimit })),
+    ),
+  });
   const formik = useFormik<AdjustmentValues>({
     initialValues,
     validationSchema,
@@ -106,13 +144,17 @@ export default function Adjustments() {
         await window.plcAPI.writeAdjustments(adjustments);
         helpers.resetForm({ values: fromPlcAdjustmentValues(adjustments) });
         setSubmitted(false);
-        showSuccess('PLC adjustments saved.');
+        showSuccess(t('settings-adjustments-saved'));
       } catch (error) {
-        showError(`Failed to save PLC adjustments: ${String(error)}`);
+        showError(t('settings-adjustments-save-error', { error: String(error) }));
       }
     },
   });
-  const { resetForm } = formik;
+  const { resetForm, validateForm } = formik;
+
+  useEffect(() => {
+    void validateForm();
+  }, [validateForm, i18n.language]);
 
   useEffect(() => {
     let cancelled = false;
@@ -136,7 +178,7 @@ export default function Adjustments() {
         resetForm({ values: adjustmentValues });
         setHasLoadedValues(true);
       } catch (error) {
-        if (!cancelled) showError(`Failed to read PLC adjustments: ${String(error)}`);
+        if (!cancelled) showError(i18n.t('settings-adjustments-read-error', { error: String(error) }));
       } finally {
         if (!cancelled) setIsReading(false);
       }
@@ -147,7 +189,7 @@ export default function Adjustments() {
     return () => {
       cancelled = true;
     };
-  }, [ipAddress, isPlcOnline, resetForm, showError]);
+  }, [ipAddress, isPlcOnline, i18n, resetForm, showError]);
 
   const hasManualVelocityValue = formik.values.manualVelocity.trim() !== '';
   const fieldError = (field: keyof AdjustmentValues) =>
@@ -164,7 +206,7 @@ export default function Adjustments() {
   return (
     <Grid size={12}>
       <Typography variant="h6" component="h2" className="mb-3">
-        Adjustments
+        {t('settings-adjustments-title')}
       </Typography>
       <Card>
         <CardContent>
@@ -187,7 +229,7 @@ export default function Adjustments() {
                     component="label"
                     className={fieldError('manualVelocity') ? 'text-error!' : undefined}
                   >
-                    Manual Velocity
+                    {t('settings-adjustments-manual-velocity')}
                   </FormLabel>
                   <Input
                     name="manualVelocity"
@@ -213,7 +255,7 @@ export default function Adjustments() {
                     component="label"
                     className={fieldError('topDistanceLimit') ? 'text-error!' : undefined}
                   >
-                    Top Distance Limit
+                    {t('settings-adjustments-top-distance-limit')}
                   </FormLabel>
                   <Input
                     name="topDistanceLimit"
@@ -240,7 +282,7 @@ export default function Adjustments() {
                     component="label"
                     className={fieldError('bottomDistanceLimit') ? 'text-error!' : undefined}
                   >
-                    Bottom Distance Limit
+                    {t('settings-adjustments-bottom-distance-limit')}
                   </FormLabel>
                   <Input
                     name="bottomDistanceLimit"
@@ -264,7 +306,7 @@ export default function Adjustments() {
                 <WeightTilde className={cn('flex-none', fieldError('topLoadLimit') && 'text-error!')} />
                 <FormControl className="outlined" variant="standard" size="small" fullWidth required disabled={formDisabled}>
                   <FormLabel component="label" className={fieldError('topLoadLimit') ? 'text-error!' : undefined}>
-                    Top Load Limit
+                    {t('settings-adjustments-top-load-limit')}
                   </FormLabel>
                   <Input
                     name="topLoadLimit"
@@ -291,7 +333,7 @@ export default function Adjustments() {
                     component="label"
                     className={fieldError('bottomLoadLimit') ? 'text-error!' : undefined}
                   >
-                    Bottom Load Limit
+                    {t('settings-adjustments-bottom-load-limit')}
                   </FormLabel>
                   <Input
                     name="bottomLoadLimit"
@@ -314,7 +356,7 @@ export default function Adjustments() {
               {visibleErrors.length > 0 && (
                 <Alert severity="error" icon={<XSquare />} className="neutral rounded-xl! bg-transparent! mb-2 mt-2 p-5">
                   <AlertTitle variant="subtitle1" className="pt-0.5">
-                    The following inputs have errors!
+                    {t('settings-validation-error-summary')}
                   </AlertTitle>
                   {visibleErrors.map(([field, error]) => (
                     <Box className="flex flex-row gap-0.5" key={field}>
@@ -336,7 +378,7 @@ export default function Adjustments() {
                 type="submit"
                 startIcon={<Save />}
               >
-                Save
+                {t('save')}
               </Button>
             </Grid>
           </Grid>

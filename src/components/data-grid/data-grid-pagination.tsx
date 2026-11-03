@@ -10,6 +10,7 @@ import {
 
 import { cn } from "@/lib/utils";
 import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 function Pagination({
   page,
@@ -108,8 +109,10 @@ function PaginationFullPage({
 }
 
 export function DataGridPaginationFullPage(props: any) {
+  const { t, i18n } = useTranslation();
   const apiRef = useGridApiContext();
   const paginationModel = useGridSelector(apiRef, gridPaginationModelSelector);
+  const formatCount = (value: number) => new Intl.NumberFormat(i18n.language).format(value);
   return (
     <TablePagination
       {...props}
@@ -118,10 +121,14 @@ export function DataGridPaginationFullPage(props: any) {
         return <PaginationFullPage {...props} className={cn("surface-standard")} />;
       }}
       rowsPerPage={paginationModel.pageSize}
-      labelRowsPerPage="Rows"
+      labelRowsPerPage={t("listing-rows")}
       rowsPerPageOptions={[10, 20, 50, 100]}
       page={paginationModel.page}
-      labelDisplayedRows={({ from, to, count }) => `${from}-${to} of ${count === -1 ? `more than ${to}` : count}`}
+      labelDisplayedRows={({ from, to, count }) =>
+        count === -1
+          ? t("listing-displayed-rows-more", { from: formatCount(from), to: formatCount(to) })
+          : t("listing-displayed-rows", { from: formatCount(from), to: formatCount(to), count: formatCount(count) })
+      }
       onRowsPerPageChange={(event) => {
         const newSize = parseInt(event.target.value, 10);
         apiRef.current.setPageSize(newSize);

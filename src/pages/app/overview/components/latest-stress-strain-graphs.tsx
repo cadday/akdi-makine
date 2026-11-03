@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Box, Card, CardContent, FormControl, Grid, hslToRgb, MenuItem, Select, Typography, useTheme } from '@mui/material';
 import { renderToStaticMarkup } from 'react-dom/server';
 import * as echarts from 'echarts';
 import type { EChartsOption } from 'echarts';
+import { useTranslation } from 'react-i18next';
 import { ChevronDown, ChevronLeft, ChevronRight, RulerDimensionLine, TicketPercent, WeightTilde } from 'lucide-react';
 import type { TestGraphPoint, TestRecord } from '@/context/db-context';
 import { getTestGraphType, type TestGraphType } from '@/lib/db';
@@ -54,23 +55,31 @@ function getNearestGraphPoint(points: TestGraphPoint[], strain: number) {
 
 function LatestTestsGraphTooltip({
   points,
-  graphType,
+  labels,
+  locale,
 }: {
   points: LatestTestTooltipPoint[];
-  graphType: TestGraphType;
+  labels: {
+    x: string;
+    xUnit: string;
+    xKind: 'strain' | 'displacement';
+    y: string;
+    yUnit: string;
+    yKind: 'stress' | 'load';
+  };
+  locale: string;
 }) {
-  const [xLabel, xUnit, yLabel, yUnit] =
-    graphType === 'stress-strain' ? ['Strain', '%', 'Stress', 'MPa'] : ['Displacement', 'mm', 'Load', 'N'];
+  const tooltipItems = [
+    { label: labels.x, unit: labels.xUnit, kind: labels.xKind, value: (point: LatestTestTooltipPoint) => point.x },
+    { label: labels.y, unit: labels.yUnit, kind: labels.yKind, value: (point: LatestTestTooltipPoint) => point.y },
+  ];
   return (
     <Box className="bg-background-paper shadow-darker-sm! outline-grey-50 rounded-lg p-5 outline-1 flex flex-col gap-2">
-      {[
-        { label: xLabel, unit: xUnit, value: (point: LatestTestTooltipPoint) => point.x, digits: 3 },
-        { label: yLabel, unit: yUnit, value: (point: LatestTestTooltipPoint) => point.y, digits: 2 },
-      ].map(({ label, unit, value, digits }) => (
+      {tooltipItems.map(({ label, unit, kind, value }) => (
         <Box key={label} className="flex flex-row gap-2">
-          {label === 'Stress' || label === 'Load' ? (
+          {kind === 'stress' || kind === 'load' ? (
             <WeightTilde size={20} />
-          ) : label === 'Strain' ? (
+          ) : kind === 'strain' ? (
             <TicketPercent size={20} />
           ) : (
             <RulerDimensionLine size={20} />
@@ -83,7 +92,10 @@ function LatestTestsGraphTooltip({
               <Box key={`${label}-${point.id}`} className="flex min-w-0 items-center gap-1.5">
                 <Box className="h-2.5 w-2.5 flex-none rounded-full" style={{ backgroundColor: point.color }} />
                 <Typography className="text-text-primary">
-                  {value(point).toFixed(digits)} {unit}
+                  {new Intl.NumberFormat(locale, {
+                    minimumFractionDigits: kind === 'strain' || kind === 'displacement' ? 3 : 2,
+                    maximumFractionDigits: kind === 'strain' || kind === 'displacement' ? 3 : 2,
+                  }).format(value(point))}{' '}{unit}
                 </Typography>
               </Box>
             ))}
@@ -103,6 +115,8 @@ export default function LatestStressStrainGraphs({
   graphType: TestGraphType;
   onGraphTypeChange: (graphType: TestGraphType) => void;
 }) {
+  const { t, i18n } = useTranslation();
+  const [isGraphTypeMenuOpen, setIsGraphTypeMenuOpen] = useState(false);
   const theme = useTheme();
   const { isDarkMode } = useThemeContext();
   const chartElementRef = useRef<HTMLDivElement | null>(null);
@@ -168,7 +182,13 @@ export default function LatestStressStrainGraphs({
           : [];
       });
     const [xAxisLabel, yAxisLabel] =
-      graphType === 'stress-strain' ? ['Strain %', 'Stress MPa'] : ['Displacement mm', 'Load N'];
+      graphType === 'stress-strain'
+        ? [`${t('overview-strain')} %`, `${t('overview-stress')} MPa`]
+        : [`${t('overview-displacement')} mm`, `${t('overview-load')} N`];
+    const tooltipLabels =
+      graphType === 'stress-strain'
+        ? { x: t('overview-strain'), xUnit: '%', xKind: 'strain' as const, y: t('overview-stress'), yUnit: 'MPa', yKind: 'stress' as const }
+        : { x: t('overview-displacement'), xUnit: 'mm', xKind: 'displacement' as const, y: t('overview-load'), yUnit: 'N', yKind: 'load' as const };
     const option: EChartsOption = {
       animation: false,
       color: colors,
@@ -211,7 +231,7 @@ export default function LatestStressStrainGraphs({
           if (!Number.isFinite(x)) return '';
           const points = getPointsAtX(x);
           return points.length
-            ? renderToStaticMarkup(<LatestTestsGraphTooltip points={points} graphType={graphType} />)
+            ? renderToStaticMarkup(<LatestTestsGraphTooltip points={points} labels={tooltipLabels} locale={i18n.language} />)
             : '';
         },
       },
@@ -296,20 +316,23 @@ export default function LatestStressStrainGraphs({
       chart.off('updateAxisPointer', handleAxisPointer);
       chart.off('globalout', clearMarkers);
     };
-  }, [colors, graphType, isDarkMode, tests]);
+  }, [colors, graphType, i18n.language, isDarkMode, t, tests]);
 
   return (
     <Grid size={12} className="group/grid">
       <Box className="mb-3 flex flex-wrap items-center justify-between gap-2 relative">
         <Typography variant="h6" component="h6">
-          {graphType === 'stress-strain' ? 'Latest Stress-Strain Graphs' : 'Latest Load-Displacement Graphs'}
+          {graphType === 'stress-strain'
+            ? t('overview-latest-stress-strain-graphs')
+            : t('overview-latest-load-displacement-graphs')}
         </Typography>
         <FormControl
           size="small"
           variant="standard"
           className={cn(
             'group-hover/grid:opacity-100',
-            'transition-all opacity-0 outlined min-w-44 absolute inset-e-0 mt-4 [&_.MuiInputBase-root.MuiInput-root.MuiInputBase-sizeSmall.outlined]:py-0.25! [&_.MuiInput-root]:rounded-xs!',
+            'transition-all opacity-0 outlined absolute inset-e-0 mt-4 [&_.MuiInputBase-root.MuiInput-root.MuiInputBase-sizeSmall.outlined]:py-0.25! [&_.MuiInput-root]:rounded-xs!',
+            isGraphTypeMenuOpen && 'opacity-100',
           )}
         >
           <Select
@@ -318,11 +341,14 @@ export default function LatestStressStrainGraphs({
             className="outlined"
             value={graphType}
             onChange={(event) => onGraphTypeChange(event.target.value as TestGraphType)}
-            inputProps={{ 'aria-label': 'Graph type' }}
+            onOpen={() => setIsGraphTypeMenuOpen(true)}
+            onClose={() => setIsGraphTypeMenuOpen(false)}
+            inputProps={{ 'aria-label': t('overview-graph-type') }}
+            SelectDisplayProps={{ style: { paddingRight: 20 } }}
             IconComponent={ChevronDown}
           >
-            <MenuItem value="stress-strain">Stress-Strain</MenuItem>
-            <MenuItem value="load-displacement">Load-Displacement</MenuItem>
+            <MenuItem value="stress-strain">{t('overview-stress-strain')}</MenuItem>
+            <MenuItem value="load-displacement">{t('overview-load-displacement')}</MenuItem>
           </Select>
         </FormControl>
       </Box>
@@ -332,7 +358,9 @@ export default function LatestStressStrainGraphs({
             <Box
               ref={chartElementRef}
               role="img"
-              aria-label={`Overlaid ${graphType === 'stress-strain' ? 'stress-strain' : 'load-displacement'} curves for the five latest tests`}
+              aria-label={t('overview-graph-description', {
+                graph: graphType === 'stress-strain' ? t('overview-stress-strain') : t('overview-load-displacement'),
+              })}
               className="h-140 w-full min-w-0"
             />
           ) : (

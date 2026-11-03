@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { useFormik } from "formik";
 import * as yup from "yup";
@@ -42,6 +43,7 @@ function createDefaultTestName() {
 }
 
 export default function QuickTestForm({ onTestCreated }: { onTestCreated?: () => void }) {
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { getSpecimens, getPresets, getConnectedMachine, createTest } = useDb();
   const { hasActiveTest, startTestRun } = useTestRun();
@@ -68,7 +70,7 @@ export default function QuickTestForm({ onTestCreated }: { onTestCreated?: () =>
         setPresets(presetRecords);
       } catch (error) {
         if (cancelled) return;
-        const message = `Failed to load Quick Test options: ${String(error)}`;
+        const message = t("quick-test-load-error", { error: String(error) });
         setLoadError(message);
         showError(message);
       } finally {
@@ -80,39 +82,39 @@ export default function QuickTestForm({ onTestCreated }: { onTestCreated?: () =>
     return () => {
       cancelled = true;
     };
-  }, [getPresets, getSpecimens, showError]);
+  }, [getPresets, getSpecimens, showError, t]);
 
   const formik = useFormik<QuickTestValues>({
     initialValues: { name: defaultTestName, specimenId: "", presetId: "" },
     validationSchema: yup.object({
-      name: yup.string().trim().required("Test name is required"),
-      specimenId: yup.string().required("Specimen is required"),
-      presetId: yup.string().required("Preset is required"),
+      name: yup.string().trim().required(t("quick-test-name-required")),
+      specimenId: yup.string().required(t("quick-test-specimen-required")),
+      presetId: yup.string().required(t("quick-test-preset-required")),
     }),
     validateOnBlur: false,
     validateOnChange: true,
     onSubmit: async (values) => {
       if (testCreationDisabled) {
-        showError("Cannot create or start a test while the machine is halted or emergency halt is active.");
+        showError(t("quick-test-interlock-error"));
         return;
       }
 
       if (hasActiveTest) {
-        showError("A test is already running");
+        showError(t("quick-test-already-running"));
         return;
       }
 
       const specimen = specimens.find((item) => item.id === values.specimenId);
       const preset = presets.find((item) => item.id === values.presetId);
       if (!specimen || !preset) {
-        showError("The selected specimen or preset is no longer available.");
+        showError(t("quick-test-selection-unavailable"));
         return;
       }
 
       try {
         const connectedMachine = await getConnectedMachine();
         if (!connectedMachine) {
-          showError("Connect to a machine before starting a test");
+          showError(t("quick-test-machine-required"));
           return;
         }
 
@@ -152,15 +154,20 @@ export default function QuickTestForm({ onTestCreated }: { onTestCreated?: () =>
             },
           });
         } catch (error) {
-          showError(`Test saved, but the PLC could not start it: ${String(error)}`);
+          showError(t("quick-test-start-error", { error: String(error) }));
         }
         onTestCreated?.();
         navigate(`/tests/${testId}`);
       } catch (error) {
-        showError(`Failed to save test: ${String(error)}`);
+        showError(t("quick-test-save-error", { error: String(error) }));
       }
     },
   });
+  const { validateForm } = formik;
+
+  useEffect(() => {
+    void validateForm();
+  }, [i18n.language, validateForm]);
 
   const selectedSpecimen = specimens.find((specimen) => specimen.id === formik.values.specimenId) ?? null;
   const selectedPreset = presets.find((preset) => preset.id === formik.values.presetId) ?? null;
@@ -183,7 +190,7 @@ export default function QuickTestForm({ onTestCreated }: { onTestCreated?: () =>
         <Bookmark className={cn("flex-none", submitted && formik.errors.name && "text-error!")} />
         <FormControl className='outlined' variant='standard' size='small' fullWidth required>
           <FormLabel component='label' className={cn(submitted && formik.errors.name && "text-error!")}>
-            Name
+            {t("quick-test-name")}
           </FormLabel>
           <Input name='name' value={formik.values.name} onChange={formik.handleChange} onBlur={formik.handleBlur} />
         </FormControl>
@@ -193,7 +200,7 @@ export default function QuickTestForm({ onTestCreated }: { onTestCreated?: () =>
         <DraftingCompass className={cn("flex-none", specimenError && "text-error!")} />
         <FormControl fullWidth required>
           <FormLabel component='label' className={cn(specimenError && "text-error!")}>
-            Specimen
+            {t("specimen")}
           </FormLabel>
           <Autocomplete<SpecimenRecord, false, false, false>
             size='small'
@@ -206,14 +213,14 @@ export default function QuickTestForm({ onTestCreated }: { onTestCreated?: () =>
             popupIcon={<ChevronDown />}
             clearIcon={<X />}
             loading={isLoading}
-            noOptionsText={isLoading ? "Loading specimens..." : "No specimens found"}
+            noOptionsText={isLoading ? t("quick-test-loading-specimens") : t("no-specimens-found")}
             slotProps={{ popper: { className: "outlined" } }}
             renderInput={(params) => (
               <TextField
                 {...params}
                 variant='standard'
                 className='outlined'
-                placeholder='Search specimens'
+                placeholder={t("quick-test-search-specimens")}
                 slotProps={{
                   htmlInput: { ...params.slotProps.htmlInput, autoComplete: "new-password" },
                   input: params.slotProps.input,
@@ -228,7 +235,7 @@ export default function QuickTestForm({ onTestCreated }: { onTestCreated?: () =>
         <SlidersVertical className={cn("flex-none", presetError && "text-error!")} />
         <FormControl fullWidth required>
           <FormLabel component='label' className={cn(presetError && "text-error!")}>
-            Preset
+            {t("preset")}
           </FormLabel>
           <Autocomplete<PresetRecord, false, false, false>
             size='small'
@@ -241,14 +248,14 @@ export default function QuickTestForm({ onTestCreated }: { onTestCreated?: () =>
             popupIcon={<ChevronDown />}
             clearIcon={<X />}
             loading={isLoading}
-            noOptionsText={isLoading ? "Loading presets..." : "No presets found"}
+            noOptionsText={isLoading ? t("quick-test-loading-presets") : t("no-presets-found")}
             slotProps={{ popper: { className: "outlined" } }}
             renderInput={(params) => (
               <TextField
                 {...params}
                 variant='standard'
                 className='outlined'
-                placeholder='Search presets'
+                placeholder={t("quick-test-search-presets")}
                 slotProps={{
                   htmlInput: { ...params.slotProps.htmlInput, autoComplete: "new-password" },
                   input: params.slotProps.input,
@@ -261,10 +268,12 @@ export default function QuickTestForm({ onTestCreated }: { onTestCreated?: () =>
 
       {submitted && !formik.isValid && (
         <Alert severity='error' icon={<XSquare />} className='neutral rounded-xl! bg-transparent! mb-2 mt-2 py-3 px-5'>
-          <AlertTitle>Check the highlighted fields</AlertTitle>
+          <AlertTitle>{t("quick-test-validation-summary")}</AlertTitle>
           {validationErrors.map(([key, message]) => (
             <Box className='flex flex-row gap-0.5' key={key}>
-              <Typography className='text-error'>{capitalize(key)}:</Typography>
+              <Typography className='text-error'>
+                {key === "name" ? t("quick-test-name") : key === "specimenId" ? t("specimen") : key === "presetId" ? t("preset") : capitalize(key)}:
+              </Typography>
               <Typography>{message}</Typography>
             </Box>
           ))}
@@ -283,7 +292,7 @@ export default function QuickTestForm({ onTestCreated }: { onTestCreated?: () =>
         className='self-start ms-6.5 mt-2'
         startIcon={<Play />}
       >
-        Start
+        {t("quick-test-start")}
       </Button>
     </Box>
   );

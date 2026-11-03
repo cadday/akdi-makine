@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent, type SyntheticEvent } from 'react';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
+import { useTranslation } from 'react-i18next';
 import {
   Alert,
   AlertTitle,
@@ -42,21 +43,6 @@ import { cn } from '@/lib/utils';
 
 type FlowScreen = 'initial' | 'connect' | 'complete' | 'error';
 
-const validationSchema = yup.object({
-  ipAddress: yup
-    .string()
-    .trim()
-    .required('IP address is required')
-    .test('ipv4', 'Enter a valid IPv4 address', (value) => {
-      if (!value) return false;
-      const octets = value.split('.');
-      return (
-        octets.length === 4 &&
-        octets.every((octet) => /^\d{1,3}$/.test(octet) && Number(octet) >= 0 && Number(octet) <= 255)
-      );
-    }),
-});
-
 function isNetworkConnectionError(error: unknown) {
   const message = String(error);
   return (
@@ -66,6 +52,7 @@ function isNetworkConnectionError(error: unknown) {
 }
 
 export default function Machines() {
+  const { t, i18n } = useTranslation();
   const { addMachine, deleteMachine, getMachineByIp, getMachines, setConnectedMachine } = useDb();
   const { showError } = useAppNotifications();
   const { connectionStatus } = usePlcData();
@@ -85,6 +72,17 @@ export default function Machines() {
   const selectedMachineIsOnline =
     connectionStatus.state === 'online' && connectionStatus.ipAddress === connectedMachine?.ipAddress;
   const selectedMachineIsWorking = selectedMachineIsOnline && connectionStatus.plcWorking === true;
+  const validationSchema = yup.object({
+    ipAddress: yup
+      .string()
+      .trim()
+      .required(t('machine-ip-required'))
+      .test('ipv4', t('machine-ip-invalid'), (value) => {
+        if (!value) return false;
+        const octets = value.split('.');
+        return octets.length === 4 && octets.every((octet) => /^\d{1,3}$/.test(octet) && Number(octet) >= 0 && Number(octet) <= 255);
+      }),
+  });
 
   const cancelCandidateConnection = async () => {
     const token = candidateTokenRef.current;
@@ -104,7 +102,7 @@ export default function Machines() {
       try {
         const existingMachine = await getMachineByIp(normalizedIpAddress);
         if (existingMachine) {
-          formik.setFieldError('ipAddress', 'A machine with this IP address already exists.');
+          formik.setFieldError('ipAddress', t('machine-duplicate-ip'));
           setScreen('connect');
           return;
         }
@@ -121,6 +119,11 @@ export default function Machines() {
       }
     },
   });
+  const { validateForm } = formik;
+
+  useEffect(() => {
+    void validateForm();
+  }, [i18n.language, validateForm]);
 
   useEffect(() => {
     let cancelled = false;
@@ -129,12 +132,12 @@ export default function Machines() {
         if (!cancelled)
           setMachines(records.sort((first, second) => Number(second.connected) - Number(first.connected)));
       })
-      .catch((error: unknown) => showError(`Failed to load machines: ${String(error)}`));
+      .catch((error: unknown) => showError(i18n.t('machine-load-error', { error: String(error) })));
 
     return () => {
       cancelled = true;
     };
-  }, [connectionStatus.state, getMachines, open, showError]);
+  }, [connectionStatus.state, getMachines, i18n, open, showError]);
 
   useEffect(() => {
     if (connectionStatus.state !== 'offline' || !connectionStatus.error) {
@@ -146,9 +149,12 @@ export default function Machines() {
     if (lastConnectionErrorRef.current === errorKey) return;
 
     lastConnectionErrorRef.current = errorKey;
-    const machine = connectionStatus.ipAddress ? ` to ${connectionStatus.ipAddress}` : '';
-    showError(`PLC connection${machine} failed: ${connectionStatus.error}`);
-  }, [connectionStatus.error, connectionStatus.ipAddress, connectionStatus.state, showError]);
+    showError(
+      connectionStatus.ipAddress
+        ? i18n.t('machine-connection-failed', { ipAddress: connectionStatus.ipAddress, error: connectionStatus.error })
+        : i18n.t('machine-connection-failed-generic', { error: connectionStatus.error }),
+    );
+  }, [connectionStatus.error, connectionStatus.ipAddress, connectionStatus.state, i18n, showError]);
 
   useEffect(
     () => () => {
@@ -170,7 +176,7 @@ export default function Machines() {
   const handleToggle = () => {
     if (open) {
       void cancelCandidateConnection().catch((error: unknown) =>
-        showError(`Failed to cancel prepared PLC connection: ${String(error)}`),
+        showError(t('machine-cancel-prepared-error', { error: String(error) })),
       );
       if (screen === 'complete') setScreen('connect');
     }
@@ -181,7 +187,7 @@ export default function Machines() {
     if (anchorRef.current?.contains(event.target as HTMLElement)) return;
     setOpen(false);
     void cancelCandidateConnection().catch((error: unknown) =>
-      showError(`Failed to cancel prepared PLC connection: ${String(error)}`),
+      showError(t('machine-cancel-prepared-error', { error: String(error) })),
     );
     if (screen === 'complete') setScreen('connect');
   };
@@ -204,7 +210,7 @@ export default function Machines() {
   const handleBack = () => {
     if (screen === 'complete') {
       void cancelCandidateConnection().catch((error: unknown) =>
-        showError(`Failed to cancel prepared PLC connection: ${String(error)}`),
+        showError(t('machine-cancel-prepared-error', { error: String(error) })),
       );
     }
     setScreen(screen === 'connect' ? 'initial' : 'connect');
@@ -218,14 +224,14 @@ export default function Machines() {
         await window.plcAPI.disconnect();
         await refreshMachines();
       } catch (error) {
-        showError(`Failed to disconnect machine: ${String(error)}`);
+        showError(t('machine-disconnect-error', { error: String(error) }));
       }
       return;
     }
 
     const machine = machines.find((record) => record.id === id);
     if (!machine) {
-      showError('The selected machine is no longer available.');
+      showError(t('machine-unavailable'));
       return;
     }
 
@@ -245,29 +251,27 @@ export default function Machines() {
           try {
             await setConnectedMachine(previousMachine?.id ?? null);
           } catch (rollbackError) {
-            rollbackErrors.push(`Could not restore the previous machine selection: ${String(rollbackError)}`);
+            rollbackErrors.push(t('machine-restore-previous-error', { error: String(rollbackError) }));
           }
         }
         if (token) {
           try {
             await window.plcAPI.cancelConnection(token);
           } catch (rollbackError) {
-            rollbackErrors.push(`Could not cancel the prepared connection: ${String(rollbackError)}`);
+            rollbackErrors.push(t('machine-cancel-prepared-error', { error: String(rollbackError) }));
           }
         }
         const connectionError = isNetworkConnectionError(error)
-          ? `Unable to connect to machine at ${machine.ipAddress}. Check that it is powered on and connected to the network.`
-          : `Failed to connect to machine at ${machine.ipAddress}: ${String(error)}`;
-        showError([connectionError, ...rollbackErrors].join(' '));
+          ? t('machine-connect-network-error', { ipAddress: machine.ipAddress })
+          : t('machine-connect-error', { ipAddress: machine.ipAddress, error: String(error) });
+        showError(t('error-with-rollback', { error: connectionError, rollbackErrors: rollbackErrors.join(' ') }).trim());
         return;
       }
 
       try {
         await refreshMachines();
       } catch (error) {
-        showError(
-          `Machine at ${machine.ipAddress} is connected, but the machine list could not be refreshed: ${String(error)}`,
-        );
+        showError(t('machine-refresh-connected-error', { ipAddress: machine.ipAddress, error: String(error) }));
       }
     } finally {
       setConnectingMachineId(null);
@@ -276,9 +280,9 @@ export default function Machines() {
 
   const handleDeleteMachine = (machine: MachineRecord) => {
     void requestDelete({
-      title: 'Delete machine',
-      message: `Delete machine at ${machine.ipAddress}?`,
-      errorMessage: 'Failed to delete machine:',
+      title: t('machine-delete-title'),
+      message: t('machine-delete-confirm', { ipAddress: machine.ipAddress }),
+      errorMessage: (error) => t('machine-delete-error', { error: String(error) }),
       onConfirm: async () => {
         await deleteMachine(machine.id);
         if (machine.connected) await window.plcAPI.disconnect();
@@ -290,7 +294,7 @@ export default function Machines() {
   const handleComplete = async () => {
     const token = candidateTokenRef.current;
     if (!token) {
-      setConnectionError('The prepared connection expired. Please connect again.');
+      setConnectionError(t('machine-connection-expired'));
       setScreen('error');
       return;
     }
@@ -308,23 +312,24 @@ export default function Machines() {
         try {
           await deleteMachine(addedMachineId);
         } catch (rollbackError) {
-          rollbackErrors.push(`Could not remove the newly added machine: ${String(rollbackError)}`);
+          rollbackErrors.push(t('machine-remove-added-error', { error: String(rollbackError) }));
         }
         try {
           await setConnectedMachine(previousMachine?.id ?? null);
         } catch (rollbackError) {
-          rollbackErrors.push(`Could not restore the previous machine selection: ${String(rollbackError)}`);
+          rollbackErrors.push(t('machine-restore-previous-error', { error: String(rollbackError) }));
         }
       }
       try {
         await window.plcAPI.cancelConnection(token);
         candidateTokenRef.current = null;
       } catch (rollbackError) {
-        rollbackErrors.push(`Could not cancel the prepared connection: ${String(rollbackError)}`);
+        rollbackErrors.push(t('machine-cancel-prepared-error', { error: String(rollbackError) }));
       }
-      const message = [`Failed to save machine at ${submittedIpAddress}: ${String(error)}`, ...rollbackErrors].join(
-        ' ',
-      );
+      const message = t('error-with-rollback', {
+        error: t('machine-save-error', { ipAddress: submittedIpAddress, error: String(error) }),
+        rollbackErrors: rollbackErrors.join(' '),
+      }).trim();
       setConnectionError(message);
       setScreen('error');
       showError(message);
@@ -336,9 +341,7 @@ export default function Machines() {
     try {
       await refreshMachines();
     } catch (error) {
-      showError(
-        `Machine at ${submittedIpAddress} was saved and connected, but the machine list could not be refreshed: ${String(error)}`,
-      );
+      showError(t('machine-refresh-saved-error', { ipAddress: submittedIpAddress, error: String(error) }));
     }
     formik.resetForm();
     setSubmitted(false);
@@ -351,7 +354,7 @@ export default function Machines() {
         <Machine className={cn('flex-none', submitted && formik.errors.ipAddress && 'text-error!')} />
         <FormControl className="outlined" variant="standard" size="small" fullWidth required>
           <FormLabel component="label" className={cn(submitted && formik.errors.ipAddress && 'text-error!')}>
-            IP Address
+            {t('machine-ip-address')}
           </FormLabel>
           <Input
             name="ipAddress"
@@ -366,10 +369,10 @@ export default function Machines() {
       {submitted && formik.errors.ipAddress && (
         <Alert severity="error" icon={<XSquare />} className="neutral rounded-lg! bg-transparent! mb-2 mt-2 p-4 ms-6.5">
           <AlertTitle variant="subtitle1" className="pt-0.5">
-            The following inputs have errors!
+            {t('machine-validation-error-summary')}
           </AlertTitle>
           <Box className="flex flex-row gap-0.5">
-            <Typography className="text-error flex-none">IP Address:</Typography>
+            <Typography className="text-error flex-none">{t('machine-ip-address')}:</Typography>
             <Typography className="text-text-primary flex-1">{formik.errors.ipAddress}</Typography>
           </Box>
         </Alert>
@@ -381,7 +384,7 @@ export default function Machines() {
     <>
       <Box className="flex flex-1 flex-row items-start justify-between pe-4">
         <Typography variant="h6" component="h6" className="card-title px-4 pt-4">
-          Machines
+          {t('machines')}
         </Typography>
       </Box>
       <Box className="mb-4">
@@ -408,7 +411,7 @@ export default function Machines() {
               </ListItemButton>
               <Box className="flex flex-row gap-1 absolute inset-e-4">
                 {machine.connected && selectedMachineIsOnline ? (
-                  <Tooltip title="Disconnect">
+                  <Tooltip title={t('disconnect')}>
                     <Button
                       onClick={() => void handleSelectMachine(null)}
                       disabled={connectingMachineId !== null}
@@ -419,7 +422,7 @@ export default function Machines() {
                       color="grey"
                       variant="pastel"
                     >
-                      Connected
+                      {t('connected')}
                     </Button>
                   </Tooltip>
                 ) : (
@@ -433,10 +436,10 @@ export default function Machines() {
                     color="grey"
                     variant="outlined"
                   >
-                    Connect
+                    {t('connect')}
                   </Button>
                 )}
-                <Tooltip title="Delete">
+                <Tooltip title={t('delete')}>
                   <Button
                     onClick={() => handleDeleteMachine(machine)}
                     disabled={connectingMachineId !== null}
@@ -451,11 +454,11 @@ export default function Machines() {
             </ListItem>
           ))}
         </List>
-        {machines.length === 0 && <Typography className="px-4 py-3 pb-0">No machines found!</Typography>}
+        {machines.length === 0 && <Typography className="px-4 py-3 pb-0">{t('no-machines-found')}</Typography>}
       </Box>
       <CardActions disableSpacing>
         <Button onClick={handleAddMachine} variant="outlined" size="tiny" color="grey" className="w-full">
-          Add Machine
+          {t('add-machine')}
         </Button>
       </CardActions>
     </>
@@ -466,7 +469,7 @@ export default function Machines() {
       <Box className="flex flex-1 flex-row items-start px-4 pt-4 gap-0.5">
         <Button
           onClick={handleBack}
-          aria-label="Back to machines"
+          aria-label={t('back-to-machines')}
           className="icon-only -ml-1.5 -mt-1"
           size="small"
           color="grey"
@@ -474,7 +477,7 @@ export default function Machines() {
           startIcon={<ChevronLeft size={16} />}
         />
         <Typography variant="h6" component="h6" className="card-title">
-          Add Machine
+          {t('add-machine')}
         </Typography>
       </Box>
       <Box component="form" noValidate onSubmit={handleConnect}>
@@ -492,7 +495,7 @@ export default function Machines() {
               loading={formik.isSubmitting}
               loadingPosition="center"
             >
-              Connect
+              {t('connect')}
             </Button>
           </Box>
         </CardActions>
@@ -505,7 +508,7 @@ export default function Machines() {
       <Box className="flex flex-1 flex-row items-start px-4 pt-4 gap-0.5">
         <Button
           onClick={handleBack}
-          aria-label="Back to IP address"
+          aria-label={t('back-to-ip-address')}
           className="icon-only -ml-1.5 -mt-1"
           size="small"
           color="grey"
@@ -513,20 +516,20 @@ export default function Machines() {
           startIcon={<ChevronLeft size={16} />}
         />
         <Typography variant="h6" component="h6" className="card-title">
-          Connection Ready
+          {t('connection-ready')}
         </Typography>
       </Box>
       <Box className="flex flex-row gap-2 px-4 mb-4">
         <CheckCircle className="flex-none text-success" />
         <Typography variant="body1" className="text-text-primary">
-          A TCP connection to this machine succeeded. Complete to save and select this IP address.
+          {t('machine-connection-ready-description')}
         </Typography>
       </Box>
       <Box className="px-4">
         <Box className="flex flex-row gap-2">
           <Machine className="flex-none" />
           <FormControl className="outlined" variant="standard" size="small" fullWidth required>
-            <FormLabel component="label">IP Address</FormLabel>
+            <FormLabel component="label">{t('machine-ip-address')}</FormLabel>
             <Input name="ipAddress" value={submittedIpAddress} disabled />
           </FormControl>
         </Box>
@@ -545,7 +548,7 @@ export default function Machines() {
             loading={isSavingMachine}
             loadingPosition="center"
           >
-            Complete
+            {t('complete')}
           </Button>
         </Box>
       </CardActions>
@@ -557,7 +560,7 @@ export default function Machines() {
       <Box className="flex flex-1 flex-row items-start px-4 pt-4 gap-0.5">
         <Button
           onClick={handleBack}
-          aria-label="Back to IP address"
+          aria-label={t('back-to-ip-address')}
           className="icon-only -ml-1.5 -mt-1"
           size="small"
           color="grey"
@@ -565,20 +568,22 @@ export default function Machines() {
           startIcon={<ChevronLeft size={16} />}
         />
         <Typography variant="h6" component="h6" className="card-title">
-          Machine not Found!
+          {t('machine-not-found')}
         </Typography>
       </Box>
       <Box className="flex flex-row gap-2 px-4 mb-4">
         <XCircle className="flex-none text-error" />
         <Box>
           <Typography variant="body1" className="text-text-primary">
-            Could not connect to {submittedIpAddress}:{' '}
-            {connectionError || 'the machine did not accept a TCP connection on port 502.'} Please check:
+            {t('machine-flow-connect-error', {
+              ipAddress: submittedIpAddress,
+              error: connectionError || t('machine-flow-connect-default-error'),
+            })}
           </Typography>
           <ul className="list-disc [&>li]:ms-4">
-            <li>The ethernet cable is connected</li>
-            <li>The IP Address is correct</li>
-            <li>The machine and computer are on the same subnet</li>
+            <li>{t('machine-check-ethernet')}</li>
+            <li>{t('machine-check-ip')}</li>
+            <li>{t('machine-check-subnet')}</li>
           </ul>
         </Box>
       </Box>
@@ -597,7 +602,7 @@ export default function Machines() {
               loading={formik.isSubmitting}
               loadingPosition="center"
             >
-              Connect
+              {t('connect')}
             </Button>
           </Box>
         </CardActions>
@@ -635,7 +640,7 @@ export default function Machines() {
             </>
           ) : (
             <Typography variant="subtitle2" className="hidden lg:flex">
-              No connection!
+              {t('machine-no-connection')}
             </Typography>
           )}
         </Box>

@@ -31,7 +31,7 @@ export default function Page() {
       if (cancelled) return;
 
       if (countsResult.status === 'fulfilled') setCounts(countsResult.value);
-      else showError(`Failed to load overview counts: ${String(countsResult.reason)}`);
+      else showError(t('overview-counts-error', { error: String(countsResult.reason) }));
 
       if (testsResult.status === 'fulfilled') {
         setLatestTests(testsResult.value);
@@ -40,7 +40,7 @@ export default function Page() {
           (test) => (test.results?.loadDisplacementData?.length ?? 0) > 0,
         );
         if (!hasStressStrainData && hasLoadDisplacementData) setGraphType('load-displacement');
-      } else showError(`Failed to load latest tests: ${String(testsResult.reason)}`);
+      } else showError(t('overview-latest-tests-error', { error: String(testsResult.reason) }));
 
       setIsLoading(false);
     };
@@ -50,7 +50,7 @@ export default function Page() {
     return () => {
       cancelled = true;
     };
-  }, [getRecordCounts, getTests, showError]);
+  }, [getRecordCounts, getTests, showError, t]);
 
   return isLoading ? (
     <LoadingFullScreen />

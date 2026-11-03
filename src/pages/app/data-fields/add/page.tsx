@@ -22,7 +22,7 @@ export default function Page() {
             <Typography variant='h1' component='h1' className='mb-0'>Add Data Field</Typography>
             <Breadcrumbs>
               <Link color='inherit' to={LINKS.home}>{t("menu-home")}</Link>
-              <Link color='inherit' to='/data-fields'>{t("menu-data-fields")}</Link>
+              <Link color='inherit' to='/data-fields'>{t("data-fields")}</Link>
               <Typography variant='body2'>Add Data Field</Typography>
             </Breadcrumbs>
           </Grid>

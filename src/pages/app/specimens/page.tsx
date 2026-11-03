@@ -40,7 +40,7 @@ import { NoSpecimensFound } from "../components/no-entity-found";
 type SpecimenGridRow = SpecimenRecord;
 
 export default function Page() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
 
   const { getSpecimens, getDataFields, deleteSpecimen, deleteSpecimens } = useDb();
@@ -60,13 +60,13 @@ export default function Page() {
       setSpecimens(specimenData);
       setDataFields(fieldData);
     } catch (_err) {
-      const message = "Failed to load specimens and data fields: " + _err;
+      const message = t("listing-load-specimens-error", { error: String(_err) });
       setError(message);
       showError(message);
     } finally {
       setIsLoading(false);
     }
-  }, [getSpecimens, getDataFields, showError]);
+  }, [getSpecimens, getDataFields, showError, t]);
 
   useEffect(() => {
     let cancelled = false;
@@ -83,7 +83,7 @@ export default function Page() {
         }
       } catch (_err) {
         if (!cancelled) {
-          const message = "Failed to load specimens and data fields: " + _err;
+          const message = t("listing-load-specimens-error", { error: String(_err) });
           setError(message);
           showError(message);
         }
@@ -99,16 +99,16 @@ export default function Page() {
     return () => {
       cancelled = true;
     };
-  }, [getSpecimens, getDataFields, showError]);
+  }, [getSpecimens, getDataFields, showError, t]);
 
   const deleteRows = useCallback(
     (ids: string[]) => {
       if (ids.length === 0) return;
 
       return requestDelete({
-        title: ids.length === 1 ? "Delete Specimen" : "Delete Specimens",
-        message: ids.length === 1 ? "Delete this specimen? This action cannot be undone." : `Delete ${ids.length} specimens? This action cannot be undone.`,
-        errorMessage: "Failed to delete specimen(s):",
+        title: t(ids.length === 1 ? "listing-delete-specimen-title" : "listing-delete-specimens-title"),
+        message: ids.length === 1 ? t("listing-delete-specimen-confirm") : t("listing-delete-specimens-confirm", { count: ids.length }),
+        errorMessage: (error) => t("listing-delete-specimen-error", { error: String(error) }),
         onConfirm: async () => {
           if (ids.length === 1) {
             await deleteSpecimen(ids[0]);
@@ -121,7 +121,7 @@ export default function Page() {
         },
       });
     },
-    [deleteSpecimen, deleteSpecimens, requestDelete],
+    [deleteSpecimen, deleteSpecimens, requestDelete, t],
   );
 
   const deleteRow = useCallback(
@@ -137,23 +137,23 @@ export default function Page() {
       if (!specimen) return [];
 
       return [
-        { key: "view", icon: <Send size={16} />, label: "View", onClick: () => navigate(`/specimens/${id}`) },
+        { key: "view", icon: <Send size={16} />, label: t("view"), onClick: () => navigate(`/specimens/${id}`) },
         {
           key: "duplicate",
           icon: <Copy size={16} />,
-          label: "Duplicate",
+          label: t("duplicate"),
           onClick: () => navigate("/specimens/add", { state: { initialSpecimen: { ...specimen, name: `${specimen.name} (Copy)` } } }),
         },
         {
           key: "delete",
           icon: <XSquare size={16} />,
-          label: "Delete",
+          label: t("delete"),
           onClick: deleteRow(id),
           className: "hover:bg-error-light/10 hover:text-error",
         },
       ];
     },
-    [deleteRow, navigate, specimens],
+    [deleteRow, navigate, specimens, t],
   );
 
   const handleAddItem = useCallback(() => {
@@ -178,10 +178,10 @@ export default function Page() {
 
   const columns = useMemo<GridColDef<SpecimenGridRow>[]>(
     () => [
-      { field: "id", headerName: "ID", width: 90, filterable: false },
+      { field: "id", headerName: t("listing-id"), width: 90, filterable: false },
       {
         field: "name",
-        headerName: "Name",
+        headerName: t("listing-name"),
         minWidth: 200,
         renderCell: (params: GridRenderCellParams<SpecimenGridRow, string>) => (
           <Link
@@ -194,15 +194,19 @@ export default function Page() {
       },
       {
         field: "geometry",
-        headerName: "Geometry",
+        headerName: t("listing-geometry"),
         minWidth: 150,
-        valueFormatter: (value) => value ?? "Not Specified",
+        valueFormatter: (value) => {
+          if (value === "Cylindrical") return t("listing-cylindrical");
+          if (value === "Rectangular") return t("listing-rectangular");
+          return t("listing-geometry-not-specified");
+        },
       },
       ...([
-        ["side1", "Side 1"],
-        ["side2", "Side 2"],
-        ["diameter", "Diameter"],
-        ["height", "Height"],
+        ["side1", t("listing-side-1")],
+        ["side2", t("listing-side-2")],
+        ["diameter", t("listing-diameter")],
+        ["height", t("listing-height")],
       ] as const).map(([field, headerName]): GridColDef<SpecimenGridRow> => ({
         field,
         headerName,
@@ -232,7 +236,7 @@ export default function Page() {
             if (dataField.type === "Image" && Array.isArray(value)) {
               return <StoredImagePreviews images={value as UploadedImage[]} imageClassName='h-8 w-10' />;
             }
-            if (typeof value === "boolean") return value ? "True" : "False";
+            if (typeof value === "boolean") return value ? t("listing-true") : t("listing-false");
             const displayValue = Array.isArray(value)
               ? value
                   .map((item) => (typeof item === "string" ? item : item && typeof item === "object" && "name" in item ? item.name : String(item)))
@@ -245,10 +249,10 @@ export default function Page() {
       ),
       {
         field: "createdAt",
-        headerName: "Created",
+        headerName: t("listing-created"),
         minWidth: 160,
         valueFormatter: (value) =>
-          new Date(Number(value)).toLocaleString("tr-TR", {
+          new Date(Number(value)).toLocaleString(i18n.language, {
             dateStyle: "short",
             timeStyle: "short",
           }),
@@ -259,10 +263,10 @@ export default function Page() {
       },
       {
         field: "updatedAt",
-        headerName: "Updated",
+        headerName: t("listing-updated"),
         minWidth: 160,
         valueFormatter: (value) =>
-          new Date(Number(value)).toLocaleString("tr-TR", {
+          new Date(Number(value)).toLocaleString(i18n.language, {
             dateStyle: "short",
             timeStyle: "short",
           }),
@@ -272,7 +276,7 @@ export default function Page() {
         })),
       },
     ],
-    [dataFields],
+    [dataFields, i18n.language, t],
   );
 
   return (
@@ -282,13 +286,13 @@ export default function Page() {
         <Grid size={12} container spacing={2.5}>
           <Grid size={{ xs: 12, md: "grow" }}>
             <Typography variant='h1' component='h1' className='mb-0'>
-              {t("menu-specimens")}
+              {t("specimens")}
             </Typography>
             <Breadcrumbs>
               <Link color='inherit' to={LINKS.home}>
                 {t("menu-home")}
               </Link>
-              <Typography variant='body2'>{t("menu-specimens")}</Typography>
+              <Typography variant='body2'>{t("specimens")}</Typography>
             </Breadcrumbs>
           </Grid>
         </Grid>
@@ -305,7 +309,7 @@ export default function Page() {
                   </Box>
                 </Box>
                 <Button size='large' variant='outlined' color='grey' startIcon={<Repeat2 />} onClick={() => void loadSpecimens()}>
-                  Retry
+                  {t("retry")}
                 </Button>
               </Box>
             ) : isLoading ? (

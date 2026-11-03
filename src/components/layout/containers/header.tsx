@@ -14,8 +14,11 @@ import { LINKS } from '@/constants';
 import Expand from '../expand/expand';
 import RouterNav from '../router-nav/router-nav';
 import Machines from '../machine-selection/machines';
+import Language from '../language/language';
+import { useTranslation } from 'react-i18next';
 
 export default function Header({ minimal = false }: { minimal?: boolean }) {
+  const { t } = useTranslation();
   const { showLeftInMobile, showLeftMobileButton, leftPrimaryCurrent, leftShowBackdrop } = useLayoutContext();
 
   return (
@@ -43,6 +46,8 @@ export default function Header({ minimal = false }: { minimal?: boolean }) {
             leftPrimaryCurrent !== MenuShowState.Hide && 'active',
           )}
           onClick={() => showLeftInMobile()}
+          aria-label={t('navigation-menu')}
+          title={t('navigation-menu')}
           startIcon={<Menu />}
         />
 
@@ -57,6 +62,7 @@ export default function Header({ minimal = false }: { minimal?: boolean }) {
             {!minimal && (
               <>
                 <Expand />
+                <Language />
                 <Mode />
                 <Search />
               </>

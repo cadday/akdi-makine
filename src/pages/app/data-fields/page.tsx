@@ -40,7 +40,7 @@ import { NoDataFieldsFound } from "../components/no-entity-found";
 type DataFieldGridRow = DataFieldDefinition;
 
 export default function Page() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
 
   const { getDataFields, deleteDataField, deleteDataFields } = useDb();
@@ -58,13 +58,13 @@ export default function Page() {
       const data = await getDataFields();
       setDataFields(data);
     } catch (_err) {
-      const message = "Failed to load data fields: " + _err;
+      const message = t("listing-load-data-fields-error", { error: String(_err) });
       setError(message);
       showError(message);
     } finally {
       setIsLoading(false);
     }
-  }, [getDataFields, showError]);
+  }, [getDataFields, showError, t]);
 
   useEffect(() => {
     let cancelled = false;
@@ -80,7 +80,7 @@ export default function Page() {
         }
       } catch (_err) {
         if (!cancelled) {
-          const message = "Failed to load data fields: " + _err;
+          const message = t("listing-load-data-fields-error", { error: String(_err) });
           setError(message);
           showError(message);
         }
@@ -96,16 +96,16 @@ export default function Page() {
     return () => {
       cancelled = true;
     };
-  }, [getDataFields, showError]);
+  }, [getDataFields, showError, t]);
 
   const deleteRows = useCallback(
     (ids: string[]) => {
       if (ids.length === 0) return;
 
       return requestDelete({
-        title: ids.length === 1 ? "Delete Data Field" : "Delete Data Fields",
-        message: ids.length === 1 ? "Delete this data field? This action cannot be undone." : `Delete ${ids.length} data fields? This action cannot be undone.`,
-        errorMessage: "Failed to delete data field(s):",
+        title: t(ids.length === 1 ? "listing-delete-data-field-title" : "listing-delete-data-fields-title"),
+        message: ids.length === 1 ? t("listing-delete-data-field-confirm") : t("listing-delete-data-fields-confirm", { count: ids.length }),
+        errorMessage: (error) => t("listing-delete-data-field-error", { error: String(error) }),
         onConfirm: async () => {
           if (ids.length === 1) {
             await deleteDataField(ids[0]);
@@ -118,7 +118,7 @@ export default function Page() {
         },
       });
     },
-    [deleteDataField, deleteDataFields, requestDelete],
+    [deleteDataField, deleteDataFields, requestDelete, t],
   );
 
   const deleteRow = useCallback(
@@ -134,23 +134,23 @@ export default function Page() {
       if (!dataField) return [];
 
       return [
-        { key: "view", icon: <Send size={16} />, label: "View", onClick: () => navigate(`/data-fields/${id}`) },
+        { key: "view", icon: <Send size={16} />, label: t("view"), onClick: () => navigate(`/data-fields/${id}`) },
         {
           key: "duplicate",
           icon: <Copy size={16} />,
-          label: "Duplicate",
+          label: t("duplicate"),
           onClick: () => navigate("/data-fields/add", { state: { initialDataField: { ...dataField, name: `${dataField.name} (Copy)` } } }),
         },
         {
           key: "delete",
           icon: <XSquare size={16} />,
-          label: "Delete",
+          label: t("delete"),
           onClick: deleteRow(id),
           className: "hover:bg-error-light/10 hover:text-error",
         },
       ];
     },
-    [dataFields, deleteRow, navigate],
+    [dataFields, deleteRow, navigate, t],
   );
 
   const handleAddItem = useCallback(() => {
@@ -174,10 +174,10 @@ export default function Page() {
   }, [dataFields]);
 
   const columns: GridColDef<DataFieldGridRow>[] = [
-    { field: "id", headerName: "ID", width: 90, filterable: false },
+    { field: "id", headerName: t("listing-id"), width: 90, filterable: false },
     {
       field: "name",
-      headerName: "Name",
+      headerName: t("listing-name"),
       minWidth: 260,
       renderCell: (params: GridRenderCellParams<DataFieldGridRow, string>) => (
         <Link
@@ -190,35 +190,43 @@ export default function Page() {
     },
     {
       field: "container",
-      headerName: "Container",
+      headerName: t("listing-container"),
       minWidth: 140,
       type: "singleSelect",
-      valueOptions: ["Specimen", "Test"] satisfies DataFieldContainer[],
+      valueOptions: (["Specimen", "Test"] satisfies DataFieldContainer[]).map((value) => ({ value, label: t(value === "Specimen" ? "specimen" : "test") })),
+      valueFormatter: (value: DataFieldContainer) => t(value === "Specimen" ? "specimen" : "test"),
     },
     {
       field: "type",
-      headerName: "Type",
+      headerName: t("listing-type"),
       minWidth: 140,
+      type: "singleSelect",
+      valueOptions: (["Text", "Textarea", "Number", "Select", "Image", "Boolean"] as const).map((value) => ({
+        value,
+        label: t(`listing-data-field-${value.toLowerCase()}`),
+      })),
+      valueFormatter: (value: DataFieldDefinition["type"]) => t(`listing-data-field-${value.toLowerCase()}`),
     },
     {
       field: "unit",
-      headerName: "Unit",
+      headerName: t("listing-unit"),
       minWidth: 120,
     },
     {
       field: "mandatory",
-      headerName: "Mandatory",
+      headerName: t("listing-mandatory"),
       minWidth: 120,
       align: "left",
       headerAlign: "left",
       type: "boolean",
+      renderCell: (params) => (params.value ? t("listing-true") : t("listing-false")),
     },
     {
       field: "createdAt",
-      headerName: "Created",
+      headerName: t("listing-created"),
       minWidth: 180,
       valueFormatter: (value) =>
-        new Date(Number(value)).toLocaleString("en-GB", {
+        new Date(Number(value)).toLocaleString(i18n.language, {
           dateStyle: "short",
           timeStyle: "short",
         }),
@@ -229,10 +237,10 @@ export default function Page() {
     },
     {
       field: "updatedAt",
-      headerName: "Updated",
+      headerName: t("listing-updated"),
       minWidth: 180,
       valueFormatter: (value) =>
-        new Date(Number(value)).toLocaleString("en-GB", {
+        new Date(Number(value)).toLocaleString(i18n.language, {
           dateStyle: "short",
           timeStyle: "short",
         }),
@@ -250,13 +258,13 @@ export default function Page() {
         <Grid size={12} container spacing={2.5}>
           <Grid size={{ xs: 12, md: "grow" }}>
             <Typography variant='h1' component='h1' className='mb-0'>
-              {t("menu-data-fields")}
+              {t("data-fields")}
             </Typography>
             <Breadcrumbs>
               <Link color='inherit' to={LINKS.home}>
                 {t("menu-home")}
               </Link>
-              <Typography variant='body2'>{t("menu-data-fields")}</Typography>
+              <Typography variant='body2'>{t("data-fields")}</Typography>
             </Breadcrumbs>
           </Grid>
         </Grid>
@@ -273,7 +281,7 @@ export default function Page() {
                   </Box>
                 </Box>
                 <Button size='large' variant='outlined' color='grey' startIcon={<Repeat2 />} onClick={() => void loadDataFields()}>
-                  Retry
+                  {t("retry")}
                 </Button>
               </Box>
             ) : isLoading ? (

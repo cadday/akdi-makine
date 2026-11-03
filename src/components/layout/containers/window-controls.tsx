@@ -2,8 +2,10 @@ import { cn } from "@/lib/utils";
 import { Box, Button } from "@mui/material";
 import { Copy, Minus, Square, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 export default function WindowControls() {
+  const { t } = useTranslation();
   const [isMaximized, setIsMaximized] = useState(false);
 
   useEffect(() => {
@@ -24,6 +26,8 @@ export default function WindowControls() {
   return (
     <Box className='flex flex-row gap-0 no-drag ms-4 h-full items-center'>
       <Button
+        aria-label={t("minimize")}
+        title={t("minimize")}
         variant='text'
         size='large'
         color='text-primary'
@@ -38,6 +42,8 @@ export default function WindowControls() {
         }
       />
       <Button
+        aria-label={isMaximized ? t("restore-window") : t("maximize")}
+        title={isMaximized ? t("restore-window") : t("maximize")}
         variant='text'
         size='large'
         color='text-primary'
@@ -48,6 +54,8 @@ export default function WindowControls() {
         startIcon={<Box className='w-6 h-6 flex items-center justify-center'>{isMaximized ? <Copy size={14} /> : <Square size={12} />}</Box>}
       />
       <Button
+        aria-label={t("close")}
+        title={t("close")}
         variant='text'
         size='large'
         color='text-primary'

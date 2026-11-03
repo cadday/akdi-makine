@@ -81,7 +81,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                     {t("menu-home")}
                   </Link>
                   <Link color='inherit' to='/data-fields'>
-                    {t("menu-data-fields")}
+                    {t("data-fields")}
                   </Link>
                   {dataField && <Typography variant='body2'>{dataField.name}</Typography>}
                 </Breadcrumbs>

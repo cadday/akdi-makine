@@ -58,18 +58,6 @@ export default function Language() {
         }}
       >
         <MenuItem
-          className={cn(locale === "en" && "active")}
-          onClick={() => {
-            handleCloseLang();
-            handleOnChangeLocale("en");
-          }}
-        >
-          <ListItemIcon>
-            <Avatar className='nano circular' alt='English' src='/images/flags/en.jpg' />
-          </ListItemIcon>
-          {t("en")}
-        </MenuItem>
-        <MenuItem
           className={cn(locale === "tr" && "active")}
           onClick={() => {
             handleCloseLang();
@@ -80,6 +68,18 @@ export default function Language() {
             <Avatar className='nano circular' alt='Türkçe' src='/images/flags/tr.jpg' />
           </ListItemIcon>
           {t("tr")}
+        </MenuItem>
+        <MenuItem
+          className={cn(locale === "en" && "active")}
+          onClick={() => {
+            handleCloseLang();
+            handleOnChangeLocale("en");
+          }}
+        >
+          <ListItemIcon>
+            <Avatar className='nano circular' alt='English' src='/images/flags/en.jpg' />
+          </ListItemIcon>
+          {t("en")}
         </MenuItem>
       </Menu>
     </>

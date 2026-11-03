@@ -49,8 +49,8 @@ interface SearchGroup {
 
 const RESULT_LIMIT = 10;
 
-function formatDate(timestamp: number) {
-  return new Date(timestamp).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short" });
+function formatDate(timestamp: number, locale: string) {
+  return new Date(timestamp).toLocaleString(locale, { dateStyle: "short", timeStyle: "short" });
 }
 
 function getResultIcon(kind: SearchKind) {
@@ -113,7 +113,7 @@ export default function Search() {
   const [specimens, setSpecimens] = useState<SpecimenRecord[]>([]);
   const [presets, setPresets] = useState<PresetRecord[]>([]);
   const [dataFields, setDataFields] = useState<DataFieldDefinition[]>([]);
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const handleClickOpenDialog = () => {
     setQuery("");
@@ -175,7 +175,7 @@ export default function Search() {
         setPresets(presetRecords);
         setDataFields(dataFieldRecords);
       } catch (error) {
-        if (!cancelled) setLoadError(`Failed to load search results: ${String(error)}`);
+        if (!cancelled) setLoadError(String(error));
       } finally {
         if (!cancelled) setIsLoading(false);
       }
@@ -189,18 +189,18 @@ export default function Search() {
 
   const groups = useMemo<SearchGroup[]>(() => {
     const searchGroups: SearchGroup[] = [
-      { kind: "tests", label: "Tests", results: makeResults(tests, "tests", query, (test) => formatDate(test.updatedAt)) },
-      { kind: "specimens", label: "Specimens", results: makeResults(specimens, "specimens", query, (specimen) => formatDate(specimen.updatedAt)) },
-      { kind: "presets", label: "Presets", results: makeResults(presets, "presets", query, (preset) => formatDate(preset.updatedAt)) },
+      { kind: "tests", label: t("tests"), results: makeResults(tests, "tests", query, (test) => formatDate(test.updatedAt, i18n.language)) },
+      { kind: "specimens", label: t("specimens"), results: makeResults(specimens, "specimens", query, (specimen) => formatDate(specimen.updatedAt, i18n.language)) },
+      { kind: "presets", label: t("presets"), results: makeResults(presets, "presets", query, (preset) => formatDate(preset.updatedAt, i18n.language)) },
       {
         kind: "data-fields",
-        label: "Data Fields",
-        results: makeResults(dataFields, "data-fields", query, (dataField) => formatDate(dataField.updatedAt)),
+        label: t("data-fields"),
+        results: makeResults(dataFields, "data-fields", query, (dataField) => formatDate(dataField.updatedAt, i18n.language)),
       },
     ];
 
     return searchGroups.filter((group) => tabValue === "all" || group.kind === tabValue);
-  }, [dataFields, presets, query, specimens, tabValue, tests]);
+  }, [dataFields, i18n.language, presets, query, specimens, tabValue, t, tests]);
 
   const visibleResults = groups.flatMap((group) => group.results);
   const hasQuery = query.trim().length > 0;
@@ -320,7 +320,7 @@ export default function Search() {
             }}
             classes={{ input: "ps-0!" }}
             className='w-full py-6.5!'
-            placeholder='Search'
+            placeholder={t("search")}
             startAdornment={
               <InputAdornment position='start' className='h-7 w-7'>
                 <SearchIcon />
@@ -330,7 +330,7 @@ export default function Search() {
               query.length > 0 && (
                 <InputAdornment position='end'>
                   <Button
-                    aria-label='Clear search'
+                    aria-label={t("search-clear")}
                     className='icon-only hover:bg-grey-25! group'
                     variant='text'
                     color='grey'
@@ -362,48 +362,48 @@ export default function Search() {
               className='flex-none'
               value={tabValue}
             >
-              <Tab icon={<GalleryVerticalEnd className='me-0! md:me-1!' />} iconPosition='start' label={<Box className='hidden md:flex'>All</Box>} value='all' />
-              <Tab icon={<FlaskConical className='me-0! md:me-1!' />} iconPosition='start' label={<Box className='hidden md:flex'>Tests</Box>} value='tests' />
+              <Tab icon={<GalleryVerticalEnd className='me-0! md:me-1!' />} iconPosition='start' label={<Box className='hidden md:flex'>{t("all")}</Box>} value='all' />
+              <Tab icon={<FlaskConical className='me-0! md:me-1!' />} iconPosition='start' label={<Box className='hidden md:flex'>{t("tests")}</Box>} value='tests' />
               <Tab
                 icon={<DraftingCompass className='me-0! md:me-1!' />}
                 iconPosition='start'
-                label={<Box className='hidden md:flex'>Specimens</Box>}
+                label={<Box className='hidden md:flex'>{t("specimens")}</Box>}
                 value='specimens'
               />
               <Tab
                 icon={<SlidersVertical className='me-0! md:me-1!' />}
                 iconPosition='start'
-                label={<Box className='hidden md:flex'>Presets</Box>}
+                label={<Box className='hidden md:flex'>{t("presets")}</Box>}
                 value='presets'
               />
               <Tab
                 icon={<Network className='me-0! md:me-1!' />}
                 iconPosition='start'
-                label={<Box className='hidden md:flex'>Data Fields</Box>}
+                label={<Box className='hidden md:flex'>{t("data-fields")}</Box>}
                 value='data-fields'
               />
             </Tabs>
             {isLoading ? (
               <Box className='flex min-h-100 items-center justify-center'>
-                <Typography color='textSecondary'>Loading search results...</Typography>
+                <Typography color='textSecondary'>{t("search-loading")}</Typography>
               </Box>
             ) : loadError ? (
               <Box className='flex min-h-100 flex-col items-center justify-center gap-4'>
-                <Alert severity='error'>{loadError}</Alert>
+                <Alert severity='error'>{t("search-load-error", { error: loadError })}</Alert>
                 <Button variant='outlined' color='grey' onClick={() => setLoadAttempt((attempt) => attempt + 1)}>
-                  Retry
+                  {t("retry")}
                 </Button>
               </Box>
             ) : hasResults ? (
               <TabPanel value={tabValue} className='flex min-h-100 flex-1 flex-col p-0'>
-                <Box className='h-100 overflow-y-auto overflow-x-hidden -mx-2' role='listbox' aria-label='Search results'>
+                <Box className='h-100 overflow-y-auto overflow-x-hidden -mx-2' role='listbox' aria-label={t("search-results-label")}>
                   {groups.map(renderGroup)}
                 </Box>
               </TabPanel>
             ) : (
               <TabPanel value={tabValue} className='flex min-h-100 flex-1 flex-col p-0'>
                 <Box className='flex min-h-100 flex-1 items-center justify-center'>
-                  <NothingToDisplay message={hasQuery ? "No results found!" : undefined} />
+                  <NothingToDisplay message={hasQuery ? t("no-search-results") : undefined} />
                 </Box>
               </TabPanel>
             )}

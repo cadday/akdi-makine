@@ -31,6 +31,7 @@ import useAppNotifications from "@/hooks/use-app-notifications";
 import useDeleteConfirmation from "@/hooks/use-delete-confirmation";
 import { NoTestsFound } from "@/pages/app/components/no-entity-found";
 import { getTestGraphType } from "@/lib/db";
+import { useTranslation } from "react-i18next";
 
 type TestGridRow = TestRecord & { specimenName: string; presetName: string };
 
@@ -43,6 +44,7 @@ interface TestDataGridProps {
 }
 
 export default function TestDataGrid({ tests, dataFields, onTestsChange, onAddItem, addDisabled }: TestDataGridProps) {
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { deleteTest, deleteTests, duplicateTest, duplicateTests } = useDb();
   const { showError } = useAppNotifications();
@@ -59,19 +61,19 @@ export default function TestDataGrid({ tests, dataFields, onTestsChange, onAddIt
         onTestsChange((current) => [...newTests, ...current].sort((first, second) => second.createdAt - first.createdAt || second.id.localeCompare(first.id)));
         setRowSelectionModel({ type: "include", ids: new Set() });
       } catch (error) {
-        showError(`Failed to duplicate test(s): ${String(error)}`);
+        showError(t("listing-duplicate-test-error", { error: String(error) }));
       }
     },
-    [duplicateTest, duplicateTests, onTestsChange, showError],
+    [duplicateTest, duplicateTests, onTestsChange, showError, t],
   );
   const duplicateRow = useCallback((testId: string) => async () => duplicateRows([testId]), [duplicateRows]);
   const deleteRows = useCallback(
     (ids: string[]) => {
       if (ids.length === 0) return;
       return requestDelete({
-        title: ids.length === 1 ? "Delete Test" : "Delete Tests",
-        message: ids.length === 1 ? "Delete this test? This action cannot be undone." : `Delete ${ids.length} tests? This action cannot be undone.`,
-        errorMessage: "Failed to delete test(s):",
+        title: t(ids.length === 1 ? "listing-delete-test-title" : "listing-delete-tests-title"),
+        message: ids.length === 1 ? t("listing-delete-test-confirm") : t("listing-delete-tests-confirm", { count: ids.length }),
+        errorMessage: (error) => t("listing-delete-test-error", { error: String(error) }),
         onConfirm: async () => {
           if (ids.length === 1) await deleteTest(ids[0]);
           else await deleteTests(ids);
@@ -80,7 +82,7 @@ export default function TestDataGrid({ tests, dataFields, onTestsChange, onAddIt
         },
       });
     },
-    [deleteTest, deleteTests, onTestsChange, requestDelete],
+    [deleteTest, deleteTests, onTestsChange, requestDelete, t],
   );
   const deleteRow = useCallback((testId: string) => async () => deleteRows([testId]), [deleteRows]);
   const handleCompare = useCallback(
@@ -100,11 +102,11 @@ export default function TestDataGrid({ tests, dataFields, onTestsChange, onAddIt
   const getRowSpacing = useCallback((params: GridRowSpacingParams) => ({ top: params.isFirstVisible ? 0 : 5, bottom: 5 }), []);
   const getRowActions = useCallback(
     (testId: string): DataGridRowAction[] => [
-      { key: "view", icon: <Send size={16} />, label: "View", onClick: () => navigate(`/tests/${testId}`) },
-      { key: "duplicate", icon: <Copy size={16} />, label: "Duplicate", onClick: duplicateRow(testId) },
-      { key: "delete", icon: <XSquare size={16} />, label: "Delete", onClick: deleteRow(testId), className: "hover:bg-error-light/10 hover:text-error" },
+      { key: "view", icon: <Send size={16} />, label: t("view"), onClick: () => navigate(`/tests/${testId}`) },
+      { key: "duplicate", icon: <Copy size={16} />, label: t("duplicate"), onClick: duplicateRow(testId) },
+      { key: "delete", icon: <XSquare size={16} />, label: t("delete"), onClick: deleteRow(testId), className: "hover:bg-error-light/10 hover:text-error" },
     ],
-    [deleteRow, duplicateRow, navigate],
+    [deleteRow, duplicateRow, navigate, t],
   );
   const rows = useMemo<TestGridRow[]>(
     () => tests.map((test) => ({ ...test, specimenName: test.specimenSnapshot.name, presetName: test.presetSnapshot.name })),
@@ -112,10 +114,10 @@ export default function TestDataGrid({ tests, dataFields, onTestsChange, onAddIt
   );
   const columns = useMemo<GridColDef<TestGridRow>[]>(
     () => [
-      { field: "id", headerName: "ID", width: 90, filterable: false },
+      { field: "id", headerName: t("listing-id"), width: 90, filterable: false },
       {
         field: "name",
-        headerName: "Name",
+        headerName: t("listing-name"),
         minWidth: 220,
         renderCell: (params: GridRenderCellParams<TestGridRow, string>) => (
           <Link
@@ -128,7 +130,7 @@ export default function TestDataGrid({ tests, dataFields, onTestsChange, onAddIt
       },
       {
         field: "specimenName",
-        headerName: "Specimen",
+        headerName: t("specimen"),
         minWidth: 180,
         renderCell: (params: GridRenderCellParams<TestGridRow, string>) =>
           params.row.specimenId ? (
@@ -144,7 +146,7 @@ export default function TestDataGrid({ tests, dataFields, onTestsChange, onAddIt
       },
       {
         field: "presetName",
-        headerName: "Preset",
+        headerName: t("preset"),
         minWidth: 180,
         renderCell: (params: GridRenderCellParams<TestGridRow, string>) =>
           params.row.presetId ? (
@@ -158,7 +160,7 @@ export default function TestDataGrid({ tests, dataFields, onTestsChange, onAddIt
             params.value
           ),
       },
-      { field: "machineIP", headerName: "Machine IP", minWidth: 150, valueFormatter: (value) => value || "-" },
+      { field: "machineIP", headerName: t("listing-machine-ip"), minWidth: 150, valueFormatter: (value) => value || "-" },
       ...dataFields.map(
         (dataField): GridColDef<TestGridRow> => ({
           field: dataField.id,
@@ -179,7 +181,7 @@ export default function TestDataGrid({ tests, dataFields, onTestsChange, onAddIt
             if (dataField.type === "Image" && Array.isArray(value)) {
               return <StoredImagePreviews images={value as UploadedImage[]} imageClassName='h-8 w-10' />;
             }
-            if (typeof value === "boolean") return value ? "True" : "False";
+            if (typeof value === "boolean") return value ? t("listing-true") : t("listing-false");
             const displayValue = Array.isArray(value)
               ? value
                   .map((item) => (typeof item === "string" ? item : item && typeof item === "object" && "name" in item ? item.name : String(item)))
@@ -191,30 +193,30 @@ export default function TestDataGrid({ tests, dataFields, onTestsChange, onAddIt
       ),
       {
         field: "createdAt",
-        headerName: "Created",
+        headerName: t("listing-created"),
         minWidth: 180,
-        valueFormatter: (value) => new Date(Number(value)).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short" }),
+        valueFormatter: (value) => new Date(Number(value)).toLocaleString(i18n.language, { dateStyle: "short", timeStyle: "short" }),
         filterOperators: getGridDateOperators(false).map((item) => ({ ...item, InputComponent: DataGridDateTimeFilter })),
       },
       {
         field: "updatedAt",
-        headerName: "Updated",
+        headerName: t("listing-updated"),
         minWidth: 180,
-        valueFormatter: (value) => new Date(Number(value)).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short" }),
+        valueFormatter: (value) => new Date(Number(value)).toLocaleString(i18n.language, { dateStyle: "short", timeStyle: "short" }),
         filterOperators: getGridDateOperators(false).map((item) => ({ ...item, InputComponent: DataGridDateTimeFilter })),
       },
     ],
-    [dataFields],
+    [dataFields, i18n.language, t],
   );
 
   return (
     <>
       {dialog}
       <Dialog open={Boolean(incompatibleTests)} onClose={() => setIncompatibleTests(null)}>
-        <DialogTitle>Test Incompatibility</DialogTitle>
+        <DialogTitle>{t("listing-test-incompatible-title")}</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            A comparison requires all selected tests to have similarly defined <u>specimen geometries</u>. The selection includes:
+            {t("listing-test-incompatible-message")}
           </DialogContentText>
           <Box className='mt-4 flex flex-col gap-2'>
             {incompatibleTests?.map((test) => (
@@ -225,7 +227,7 @@ export default function TestDataGrid({ tests, dataFields, onTestsChange, onAddIt
                     {test.name}
                   </Typography>
                   <Typography variant='body1' className='text-error'>
-                    {getTestGraphType(test.specimenSnapshot.geometry) === "stress-strain" ? "Stress-Strain" : "Load-Displacement"}
+                    {getTestGraphType(test.specimenSnapshot.geometry) === "stress-strain" ? t("listing-graph-stress-strain") : t("listing-graph-load-displacement")}
                   </Typography>
                 </Box>
               </Box>
@@ -234,7 +236,7 @@ export default function TestDataGrid({ tests, dataFields, onTestsChange, onAddIt
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setIncompatibleTests(null)} color='grey'>
-            Close
+            {t("close")}
           </Button>
         </DialogActions>
       </Dialog>
@@ -268,7 +270,7 @@ export default function TestDataGrid({ tests, dataFields, onTestsChange, onAddIt
               deleteRows,
               duplicateRows,
               onCompare: handleCompare,
-              ...(onAddItem ? { onAddItem, addDisabled, addLabel: "Add Test", addIcon: <Play /> } : {}),
+              ...(onAddItem ? { onAddItem, addDisabled, addLabel: t("add-test"), addIcon: <Play /> } : {}),
             },
           }}
           classes={{ main: "overflow-visible" }}

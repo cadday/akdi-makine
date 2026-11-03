@@ -58,7 +58,7 @@ export default function Page() {
                 {t("menu-home")}
               </Link>
               <Link color='inherit' to='/specimens'>
-                {t("menu-specimens")}
+                {t("specimens")}
               </Link>
               <Typography variant='body2'>Add Specimen</Typography>
             </Breadcrumbs>

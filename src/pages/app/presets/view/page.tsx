@@ -126,7 +126,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                         {t("menu-home")}
                       </Link>
                       <Link color='inherit' to='/presets'>
-                        {t("menu-presets")}
+                        {t("presets")}
                       </Link>
                       {preset && <Typography variant='body2'>{preset.name}</Typography>}
                     </Breadcrumbs>

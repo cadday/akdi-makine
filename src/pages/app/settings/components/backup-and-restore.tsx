@@ -41,7 +41,7 @@ export default function BackupAndRestore() {
       const result = await window.electronAPI.saveBackupArchive(archive);
       if (result.canceled === false) showSavedFile(t('backup-export-success'), result.filePath);
     } catch (error) {
-      showError(`${t('backup-export-error')} ${String(error)}`);
+      showError(t('backup-export-error', { error: String(error) }));
     } finally {
       setOperation(null);
     }
@@ -54,7 +54,7 @@ export default function BackupAndRestore() {
       if (result.canceled === true) return;
       setRestoreCandidate(prepareDatabaseBackup(result.bytes));
     } catch (error) {
-      showError(`${t('backup-import-error')} ${String(error)}`);
+      showError(t('backup-import-error', { error: String(error) }));
     } finally {
       setOperation(null);
     }
@@ -69,7 +69,7 @@ export default function BackupAndRestore() {
       setRestoreCandidate(null);
       navigate(LINKS.home, { replace: true });
     } catch (error) {
-      showError(`${t('backup-import-error')} ${String(error)}`);
+      showError(t('backup-import-error', { error: String(error) }));
       setOperation(null);
     }
   };
@@ -78,17 +78,17 @@ export default function BackupAndRestore() {
     <>
       <Grid size={12}>
         <Typography variant="h6" component="h2" className="mb-3">
-          Backup and Restore
+          {t('backup-title')}
         </Typography>
         <Card>
           <CardContent className="flex flex-col gap-6">
             <Box className="flex flex-col gap-2">
-              <Typography variant="subtitle1">Backup</Typography>
-              <Box className="flex flex-col gap-1">
-                <Typography>
-                  Export your database to a ZIP file containing all the Tests, Specimens, Presets and Data Fields.
-                </Typography>
-              </Box>
+              <Typography variant="subtitle1">{t('backup-database-title')}</Typography>
+              <Typography>{t('backup-description')}</Typography>
+              <Typography>{t('backup-scope')}</Typography>
+            </Box>
+            <Box className="flex flex-col gap-2">
+              <Typography variant="subtitle1">{t('settings-backup-export-heading')}</Typography>
               <Box className="flex flex-wrap gap-2">
                 <Button
                   color="grey"
@@ -99,15 +99,12 @@ export default function BackupAndRestore() {
                   disabled={operation !== null}
                   onClick={() => void exportBackup()}
                 >
-                  Download
+                  {t('settings-backup-download')}
                 </Button>
               </Box>
             </Box>
             <Box className="flex flex-col gap-2">
-              <Typography variant="subtitle1">Restore</Typography>
-              <Box className="flex flex-col gap-1">
-                <Typography>Select a backup ZIP file to restore your database and images.</Typography>
-              </Box>
+              <Typography variant="subtitle1">{t('backup-import')}</Typography>
               <Box className="flex flex-wrap gap-2">
                 <Button
                   color="grey"
@@ -118,7 +115,7 @@ export default function BackupAndRestore() {
                   disabled={operation !== null}
                   onClick={() => void selectBackup()}
                 >
-                  Restore
+                  {t('settings-backup-restore-select')}
                 </Button>
               </Box>
             </Box>
@@ -131,11 +128,10 @@ export default function BackupAndRestore() {
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle>Replace Current Database and Images?</DialogTitle>
+        <DialogTitle>{t('backup-restore-confirm-title')}</DialogTitle>
         <DialogContent>
           <DialogContentText className="mb-3">
-            This permanently replaces all current Specimens, Tests, Presets and Data Fields with the contents of the
-            selected backup.
+            {t('backup-restore-confirm-message')}
           </DialogContentText>
           {restoreCandidate && (
             <Typography color="textSecondary">
@@ -148,10 +144,10 @@ export default function BackupAndRestore() {
         </DialogContent>
         <DialogActions>
           <Button color="grey" disabled={operation === 'restore'} onClick={() => setRestoreCandidate(null)}>
-            Cancel
+            {t('cancel')}
           </Button>
           <Button color="error" variant="pastel" loading={operation === 'restore'} onClick={() => void restoreBackup()}>
-            Restore
+            {t('backup-restore-confirm')}
           </Button>
         </DialogActions>
       </Dialog>

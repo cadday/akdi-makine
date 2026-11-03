@@ -193,7 +193,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                       {t("menu-home")}
                     </Link>
                     <Link color='inherit' to='/tests'>
-                      {t("menu-tests")}
+                      {t("tests")}
                     </Link>
                     {test && <Typography variant='body2'>{test.name}</Typography>}
                   </Breadcrumbs>

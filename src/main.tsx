@@ -3,8 +3,8 @@ import ReactDOM from "react-dom/client";
 import App from "./App.tsx";
 import "@/i18n/i18n";
 import "@/style/global.css";
-import "@fontsource/mulish/latin.css";
-import "@fontsource/nunito/latin.css";
+import "@fontsource-variable/mulish";
+import "@fontsource-variable/nunito";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

@@ -21,7 +21,7 @@ export default function Page() {
                 {t("menu-home")}
               </Link>
               <Link color='inherit' to='/tests'>
-                {t("menu-tests")}
+                {t("tests")}
               </Link>
               <Typography variant='body2'>Edit Test</Typography>
             </Breadcrumbs>
