@@ -10,6 +10,8 @@ import { useDb } from "@/context/db-context";
 import useAppNotifications from "@/hooks/use-app-notifications";
 import { NoWayToTest } from "@/pages/app/components/no-entity-found";
 import { isMachineInterlocked, usePlcData } from "@/context/plc-context";
+import { RulerReset } from "@/icons/custom-lucide-icons/ruler-reset";
+import { WeightReset } from "@/icons/custom-lucide-icons/weight-reset";
 
 const PLC_OVERVIEW_POLL_INTERVAL_MS = 100;
 const PLC_LOAD_SCALE_DIVISOR = 10;
@@ -271,7 +273,7 @@ export default function MachineControls() {
                   size='large'
                   color='grey'
                   className='icon-only'
-                  startIcon={<Weight />}
+                  startIcon={<WeightReset />}
                 />
               </span>
             </Tooltip>
@@ -286,7 +288,7 @@ export default function MachineControls() {
                   size='large'
                   color='grey'
                   className='icon-only'
-                  startIcon={<Ruler />}
+                  startIcon={<RulerReset />}
                 />
               </span>
             </Tooltip>
