@@ -258,7 +258,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                   }}
                 >
                   <Tab label={t("view-result")} value='Result' />
-                  <Tab label={t("view-raw-test-data")} value='Raw Test Data' />
+                  <Tab label={t("view-test-data")} value='Test Data' />
                 </TabList>
               </Box>
             </TitleWrapper>
@@ -426,7 +426,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                   </Grid>
                 )}
               </TabPanel>
-              <TabPanel value='Raw Test Data'>
+              <TabPanel value='Test Data'>
                 {!loadError && test && (
                   <DataGrid
                     autoHeight

@@ -36,7 +36,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
       setLoadError(null);
       if (!id) {
         setDataField(null);
-        setLoadError("Data Field not found");
+        setLoadError(t("view-data-field-not-found"));
 
         setIsLoading(false);
         return;
@@ -46,9 +46,9 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
         const record = await getDataField(id);
         if (cancelled) return;
         setDataField(record ?? null);
-        if (!record) setLoadError("Data Field not found");
+        if (!record) setLoadError(t("view-data-field-not-found"));
       } catch (error) {
-        if (!cancelled) setLoadError(`Failed to load Data Field: ${String(error)}`);
+        if (!cancelled) setLoadError(t("view-load-data-field-error", { error: String(error) }));
       } finally {
         if (!cancelled) setIsLoading(false);
       }
@@ -58,7 +58,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
     return () => {
       cancelled = true;
     };
-  }, [getDataField, id]);
+  }, [getDataField, id, t]);
 
   useEffect(() => {
     if (loadError) showError(loadError);
@@ -74,7 +74,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
             <Grid size={12} container spacing={2.5}>
               <Grid size={{ xs: 12, md: "grow" }}>
                 <Typography variant='h1' component='h1' className='mb-0'>
-                  {dataField?.name ?? "Data Field"}
+                  {dataField?.name ?? t("data-field")}
                 </Typography>
                 <Breadcrumbs>
                   <Link color='inherit' to={LINKS.home}>
@@ -90,7 +90,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                 <PopupState variant='popover' popupId='data-field-actions-menu' >
                   {(popupState) => (
                     <>
-                      <Tooltip title='Actions' placement='bottom'>
+                      <Tooltip title={t("view-actions")} placement='bottom'>
                         <Button className='icon-only surface-standard' color='grey' variant='surface' {...bindTrigger(popupState)}>
                           <Box className='w-6 h-6 flex items-center justify-center'>
                             <Ellipsis size={16} />
@@ -102,15 +102,15 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                         anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
                         transformOrigin={{ vertical: "top", horizontal: "right" }}
                       >
-                        <SaveRecordPdfMenuItem type='data-field' id={id} name={dataField?.name ?? "Data Field"} closeMenu={popupState.close} />
+                        <SaveRecordPdfMenuItem type='data-field' id={id} name={dataField?.name ?? t("data-field")} closeMenu={popupState.close} />
                         <MenuItem
                           onClick={() => {
                             popupState.close();
                             if (!id) return;
                             requestDelete({
-                              title: "Delete Data Field",
-                              message: dataField?.name ? `Delete “${dataField.name}”? This action cannot be undone.` : "Delete this data field? This action cannot be undone.",
-                              errorMessage: "Failed to delete data field:",
+                              title: t("listing-delete-data-field-title"),
+                              message: dataField?.name ? t("view-delete-confirm-named", { name: dataField.name }) : t("listing-delete-data-field-confirm"),
+                              errorMessage: (error) => t("listing-delete-data-field-error", { error: String(error) }),
                               onConfirm: async () => {
                                 await deleteDataField(id);
                                 navigate("/data-fields");
@@ -122,7 +122,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                           <ListItemIcon>
                             <X size={16} />
                           </ListItemIcon>
-                          <ListItemText>Delete</ListItemText>
+                          <ListItemText>{t("view-delete")}</ListItemText>
                         </MenuItem>
                       </Menu>
                     </>
@@ -137,7 +137,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
               <DataFieldForm
                 key={dataField.id}
                 dataField={dataField}
-                saveLabel='Update'
+                saveLabel={t("view-update")}
                 onSave={async (input) => {
                   await updateDataField(id, input);
                   navigate("/data-fields");

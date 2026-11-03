@@ -14,7 +14,7 @@ export default function Page() {
         <Grid size={12} container spacing={2.5}>
           <Grid size={{ xs: 12, md: "grow" }}>
             <Typography variant='h1' component='h1' className='mb-0'>
-              Edit Test
+              {t("edit-test-title")}
             </Typography>
             <Breadcrumbs>
               <Link color='inherit' to={LINKS.home}>
@@ -23,7 +23,7 @@ export default function Page() {
               <Link color='inherit' to='/tests'>
                 {t("tests")}
               </Link>
-              <Typography variant='body2'>Edit Test</Typography>
+              <Typography variant='body2'>{t("edit-test-title")}</Typography>
             </Breadcrumbs>
           </Grid>
         </Grid>

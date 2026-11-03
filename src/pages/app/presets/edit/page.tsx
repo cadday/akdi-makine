@@ -29,7 +29,7 @@ export default function Page() {
         if (!cancelled) {
           setPreset(null);
           setIsLoading(false);
-          showError("Preset not found");
+          showError(t("view-preset-not-found"));
         }
         return;
       }
@@ -39,11 +39,11 @@ export default function Page() {
         if (cancelled) return;
 
         setPreset(record ?? null);
-        if (!record) showError("Preset not found");
+        if (!record) showError(t("view-preset-not-found"));
       } catch (error) {
         if (!cancelled) {
           setPreset(null);
-          showError(`Failed to load preset: ${String(error)}`);
+          showError(t("view-load-preset-error", { error: String(error) }));
         }
       } finally {
         if (!cancelled) setIsLoading(false);
@@ -54,7 +54,7 @@ export default function Page() {
     return () => {
       cancelled = true;
     };
-  }, [getPreset, id, showError]);
+  }, [getPreset, id, showError, t]);
 
   return (
     isLoading ? (
@@ -65,7 +65,7 @@ export default function Page() {
           <Grid size={12} container spacing={2.5}>
             <Grid size={{ xs: 12, md: "grow" }}>
               <Typography variant='h1' component='h1' className='mb-0'>
-                {preset ? `Edit / ${preset.name}` : "Edit Preset"}
+                {preset ? `${t("edit-preset-title")} / ${preset.name}` : t("edit-preset-title")}
               </Typography>
               <Breadcrumbs>
                 <Link color='inherit' to={LINKS.home}>
@@ -75,7 +75,7 @@ export default function Page() {
                   {t("presets")}
                 </Link>
                 {preset && <Link color='inherit' to={`/presets/${preset.id}`}>{preset.name}</Link>}
-                <Typography variant='body2'>Edit Preset</Typography>
+                <Typography variant='body2'>{t("edit-preset-title")}</Typography>
               </Breadcrumbs>
             </Grid>
           </Grid>
@@ -85,10 +85,10 @@ export default function Page() {
           {preset && id && (
             <PresetForm
               preset={preset}
-              saveLabel='Update'
+              saveLabel={t("view-update")}
               onSave={async (input) => {
                 const updatedCount = await updatePreset(id, input);
-                if (updatedCount === 0) throw new Error("Preset no longer exists");
+                if (updatedCount === 0) throw new Error(t("edit-preset-missing"));
                 navigate(`/presets/${id}`);
               }}
             />

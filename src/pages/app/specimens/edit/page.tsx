@@ -27,7 +27,7 @@ export default function Page() {
       if (!id) {
         setSpecimen(null);
         setIsLoading(false);
-        showError("Specimen not found");
+        showError(t("view-specimen-not-found"));
         return;
       }
 
@@ -36,11 +36,11 @@ export default function Page() {
         if (cancelled) return;
         setSpecimen(record ?? null);
         setFields(dataFields);
-        if (!record) showError("Specimen not found");
+        if (!record) showError(t("view-specimen-not-found"));
       } catch (error) {
         if (!cancelled) {
           setSpecimen(null);
-          showError(`Failed to load specimen: ${String(error)}`);
+          showError(t("view-load-specimen-error", { error: String(error) }));
         }
       } finally {
         if (!cancelled) setIsLoading(false);
@@ -51,7 +51,7 @@ export default function Page() {
     return () => {
       cancelled = true;
     };
-  }, [getDataFields, getSpecimen, id, showError]);
+  }, [getDataFields, getSpecimen, id, showError, t]);
 
   return isLoading ? (
     <LoadingFullScreen />
@@ -61,7 +61,7 @@ export default function Page() {
         <Grid size={12} container spacing={2.5}>
           <Grid size={{ xs: 12, md: "grow" }}>
             <Typography variant='h1' component='h1' className='mb-0'>
-              {specimen ? `Edit / ${specimen.name}` : "Edit Specimen"}
+              {specimen ? `${t("edit-specimen-title")} / ${specimen.name}` : t("edit-specimen-title")}
             </Typography>
             <Breadcrumbs>
               <Link color='inherit' to={LINKS.home}>
@@ -71,7 +71,7 @@ export default function Page() {
                 {t("specimens")}
               </Link>
               {specimen && <Link color='inherit' to={`/specimens/${specimen.id}`}>{specimen.name}</Link>}
-              <Typography variant='body2'>Edit Specimen</Typography>
+              <Typography variant='body2'>{t("edit-specimen-title")}</Typography>
             </Breadcrumbs>
           </Grid>
         </Grid>
@@ -82,10 +82,10 @@ export default function Page() {
           <SpecimenForm
             fields={fields}
             specimen={specimen}
-            saveLabel='Update'
+            saveLabel={t("view-update")}
             onSave={async (input) => {
               const updatedCount = await updateSpecimen(id, input);
-              if (updatedCount === 0) throw new Error("Specimen no longer exists");
+              if (updatedCount === 0) throw new Error(t("edit-specimen-missing"));
               navigate(`/specimens/${id}`);
             }}
           />
