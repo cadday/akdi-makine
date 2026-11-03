@@ -263,19 +263,19 @@ export default function SpecimenForm({ fields, isLoadingFields = false, loadErro
     void formik.setFieldValue(field, value === "" ? "" : Number(value));
 
   return (
-    <Grid
-      container
-      size={12}
-      spacing={5}
-      className='w-full'
-      component='form'
-      noValidate
-      onSubmit={(event) => {
-        event.preventDefault();
-        setSubmitted(true);
-        void formik.submitForm();
-      }}
-    >
+    <Grid container size={12} spacing={5} className='w-full'>
+      <Grid
+        container
+        size={{ lg: 8, xs: 12 }}
+        spacing={5}
+        component='form'
+        noValidate
+        onSubmit={(event) => {
+          event.preventDefault();
+          setSubmitted(true);
+          void formik.submitForm();
+        }}
+      >
       <Grid size={{ xs: 12 }} container spacing={5}>
         <Grid size={12}>
           <Typography variant='h6' component='h6' className='mb-3'>
@@ -469,6 +469,7 @@ export default function SpecimenForm({ fields, isLoadingFields = false, loadErro
             {saveLabel ?? t("save")}
           </Button>
         </Grid>
+      </Grid>
       </Grid>
     </Grid>
   );

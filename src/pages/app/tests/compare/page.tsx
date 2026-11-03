@@ -461,7 +461,7 @@ function ComparisonDetails({
             <ComparisonField
               key={`preset-target-${index}`}
               icon={<Crosshair className='flex-none' />}
-              label={t("compare-target", { index: index + 1 })}
+              label={t("compare-target")}
               tests={tests}
               colors={colors}
               valueForTest={(test) => {

@@ -304,35 +304,35 @@ export default function Page() {
       </TitleWrapper>
 
       <ContentWrapper>
-        <Grid
-          container
-          size={12}
-          spacing={5}
-          className='w-full'
-          component='form'
-          noValidate
-          onSubmit={(event) => {
-            event.preventDefault();
-            setSubmitted(true);
-            if (testCreationDisabled) {
-              showError(t("quick-test-interlock-error"));
-              return;
-            }
-            setIsCheckingMachine(true);
-            void getConnectedMachine()
-              .then((connectedMachine) => {
-                if (!connectedMachine) {
-                  setMachineConnectionError(true);
-                  return;
-                }
+        <Grid container size={12} spacing={5} className='w-full'>
+          <Grid
+            container
+            size={{ lg: 8, xs: 12 }}
+            spacing={5}
+            component='form'
+            noValidate
+            onSubmit={(event) => {
+              event.preventDefault();
+              setSubmitted(true);
+              if (testCreationDisabled) {
+                showError(t("quick-test-interlock-error"));
+                return;
+              }
+              setIsCheckingMachine(true);
+              void getConnectedMachine()
+                .then((connectedMachine) => {
+                  if (!connectedMachine) {
+                    setMachineConnectionError(true);
+                    return;
+                  }
 
-                setMachineConnectionError(false);
-                return formik.submitForm();
-              })
-              .catch((error: unknown) => showError(t("add-form-connected-machine-error", { error: String(error) })))
-              .finally(() => setIsCheckingMachine(false));
-          }}
-        >
+                  setMachineConnectionError(false);
+                  return formik.submitForm();
+                })
+                .catch((error: unknown) => showError(t("add-form-connected-machine-error", { error: String(error) })))
+                .finally(() => setIsCheckingMachine(false));
+            }}
+          >
           <Grid size={{ xs: 12 }} container spacing={5}>
             <Grid size={12}>
               <Typography variant='h6' component='h6' className='mb-3'>
@@ -557,6 +557,7 @@ export default function Page() {
                 {t("quick-test-start")}
               </Button>
             </Grid>
+          </Grid>
           </Grid>
         </Grid>
       </ContentWrapper>

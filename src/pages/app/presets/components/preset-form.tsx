@@ -128,9 +128,8 @@ export default function PresetForm({ onSave, preset, initialPreset, saveLabel }:
     <Grid container size={12} className='items-start w-full' spacing={5}>
       <Grid
         container
-        size={{ xs: 12 }}
+        size={{ lg: 8, xs: 12 }}
         spacing={5}
-        className='w-full'
         component='form'
         noValidate
         onSubmit={(event) => {
@@ -168,7 +167,9 @@ export default function PresetForm({ onSave, preset, initialPreset, saveLabel }:
                   >
                     {PRESET_TYPES.map((presetType) => (
                       <MenuItem key={presetType} value={presetType}>
-                        {presetType === "Tensile" ? t("listing-tensile") : t("listing-compression")}
+                        <Box component='span' sx={{ color: presetType === "Tensile" ? "primary.main" : "accent-5.main" }}>
+                          {presetType === "Tensile" ? t("listing-tensile") : t("listing-compression")}
+                        </Box>
                       </MenuItem>
                     ))}
                   </Select>
@@ -276,7 +277,7 @@ export default function PresetForm({ onSave, preset, initialPreset, saveLabel }:
                     <Crosshair className={cn("mb-2 flex-none", targetError && "text-error!")} />
                     <FormControl className='outlined' variant='standard' size='small' fullWidth required>
                       <FormLabel component='label' className={targetError ? "text-error!" : undefined}>
-                        {t("add-target", { index: index + 1 })}
+                        {t("add-target")}
                       </FormLabel>
                       <Input
                         inputComponent={DecimalMaskInput}
@@ -332,7 +333,7 @@ export default function PresetForm({ onSave, preset, initialPreset, saveLabel }:
                   return value.flatMap((targetError, index) =>
                     typeof targetError === "string" ? (
                       <Box className='flex flex-row gap-0.5' key={`target-${index}`}>
-                        <Typography className='text-error'>{t("add-target", { index: index + 1 })}:</Typography>
+                        <Typography className='text-error'>{t("add-target")}:</Typography>
                         <Typography className='text-text-primary'>{targetError}</Typography>
                       </Box>
                     ) : [],

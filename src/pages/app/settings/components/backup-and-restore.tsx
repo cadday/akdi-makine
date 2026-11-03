@@ -77,7 +77,7 @@ export default function BackupAndRestore() {
 
   return (
     <>
-      <Grid size={12}>
+      <Grid size={{ lg: 4, xs: 12 }}>
         <Typography variant='h6' component='h2' className='mb-3'>
           {t("backup-title")}
         </Typography>

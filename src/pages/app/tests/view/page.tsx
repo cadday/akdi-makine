@@ -321,7 +321,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                                   <Box className='flex flex-row gap-2' key={`target-${index}`}>
                                     <Crosshair className='flex-none' />
                                     <Box className='flex flex-col gap-1'>
-                                      <Typography variant='subtitle1'>{t("view-target", { index: index + 1 })}</Typography>
+                                      <Typography variant='subtitle1'>{t("view-target")}</Typography>
                                       <Typography>
                                         {typeof target === "number"
                                           ? `${preset.method === "Load" ? target.toFixed(1) : preset.method === "Distance" ? target.toFixed(4) : target} ${preset.method === "Load" ? "N" : preset.method === "Distance" ? "mm" : ""}`.trim()
