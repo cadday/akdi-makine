@@ -180,10 +180,10 @@
 
   "settings-adjustments-title": "Manual Adjustments",
   "settings-adjustments-manual-velocity": "Velocity",
-  "settings-adjustments-top-distance-limit": "Top Distance Limit",
-  "settings-adjustments-bottom-distance-limit": "Bottom Distance Limit",
-  "settings-adjustments-top-load-limit": "Top Load Limit",
-  "settings-adjustments-bottom-load-limit": "Bottom Load Limit",
+  "settings-adjustments-top-distance-limit": "Up Distance Limit",
+  "settings-adjustments-bottom-distance-limit": "Down Distance Limit",
+  "settings-adjustments-top-load-limit": "Up Load Limit",
+  "settings-adjustments-bottom-load-limit": "Down Load Limit",
 
   "settings-limits-title": "Test Limits",
   "settings-limits-test-distance-limit": "Distance Limit",

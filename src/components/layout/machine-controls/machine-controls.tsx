@@ -3,7 +3,7 @@ import { useLocation } from "react-router";
 import { useTranslation } from "react-i18next";
 import { Box, Button, Card, ClickAwayListener, CircularProgress, Fade, Paper, Popper, Tooltip, Typography } from "@mui/material";
 import { liveQuery } from "dexie";
-import { ArrowBigDownDash, ArrowBigUpDash, OctagonX, Play, Ruler, Square, TriangleAlert, Weight } from "lucide-react";
+import { LayersArrowUp, OctagonX, Play, Ruler, Square, TriangleAlert, Weight } from "lucide-react";
 import QuickTestForm from "@/pages/app/overview/components/quick-test-form";
 import { useTestRun } from "@/context/test-run-context";
 import { useDb } from "@/context/db-context";
@@ -292,8 +292,6 @@ export default function MachineControls() {
                 />
               </span>
             </Tooltip>
-          </Box>
-          <Box className='flex flex-row'>
             <Tooltip title={t("machine-controls-move-down")} placement='top'>
               <span className='inline-flex'>
                 <Button
@@ -320,7 +318,7 @@ export default function MachineControls() {
                   size='large'
                   color='grey'
                   className='icon-only'
-                  startIcon={<ArrowBigDownDash />}
+                  startIcon={<LayersArrowUp className="rotate-180" />}
                 />
               </span>
             </Tooltip>
@@ -350,10 +348,12 @@ export default function MachineControls() {
                   size='large'
                   color='grey'
                   className='icon-only'
-                  startIcon={<ArrowBigUpDash />}
+                  startIcon={<LayersArrowUp />}
                 />
               </span>
             </Tooltip>
+          </Box>
+          <Box className='flex flex-row'>
             {displayedPlcValues &&
               (displayedPlcValues.machineHalted ? (
                 <Tooltip title={t("machine-controls-resume")} placement='top'>

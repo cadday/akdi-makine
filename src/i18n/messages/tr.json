@@ -180,10 +180,10 @@
 
   "settings-adjustments-title": "Manuel Ayarlar",
   "settings-adjustments-manual-velocity": "Hız",
-  "settings-adjustments-top-distance-limit": "Üst Mesafe Limiti",
-  "settings-adjustments-bottom-distance-limit": "Alt Mesafe Limiti",
-  "settings-adjustments-top-load-limit": "Üst Yük Limiti",
-  "settings-adjustments-bottom-load-limit": "Alt Yük Limiti",
+  "settings-adjustments-top-distance-limit": "Yukarı Mesafe Limiti",
+  "settings-adjustments-bottom-distance-limit": "Aşağı Mesafe Limiti",
+  "settings-adjustments-top-load-limit": "Yukarı Yük Limiti",
+  "settings-adjustments-bottom-load-limit": "Aşağı Yük Limiti",
 
   "settings-limits-title": "Test Limitleri",
   "settings-limits-test-distance-limit": "Mesafe Limiti",
