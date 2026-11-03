@@ -2,9 +2,11 @@ import { createElement, Fragment, useCallback } from "react";
 import { Button, CircularProgress } from "@mui/material";
 import { FolderOpen, X } from "lucide-react";
 import { useSnackbar } from "notistack";
+import { useTranslation } from "react-i18next";
 
 export default function useAppNotifications() {
   const { closeSnackbar, enqueueSnackbar } = useSnackbar();
+  const { t } = useTranslation();
 
   const showError = useCallback(
     (message: string) => {
@@ -47,7 +49,7 @@ export default function useAppNotifications() {
                 createElement(
                   Button,
                   {
-                    "aria-label": "close",
+                    "aria-label": t("close"),
                     className: "icon-only",
                     color: "grey",
                     variant: "text",
@@ -61,32 +63,35 @@ export default function useAppNotifications() {
         anchorOrigin: { horizontal: "right", vertical: "bottom" },
       });
     },
-    [closeSnackbar, enqueueSnackbar],
+    [closeSnackbar, enqueueSnackbar, t],
   );
 
   const showPdfCreating = useCallback(() => {
-    const snackbarId = enqueueSnackbar("Creating PDF...", {
+    const creatingPdfLabel = t("notification-pdf-creating");
+    const snackbarId = enqueueSnackbar(creatingPdfLabel, {
       variant: "default",
       persist: true,
-      action: createElement(CircularProgress, { "aria-label": "Creating PDF", size: 18 }),
+      action: createElement(CircularProgress, { "aria-label": creatingPdfLabel, size: 18 }),
       anchorOrigin: { horizontal: "right", vertical: "bottom" },
     });
     return () => closeSnackbar(snackbarId);
-  }, [closeSnackbar, enqueueSnackbar]);
+  }, [closeSnackbar, enqueueSnackbar, t]);
 
   const showSavedFile = useCallback(
     (message: string, filePath: string) => {
       showSuccess(message, {
-        label: "Open folder",
+        label: t("notification-open-folder"),
         onClick: () => {
-          void window.electronAPI.showPdfInFolder(filePath).catch((error: unknown) => showError(`Failed to open folder: ${String(error)}`));
+          void window.electronAPI.showPdfInFolder(filePath).catch((error: unknown) =>
+            showError(t("notification-open-folder-error", { error: String(error) })),
+          );
         },
       });
     },
-    [showError, showSuccess],
+    [showError, showSuccess, t],
   );
 
-  const showPdfSaved = useCallback((filePath: string) => showSavedFile("PDF saved successfully", filePath), [showSavedFile]);
+  const showPdfSaved = useCallback((filePath: string) => showSavedFile(t("notification-pdf-saved"), filePath), [showSavedFile, t]);
 
   return { showError, showSuccess, showPdfCreating, showSavedFile, showPdfSaved };
 }

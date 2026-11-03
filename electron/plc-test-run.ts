@@ -57,8 +57,8 @@ export async function writePlcTestPreset(client: PlcModbusClient, preset: PlcTes
   if (preset.type !== "Tensile" && preset.type !== "Compression") {
     throw new Error("Invalid PLC test type");
   }
-  if (preset.base !== "Distance" && preset.base !== "Load") {
-    throw new Error("Invalid PLC test base");
+  if (preset.method !== "Distance" && preset.method !== "Load") {
+    throw new Error("Invalid PLC test method");
   }
   if (!Array.isArray(preset.targets) || preset.targets.length < 1 || preset.targets.length > 5) {
     throw new Error("PLC tests require between one and five targets");
@@ -67,14 +67,14 @@ export async function writePlcTestPreset(client: PlcModbusClient, preset: PlcTes
   const encodedVelocity = encodeDvpDword(
     validateScaledSignedDword(preset.velocity, "Preset Velocity", PLC_VELOCITY_SCALE, 1, { min: 1 }),
   );
-  const isDistanceBase = preset.base === "Distance";
-  const targetScale = isDistanceBase ? PLC_TEST_DISTANCE_SCALE : PLC_TEST_LOAD_SCALE;
-  const targetDecimalPlaces = isDistanceBase ? 4 : 1;
+  const isDistanceMethod = preset.method === "Distance";
+  const targetScale = isDistanceMethod ? PLC_TEST_DISTANCE_SCALE : PLC_TEST_LOAD_SCALE;
+  const targetDecimalPlaces = isDistanceMethod ? 4 : 1;
   const encodedTargets = preset.targets.map((target, index) =>
     encodeDvpDword(validateScaledSignedDword(target, `Target ${index + 1}`, targetScale, targetDecimalPlaces)),
   );
   let encodedPreload: [number, number] | undefined;
-  if (!isDistanceBase) {
+  if (!isDistanceMethod) {
     const preload = preset.preload ?? 0;
     if ((preset.type === "Compression" && preload > 0) || (preset.type === "Tensile" && preload < 0)) {
       throw new Error("Preload sign must match the test type");
@@ -83,10 +83,10 @@ export async function writePlcTestPreset(client: PlcModbusClient, preset: PlcTes
   }
 
   await client.writeSingleCoil(PLC_TEST_TYPE_COIL_ADDRESS, preset.type === "Compression");
-  await client.writeSingleCoil(PLC_TEST_LOAD_BASE_COIL_ADDRESS, !isDistanceBase);
+  await client.writeSingleCoil(PLC_TEST_LOAD_BASE_COIL_ADDRESS, !isDistanceMethod);
   await client.writeMultipleRegisters(PLC_TEST_VELOCITY_ADDRESS, encodedVelocity);
 
-  if (isDistanceBase) {
+  if (isDistanceMethod) {
     await client.writeMultipleRegisters(PLC_TEST_DISTANCE_TARGET_ADDRESSES[0], encodedTargets.slice(0, 3).flat());
     if (encodedTargets.length > 3) {
       await client.writeMultipleRegisters(PLC_TEST_DISTANCE_TARGET_ADDRESSES[3], encodedTargets.slice(3).flat());

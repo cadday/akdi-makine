@@ -15,27 +15,39 @@ export function registerBackupStorage(getWindow: () => BrowserWindow | null) {
 
   ipcMain.handle("backup:save", async (event, input: unknown) => {
     const window = assertTrustedRequest(event.sender);
-    if (!(input instanceof Uint8Array) || input.byteLength === 0 || input.byteLength > MAX_BACKUP_ARCHIVE_BYTES) {
+    if (!input || typeof input !== "object") throw new Error("Backup archive is invalid or exceeds the 512 MB limit");
+    const request = input as { bytes?: unknown; labels?: NativeDialogLabels };
+    if (
+      !(request.bytes instanceof Uint8Array) ||
+      request.bytes.byteLength === 0 ||
+      request.bytes.byteLength > MAX_BACKUP_ARCHIVE_BYTES ||
+      !request.labels ||
+      typeof request.labels.title !== "string" ||
+      typeof request.labels.filterName !== "string"
+    ) {
       throw new Error("Backup archive is invalid or exceeds the 512 MB limit");
     }
 
     const { canceled, filePath } = await dialog.showSaveDialog(window, {
-      title: "Export Database Backup",
+      title: request.labels.title,
       defaultPath: path.join(app.getPath("documents"), `AKDI-MAKINE-Backup-${new Date().toISOString().slice(0, 10)}.zip`),
-      filters: [{ name: "AKDI MAKINE Backup", extensions: ["zip"] }],
+      filters: [{ name: request.labels.filterName, extensions: ["zip"] }],
     });
     if (canceled || !filePath) return { canceled: true };
 
-    await writeFile(filePath, Buffer.from(input));
+    await writeFile(filePath, Buffer.from(request.bytes));
     return { canceled: false, filePath };
   });
 
-  ipcMain.handle("backup:open", async (event) => {
+  ipcMain.handle("backup:open", async (event, labels: NativeDialogLabels) => {
     const window = assertTrustedRequest(event.sender);
+    if (!labels || typeof labels.title !== "string" || typeof labels.filterName !== "string") {
+      throw new Error("Invalid backup dialog labels");
+    }
     const { canceled, filePaths } = await dialog.showOpenDialog(window, {
-      title: "Restore Database Backup",
+      title: labels.title,
       properties: ["openFile"],
-      filters: [{ name: "AKDI MAKINE Backup", extensions: ["zip"] }],
+      filters: [{ name: labels.filterName, extensions: ["zip"] }],
     });
     if (canceled || filePaths.length === 0) return { canceled: true };
 

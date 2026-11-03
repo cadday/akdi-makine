@@ -14929,24 +14929,29 @@ function registerBackupStorage(getWindow) {
   };
   ipcMain.handle("backup:save", async (event, input) => {
     const window2 = assertTrustedRequest2(event.sender);
-    if (!(input instanceof Uint8Array) || input.byteLength === 0 || input.byteLength > MAX_BACKUP_ARCHIVE_BYTES) {
+    if (!input || typeof input !== "object") throw new Error("Backup archive is invalid or exceeds the 512 MB limit");
+    const request2 = input;
+    if (!(request2.bytes instanceof Uint8Array) || request2.bytes.byteLength === 0 || request2.bytes.byteLength > MAX_BACKUP_ARCHIVE_BYTES || !request2.labels || typeof request2.labels.title !== "string" || typeof request2.labels.filterName !== "string") {
       throw new Error("Backup archive is invalid or exceeds the 512 MB limit");
     }
     const { canceled, filePath } = await dialog.showSaveDialog(window2, {
-      title: "Export Database Backup",
+      title: request2.labels.title,
       defaultPath: path$n.join(app.getPath("documents"), `AKDI-MAKINE-Backup-${(/* @__PURE__ */ new Date()).toISOString().slice(0, 10)}.zip`),
-      filters: [{ name: "AKDI MAKINE Backup", extensions: ["zip"] }]
+      filters: [{ name: request2.labels.filterName, extensions: ["zip"] }]
     });
     if (canceled || !filePath) return { canceled: true };
-    await writeFile$1(filePath, Buffer.from(input));
+    await writeFile$1(filePath, Buffer.from(request2.bytes));
     return { canceled: false, filePath };
   });
-  ipcMain.handle("backup:open", async (event) => {
+  ipcMain.handle("backup:open", async (event, labels) => {
     const window2 = assertTrustedRequest2(event.sender);
+    if (!labels || typeof labels.title !== "string" || typeof labels.filterName !== "string") {
+      throw new Error("Invalid backup dialog labels");
+    }
     const { canceled, filePaths } = await dialog.showOpenDialog(window2, {
-      title: "Restore Database Backup",
+      title: labels.title,
       properties: ["openFile"],
-      filters: [{ name: "AKDI MAKINE Backup", extensions: ["zip"] }]
+      filters: [{ name: labels.filterName, extensions: ["zip"] }]
     });
     if (canceled || filePaths.length === 0) return { canceled: true };
     const filePath = filePaths[0];
@@ -19053,8 +19058,8 @@ async function writePlcTestPreset(client, preset) {
   if (preset.type !== "Tensile" && preset.type !== "Compression") {
     throw new Error("Invalid PLC test type");
   }
-  if (preset.base !== "Distance" && preset.base !== "Load") {
-    throw new Error("Invalid PLC test base");
+  if (preset.method !== "Distance" && preset.method !== "Load") {
+    throw new Error("Invalid PLC test method");
   }
   if (!Array.isArray(preset.targets) || preset.targets.length < 1 || preset.targets.length > 5) {
     throw new Error("PLC tests require between one and five targets");
@@ -19062,14 +19067,14 @@ async function writePlcTestPreset(client, preset) {
   const encodedVelocity = encodeDvpDword(
     validateScaledSignedDword(preset.velocity, "Preset Velocity", PLC_VELOCITY_SCALE, 1, { min: 1 })
   );
-  const isDistanceBase = preset.base === "Distance";
-  const targetScale = isDistanceBase ? PLC_TEST_DISTANCE_SCALE : PLC_TEST_LOAD_SCALE;
-  const targetDecimalPlaces = isDistanceBase ? 4 : 1;
+  const isDistanceMethod = preset.method === "Distance";
+  const targetScale = isDistanceMethod ? PLC_TEST_DISTANCE_SCALE : PLC_TEST_LOAD_SCALE;
+  const targetDecimalPlaces = isDistanceMethod ? 4 : 1;
   const encodedTargets = preset.targets.map(
     (target, index) => encodeDvpDword(validateScaledSignedDword(target, `Target ${index + 1}`, targetScale, targetDecimalPlaces))
   );
   let encodedPreload;
-  if (!isDistanceBase) {
+  if (!isDistanceMethod) {
     const preload = preset.preload ?? 0;
     if (preset.type === "Compression" && preload > 0 || preset.type === "Tensile" && preload < 0) {
       throw new Error("Preload sign must match the test type");
@@ -19077,9 +19082,9 @@ async function writePlcTestPreset(client, preset) {
     encodedPreload = encodeDvpDword(validateScaledSignedDword(preload, "Preload", PLC_TEST_LOAD_SCALE, 1));
   }
   await client.writeSingleCoil(PLC_TEST_TYPE_COIL_ADDRESS, preset.type === "Compression");
-  await client.writeSingleCoil(PLC_TEST_LOAD_BASE_COIL_ADDRESS, !isDistanceBase);
+  await client.writeSingleCoil(PLC_TEST_LOAD_BASE_COIL_ADDRESS, !isDistanceMethod);
   await client.writeMultipleRegisters(PLC_TEST_VELOCITY_ADDRESS, encodedVelocity);
-  if (isDistanceBase) {
+  if (isDistanceMethod) {
     await client.writeMultipleRegisters(PLC_TEST_DISTANCE_TARGET_ADDRESSES[0], encodedTargets.slice(0, 3).flat());
     if (encodedTargets.length > 3) {
       await client.writeMultipleRegisters(PLC_TEST_DISTANCE_TARGET_ADDRESSES[3], encodedTargets.slice(3).flat());
@@ -19653,8 +19658,8 @@ function validateTestRunRequest(value) {
   if (preset.type !== "Tensile" && preset.type !== "Compression") {
     throw new Error("Invalid PLC test type");
   }
-  if (preset.base !== "Load" && preset.base !== "Distance") {
-    throw new Error("Invalid PLC test base");
+  if (preset.method !== "Load" && preset.method !== "Distance") {
+    throw new Error("Invalid PLC test method");
   }
   if (typeof preset.velocity !== "number" || !Number.isFinite(preset.velocity)) {
     throw new Error("Invalid PLC test velocity");
@@ -19667,7 +19672,7 @@ function validateTestRunRequest(value) {
     return target;
   });
   let preload;
-  if (preset.base === "Load") {
+  if (preset.method === "Load") {
     if (preset.preload !== void 0 && (typeof preset.preload !== "number" || !Number.isFinite(preset.preload))) {
       throw new Error("Invalid PLC test preload");
     }
@@ -19680,7 +19685,7 @@ function validateTestRunRequest(value) {
     testId: request2.testId,
     preset: {
       type: preset.type,
-      base: preset.base,
+      method: preset.method,
       velocity: preset.velocity,
       ...preload !== void 0 ? { preload } : {},
       targets
@@ -19832,6 +19837,12 @@ const MAIN_DIST = path$n.join(process.env.APP_ROOT, "dist-electron");
 const RENDERER_DIST = path$n.join(process.env.APP_ROOT, "dist");
 process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path$n.join(process.env.APP_ROOT, "public") : RENDERER_DIST;
 let mainWindow;
+let updaterMessages = {
+  title: "Update Ready to Install",
+  messageTemplate: "Version __VERSION__ has been downloaded. Restart the app now to install it?",
+  restartButton: "Restart Now",
+  laterButton: "Later"
+};
 const activePdfImageReaders = /* @__PURE__ */ new Set();
 registerImageStorage(() => mainWindow, (sender) => activePdfImageReaders.has(sender.id));
 registerBackupStorage(() => mainWindow);
@@ -19860,9 +19871,9 @@ function startAutoUpdates() {
   main$1.autoUpdater.on("update-downloaded", (info) => {
     const options = {
       type: "info",
-      title: "Update ready to install",
-      message: `Version ${info.version} has been downloaded. Restart the app now to install it?`,
-      buttons: ["Restart now", "Later"],
+      title: updaterMessages.title,
+      message: updaterMessages.messageTemplate.replace("__VERSION__", () => info.version),
+      buttons: [updaterMessages.restartButton, updaterMessages.laterButton],
       defaultId: 0,
       cancelId: 1,
       noLink: true
@@ -19907,12 +19918,27 @@ ipcMain.handle("window:close", () => {
 ipcMain.handle("window:is-maximized", () => {
   return !!mainWindow && mainWindow.isMaximized();
 });
+ipcMain.handle("app:set-updater-messages", (event, input) => {
+  if (!mainWindow || mainWindow.isDestroyed() || event.sender !== mainWindow.webContents) {
+    throw new Error("Unauthorized locale update");
+  }
+  if (!input || typeof input !== "object") throw new Error("Invalid updater dialog messages");
+  const messages = input;
+  if (messages.locale !== "en" && messages.locale !== "tr" || typeof messages.title !== "string" || typeof messages.messageTemplate !== "string" || typeof messages.restartButton !== "string" || typeof messages.laterButton !== "string") {
+    throw new Error("Invalid updater dialog messages");
+  }
+  updaterMessages = messages;
+});
 ipcMain.handle("pdf:save-record", async (event, input) => {
   if (!mainWindow || mainWindow.isDestroyed() || event.sender !== mainWindow.webContents) {
     throw new Error("Unauthorized PDF request");
   }
   if (!input || typeof input !== "object") throw new Error("Invalid PDF request");
   const request2 = input;
+  const dialogLabels = request2.dialogLabels;
+  if (!dialogLabels || typeof dialogLabels.title !== "string" || typeof dialogLabels.filterName !== "string") {
+    throw new Error("Invalid PDF dialog labels");
+  }
   const recordTypes = /* @__PURE__ */ new Set(["test", "specimen", "preset", "data-field"]);
   let name;
   let printRoute;
@@ -19937,9 +19963,9 @@ ipcMain.handle("pdf:save-record", async (event, input) => {
   const safeName = Array.from(name.replace(/[<>:"/\\|?*]/g, "_"), (character) => character.charCodeAt(0) < 32 ? "_" : character).join("").trim().replace(/[. ]+$/, "") || "Test";
   const parentWindow = mainWindow;
   const { canceled, filePath } = await dialog.showSaveDialog(mainWindow, {
-    title: request2.type === "test-comparison" ? "Save Test Comparison as PDF" : "Save Record as PDF",
+    title: dialogLabels.title,
     defaultPath: path$n.join(app.getPath("documents"), `${safeName}.pdf`),
-    filters: [{ name: "PDF", extensions: ["pdf"] }]
+    filters: [{ name: dialogLabels.filterName, extensions: ["pdf"] }]
   });
   if (canceled || !filePath) return { canceled: true };
   if (parentWindow.isDestroyed()) throw new Error("The main window was closed before PDF export completed");

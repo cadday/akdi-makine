@@ -10,7 +10,7 @@ import {
   type UploadedImage,
 } from "@/lib/db";
 
-const BACKUP_FORMAT_VERSION = 1;
+const BACKUP_FORMAT_VERSION = 2;
 const DATABASE_VERSION = 5;
 const MAX_ARCHIVE_BYTES = 512 * 1024 * 1024;
 const MAX_UNCOMPRESSED_BYTES = 512 * 1024 * 1024;
@@ -203,7 +203,7 @@ function readZipEntries(bytes: Uint8Array) {
 function validateManifest(value: unknown): BackupManifest {
   if (!isObject(value)) throw new Error("Backup manifest is invalid");
   if (value.formatVersion !== BACKUP_FORMAT_VERSION) throw new Error("This backup format version is not supported");
-  if (value.databaseVersion !== 3 && value.databaseVersion !== 4 && value.databaseVersion !== DATABASE_VERSION) {
+  if (value.databaseVersion !== DATABASE_VERSION) {
     throw new Error("This database backup version is not supported");
   }
   if (typeof value.createdAt !== "string" || !Number.isFinite(Date.parse(value.createdAt))) throw new Error("Backup timestamp is invalid");
@@ -213,12 +213,12 @@ function validateManifest(value: unknown): BackupManifest {
     if (!Number.isSafeInteger(value.counts[table]) || (value.counts[table] as number) < 0) throw new Error(`Backup ${table} count is invalid`);
   }
   const machineCount = value.counts.machines;
-  if (value.databaseVersion >= 4 && (!Number.isSafeInteger(machineCount) || (machineCount as number) < 0)) {
+  if (!Number.isSafeInteger(machineCount) || (machineCount as number) < 0) {
     throw new Error("Backup machines count is invalid");
   }
   return {
     ...value,
-    counts: { ...value.counts, machines: Number.isSafeInteger(machineCount) && (machineCount as number) >= 0 ? (machineCount as number) : 0 },
+    counts: { ...value.counts, machines: machineCount as number },
   } as unknown as BackupManifest;
 }
 
@@ -230,17 +230,17 @@ function validateAndPrepare(entries: Map<string, Uint8Array>): PreparedDatabaseB
   const parsedRecords = parseJson<Partial<BackupRecords>>(recordsBytes, "records");
   const tests = validateRecordArray<TestRecord>(parsedRecords.tests, "tests").map((test) => {
     const machineIP = (test as TestRecord & { machineIP?: unknown }).machineIP;
-    if (manifest.databaseVersion >= 5 && machineIP !== null && typeof machineIP !== "string") {
+    if (machineIP !== null && typeof machineIP !== "string") {
       throw new Error("Backup contains an invalid test machine IP");
     }
-    return { ...test, machineIP: typeof machineIP === "string" ? machineIP : null };
+    return { ...test, machineIP };
   });
   const records: BackupRecords = {
     specimens: validateRecordArray<SpecimenRecord>(parsedRecords.specimens, "specimens"),
     tests,
     presets: validateRecordArray<PresetRecord>(parsedRecords.presets, "presets"),
     dataFields: validateRecordArray<DataFieldDefinition>(parsedRecords.dataFields, "dataFields"),
-    machines: parsedRecords.machines === undefined && manifest.databaseVersion === 3 ? [] : validateRecordArray<MachineRecord>(parsedRecords.machines, "machines"),
+    machines: validateRecordArray<MachineRecord>(parsedRecords.machines, "machines"),
   };
 
   for (const table of ["specimens", "tests", "presets", "dataFields", "machines"] as const) {

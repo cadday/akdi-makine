@@ -1,4 +1,5 @@
 import * as React from "react";
+import { useTranslation } from "react-i18next";
 
 import { FilledInput, FormLabel, Input } from "@mui/material";
 import FormControl from "@mui/material/FormControl";
@@ -35,6 +36,7 @@ export default function NumberSpinner({
   readonly?: boolean;
   centered?: boolean;
 }) {
+  const { t } = useTranslation();
   let id = React.useId();
   if (idProp) {
     id = idProp;
@@ -79,14 +81,14 @@ export default function NumberSpinner({
                 }}
                 startAdornment={
                   <InputAdornment position='start' className='-ms-2!'>
-                    <BaseNumberField.Decrement disabled={readOnly} render={<IconButton size={"tiny"} aria-label='Decrease' />}>
+                    <BaseNumberField.Decrement disabled={readOnly} render={<IconButton size={"tiny"} aria-label={t("number-decrease")} />}>
                       <Minus size={16} />
                     </BaseNumberField.Decrement>
                   </InputAdornment>
                 }
                 endAdornment={
                   <InputAdornment position='end'>
-                    <BaseNumberField.Increment disabled={readOnly} render={<IconButton size={"tiny"} aria-label='Increase' />}>
+                    <BaseNumberField.Increment disabled={readOnly} render={<IconButton size={"tiny"} aria-label={t("number-increase")} />}>
                       <Plus size={16} />
                     </BaseNumberField.Increment>
                   </InputAdornment>
@@ -116,14 +118,14 @@ export default function NumberSpinner({
                 }}
                 startAdornment={
                   <InputAdornment position='start' className='-ms-2 mt-3'>
-                    <BaseNumberField.Decrement disabled={readOnly} render={<IconButton size={"tiny"} aria-label='Increase' className='mt-0' />}>
+                    <BaseNumberField.Decrement disabled={readOnly} render={<IconButton size={"tiny"} aria-label={t("number-decrease")} className='mt-0' />}>
                       <Minus size={16} />
                     </BaseNumberField.Decrement>
                   </InputAdornment>
                 }
                 endAdornment={
                   <InputAdornment position='end' className='mt-3'>
-                    <BaseNumberField.Increment disabled={readOnly} render={<IconButton size={"tiny"} aria-label='Increase' className='mt-0' />}>
+                    <BaseNumberField.Increment disabled={readOnly} render={<IconButton size={"tiny"} aria-label={t("number-increase")} className='mt-0' />}>
                       <Plus size={16} />
                     </BaseNumberField.Increment>
                   </InputAdornment>
@@ -161,14 +163,14 @@ export default function NumberSpinner({
                 }}
                 startAdornment={
                   <InputAdornment position='start'>
-                    <BaseNumberField.Decrement disabled={readOnly} render={<IconButton size={"tiny"} aria-label='Decrease' />}>
+                    <BaseNumberField.Decrement disabled={readOnly} render={<IconButton size={"tiny"} aria-label={t("number-decrease")} />}>
                       <Minus size={16} />
                     </BaseNumberField.Decrement>
                   </InputAdornment>
                 }
                 endAdornment={
                   <InputAdornment position='end'>
-                    <BaseNumberField.Increment disabled={readOnly} render={<IconButton size={"tiny"} aria-label='Increase' />}>
+                    <BaseNumberField.Increment disabled={readOnly} render={<IconButton size={"tiny"} aria-label={t("number-increase")} />}>
                       <Plus size={16} />
                     </BaseNumberField.Increment>
                   </InputAdornment>

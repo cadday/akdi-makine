@@ -17,6 +17,13 @@ export const RENDERER_DIST = path.join(process.env.APP_ROOT, "dist");
 
 process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, "public") : RENDERER_DIST;
 let mainWindow: BrowserWindow | null;
+let updaterMessages: UpdaterDialogMessages = {
+  locale: "en",
+  title: "Update Ready to Install",
+  messageTemplate: "Version __VERSION__ has been downloaded. Restart the app now to install it?",
+  restartButton: "Restart Now",
+  laterButton: "Later",
+};
 const activePdfImageReaders = new Set<number>();
 registerImageStorage(() => mainWindow, (sender) => activePdfImageReaders.has(sender.id));
 registerBackupStorage(() => mainWindow);
@@ -26,11 +33,13 @@ interface PdfRecordRequest {
   type: PdfRecordType;
   id: string;
   name: string;
+  dialogLabels: NativeDialogLabels;
 }
 interface PdfComparisonRequest {
   type: "test-comparison";
   testIds: string[];
   name: string;
+  dialogLabels: NativeDialogLabels;
 }
 
 const pdfReadyWaiters = new Map<number, { resolve: () => void; reject: (error: Error) => void; timeout: ReturnType<typeof setTimeout> }>();
@@ -62,9 +71,9 @@ function startAutoUpdates() {
   autoUpdater.on("update-downloaded", (info) => {
     const options = {
       type: "info" as const,
-      title: "Update ready to install",
-      message: `Version ${info.version} has been downloaded. Restart the app now to install it?`,
-      buttons: ["Restart now", "Later"],
+      title: updaterMessages.title,
+      message: updaterMessages.messageTemplate.replace("__VERSION__", () => info.version),
+      buttons: [updaterMessages.restartButton, updaterMessages.laterButton],
       defaultId: 0,
       cancelId: 1,
       noLink: true,
@@ -121,6 +130,24 @@ ipcMain.handle("window:is-maximized", () => {
   return !!mainWindow && mainWindow.isMaximized();
 });
 
+ipcMain.handle("app:set-updater-messages", (event, input: unknown) => {
+  if (!mainWindow || mainWindow.isDestroyed() || event.sender !== mainWindow.webContents) {
+    throw new Error("Unauthorized locale update");
+  }
+  if (!input || typeof input !== "object") throw new Error("Invalid updater dialog messages");
+  const messages = input as Partial<UpdaterDialogMessages>;
+  if (
+    (messages.locale !== "en" && messages.locale !== "tr") ||
+    typeof messages.title !== "string" ||
+    typeof messages.messageTemplate !== "string" ||
+    typeof messages.restartButton !== "string" ||
+    typeof messages.laterButton !== "string"
+  ) {
+    throw new Error("Invalid updater dialog messages");
+  }
+  updaterMessages = messages as UpdaterDialogMessages;
+});
+
 ipcMain.handle("pdf:save-record", async (event, input: unknown) => {
   if (!mainWindow || mainWindow.isDestroyed() || event.sender !== mainWindow.webContents) {
     throw new Error("Unauthorized PDF request");
@@ -128,6 +155,10 @@ ipcMain.handle("pdf:save-record", async (event, input: unknown) => {
 
   if (!input || typeof input !== "object") throw new Error("Invalid PDF request");
   const request = input as Partial<PdfRecordRequest> & Partial<PdfComparisonRequest>;
+  const dialogLabels = request.dialogLabels;
+  if (!dialogLabels || typeof dialogLabels.title !== "string" || typeof dialogLabels.filterName !== "string") {
+    throw new Error("Invalid PDF dialog labels");
+  }
   const recordTypes = new Set<PdfRecordType>(["test", "specimen", "preset", "data-field"]);
   let name: string;
   let printRoute: string;
@@ -168,9 +199,9 @@ ipcMain.handle("pdf:save-record", async (event, input: unknown) => {
 
   const parentWindow = mainWindow;
   const { canceled, filePath } = await dialog.showSaveDialog(mainWindow, {
-    title: request.type === "test-comparison" ? "Save Test Comparison as PDF" : "Save Record as PDF",
+    title: dialogLabels.title,
     defaultPath: path.join(app.getPath("documents"), `${safeName}.pdf`),
-    filters: [{ name: "PDF", extensions: ["pdf"] }],
+    filters: [{ name: dialogLabels.filterName, extensions: ["pdf"] }],
   });
 
   if (canceled || !filePath) return { canceled: true };

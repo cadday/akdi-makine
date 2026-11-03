@@ -64,7 +64,7 @@ export const PlcProvider = ({ children }: { children: ReactNode }) => {
         } catch (error) {
           console.error("Failed to clear the selected machine after PLC communication was lost:", error);
           if (!cancelled) {
-            setConnectionStatus({ ...status, error: `Failed to clear the disconnected machine selection: ${String(error)}` });
+            setConnectionStatus({ ...status, error: String(error), errorCode: "clear-disconnected-selection" });
           }
           return;
         }
@@ -83,7 +83,7 @@ export const PlcProvider = ({ children }: { children: ReactNode }) => {
         await updateStatus(status);
       } catch (error) {
         if (!cancelled) {
-          setConnectionStatus({ state: "offline", ipAddress: null, error: `Failed to read PLC connection status: ${String(error)}` });
+          setConnectionStatus({ state: "offline", ipAddress: null, error: String(error), errorCode: "read-status" });
         }
         return;
       }
@@ -93,7 +93,7 @@ export const PlcProvider = ({ children }: { children: ReactNode }) => {
         machine = await getConnectedMachine();
       } catch (error) {
         if (!cancelled) {
-          setConnectionStatus({ state: "offline", ipAddress: null, error: `Failed to load the selected machine: ${String(error)}` });
+          setConnectionStatus({ state: "offline", ipAddress: null, error: String(error), errorCode: "load-selected-machine" });
         }
         return;
       }
@@ -107,7 +107,8 @@ export const PlcProvider = ({ children }: { children: ReactNode }) => {
           setConnectionStatus({
             state: "offline",
             ipAddress: machine?.ipAddress ?? null,
-            error: `Failed to connect to the selected machine: ${String(error)}`,
+            error: String(error),
+            errorCode: "connect-selected-machine",
           });
         }
       }

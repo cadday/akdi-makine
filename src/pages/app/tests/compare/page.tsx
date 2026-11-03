@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
+import { useTranslation } from "react-i18next";
 import {
   Alert,
   Box,
@@ -72,7 +73,11 @@ function resolveSeriesColor(color: string, cssVariables: CSSStyleDeclaration) {
 }
 
 function ComparisonGraphTooltip({ points, graphType }: { points: ComparisonTooltipPoint[]; graphType: TestGraphType }) {
-  const [xLabel, xUnit, yLabel, yUnit] = graphType === "stress-strain" ? ["Strain", "%", "Stress", "MPa"] : ["Displacement", "mm", "Load", "N"];
+  const { t } = useTranslation();
+  const [xLabel, xUnit, yLabel, yUnit] =
+    graphType === "stress-strain"
+      ? [t("overview-strain"), "%", t("overview-stress"), "MPa"]
+      : [t("overview-displacement"), "mm", t("overview-load"), "N"];
   return (
     <Box className='bg-background-paper shadow-darker-sm! outline-grey-50 rounded-lg p-5 outline-1 flex flex-col gap-2'>
       {[
@@ -80,7 +85,7 @@ function ComparisonGraphTooltip({ points, graphType }: { points: ComparisonToolt
         { label: yLabel, unit: yUnit, value: (point: ComparisonTooltipPoint) => point.y, digits: 2 },
       ].map(({ label, unit, value, digits }) => (
         <Box key={label} className='flex flex-row gap-2'>
-          {label === "Stress" || label === "Load" ? <WeightTilde size={20} /> : label === "Strain" ? <TicketPercent size={20} /> : <RulerDimensionLine size={20} />}
+          {label === t("overview-stress") || label === t("overview-load") ? <WeightTilde size={20} /> : label === t("overview-strain") ? <TicketPercent size={20} /> : <RulerDimensionLine size={20} />}
           <Box className='flex min-w-0 flex-col gap-1'>
             <Typography variant='subtitle1' className='text-text-primary'>
               {label}
@@ -118,20 +123,20 @@ function getSnapshotValue(values: Record<string, DynamicDataValue>, field: DataF
   return values[field.id] ?? values[field.name] ?? null;
 }
 
-function renderValue(value: DynamicDataValue | undefined, field?: DataFieldDefinition, printMode = false) {
+function renderValue(value: DynamicDataValue | undefined, t: (key: string) => string, field?: DataFieldDefinition, printMode = false) {
   if (value == null) return "-";
   if (field?.type === "Image" && Array.isArray(value)) {
     return <ImageLightboxGallery images={value as UploadedImage[]} printMode={printMode} />;
   }
-  if (typeof value === "boolean") return value ? "True" : "False";
+  if (typeof value === "boolean") return value ? t("listing-true") : t("listing-false");
   const text = Array.isArray(value)
     ? value.map((item) => (item && typeof item === "object" && "name" in item ? item.name : String(item))).join(", ")
     : String(value);
   return field?.unit ? `${text} ${field.unit}` : text;
 }
 
-function formatDate(timestamp: number) {
-  return new Date(timestamp).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" });
+function formatDate(timestamp: number, locale: string) {
+  return new Date(timestamp).toLocaleString(locale, { dateStyle: "medium", timeStyle: "short" });
 }
 
 function getNearestGraphPoint(points: TestGraphPoint[], strain: number) {
@@ -179,6 +184,7 @@ function ComparisonField({
   colors: string[];
   valueForTest: (test: TestRecord) => React.ReactNode;
 }) {
+  const { t } = useTranslation();
   return (
     <Box className='flex flex-row gap-2'>
       {icon}
@@ -188,7 +194,7 @@ function ComparisonField({
           {tests.map((test, index) => (
             <Box key={test.id} className='flex min-w-0 items-start gap-2'>
               <Box
-                aria-label={`${test.name} comparison color`}
+                aria-label={t("compare-series-color", { name: test.name })}
                 title={test.name}
                 className='mt-1.5 h-2.5 w-2.5 flex-none rounded-full'
                 style={{ backgroundColor: colors[index] }}
@@ -234,6 +240,7 @@ function ComparisonDetails({
   graphType: TestGraphType;
   printMode: boolean;
 }) {
+  const { t, i18n } = useTranslation();
   const targetCount = Math.max(1, ...tests.map((test) => test.presetSnapshot.targets?.length ?? 0));
 
   return (
@@ -241,7 +248,7 @@ function ComparisonDetails({
       <Grid container size={{ lg: 8, xs: 12 }} spacing={5}>
         <Grid size={12}>
           <Typography variant='h6' component='h6' className='mb-3'>
-            {graphType === "stress-strain" ? "Stress Strain Graph" : "Load Displacement Graph"}
+            {graphType === "stress-strain" ? t("compare-graph-stress-strain") : t("compare-graph-load-displacement")}
           </Typography>
           <Card>
             <CardContent>{graph}</CardContent>
@@ -249,7 +256,7 @@ function ComparisonDetails({
         </Grid>
         <Grid size={12}>
           <Typography variant='h6' component='h6' className='mb-3'>
-            Results
+            {t("compare-results")}
           </Typography>
           <Grid size={12} container spacing={2.5}>
             {graphType === "stress-strain" && (
@@ -260,11 +267,11 @@ function ComparisonDetails({
                   <Box className='flex flex-row gap-2'>
                     <Yeild className='flex-none' />
                     <Box className='flex min-w-0 flex-1 flex-col gap-1'>
-                      <Typography variant='subtitle1'>Yield Strength</Typography>
+                      <Typography variant='subtitle1'>{t("compare-yield-strength")}</Typography>
                       {tests.map((test, index) => (
                         <Box key={test.id} className='flex min-w-0 items-start gap-2'>
                           <Box
-                            aria-label={`${test.name} comparison color`}
+                            aria-label={t("compare-series-color", { name: test.name })}
                             title={test.name}
                             className='mt-1.5 h-2.5 w-2.5 flex-none rounded-full'
                             style={{ backgroundColor: colors[index] }}
@@ -285,11 +292,11 @@ function ComparisonDetails({
                   <Box className='flex flex-row gap-2'>
                     <Tensile className='flex-none' />
                     <Box className='flex min-w-0 flex-1 flex-col gap-1'>
-                      <Typography variant='subtitle1'>Tensile Strength</Typography>
+                      <Typography variant='subtitle1'>{t("compare-tensile-strength")}</Typography>
                       {tests.map((test, index) => (
                         <Box key={test.id} className='flex min-w-0 items-start gap-2'>
                           <Box
-                            aria-label={`${test.name} comparison color`}
+                            aria-label={t("compare-series-color", { name: test.name })}
                             title={test.name}
                             className='mt-1.5 h-2.5 w-2.5 flex-none rounded-full'
                             style={{ backgroundColor: colors[index] }}
@@ -314,11 +321,11 @@ function ComparisonDetails({
                   <Box className='flex flex-row gap-2'>
                     <ArrowUpWideNarrow className='flex-none' />
                     <Box className='flex min-w-0 flex-1 flex-col gap-1'>
-                      <Typography variant='subtitle1'>Elongation</Typography>
+                      <Typography variant='subtitle1'>{t("compare-elongation")}</Typography>
                       {tests.map((test, index) => (
                         <Box key={test.id} className='flex min-w-0 items-start gap-2'>
                           <Box
-                            aria-label={`${test.name} comparison color`}
+                            aria-label={t("compare-series-color", { name: test.name })}
                             title={test.name}
                             className='mt-1.5 h-2.5 w-2.5 flex-none rounded-full'
                             style={{ backgroundColor: colors[index] }}
@@ -341,11 +348,11 @@ function ComparisonDetails({
                     <Box className='flex flex-row gap-2'>
                       <WeightTilde className='flex-none' />
                       <Box className='flex min-w-0 flex-1 flex-col gap-1'>
-                        <Typography variant='subtitle1'>Max Load</Typography>
+                        <Typography variant='subtitle1'>{t("compare-max-load")}</Typography>
                         {tests.map((test, index) => (
                           <Box key={test.id} className='flex min-w-0 items-start gap-2'>
                             <Box
-                              aria-label={`${test.name} comparison color`}
+                              aria-label={t("compare-series-color", { name: test.name })}
                               title={test.name}
                               className='mt-1.5 h-2.5 w-2.5 flex-none rounded-full'
                               style={{ backgroundColor: colors[index] }}
@@ -366,11 +373,11 @@ function ComparisonDetails({
                     <Box className='flex flex-row gap-2'>
                       <RulerDimensionLine className='flex-none' />
                       <Box className='flex min-w-0 flex-1 flex-col gap-1'>
-                        <Typography variant='subtitle1'>Max Distance</Typography>
+                        <Typography variant='subtitle1'>{t("compare-max-distance")}</Typography>
                         {tests.map((test, index) => (
                           <Box key={test.id} className='flex min-w-0 items-start gap-2'>
                             <Box
-                              aria-label={`${test.name} comparison color`}
+                              aria-label={t("compare-series-color", { name: test.name })}
                               title={test.name}
                               className='mt-1.5 h-2.5 w-2.5 flex-none rounded-full'
                               style={{ backgroundColor: colors[index] }}
@@ -391,11 +398,11 @@ function ComparisonDetails({
                   <Box className='flex flex-row gap-2'>
                     <Timer className='flex-none' />
                     <Box className='flex min-w-0 flex-1 flex-col gap-1'>
-                      <Typography variant='subtitle1'>Test Duration</Typography>
+                      <Typography variant='subtitle1'>{t("compare-test-duration")}</Typography>
                       {tests.map((test, index) => (
                         <Box key={test.id} className='flex min-w-0 items-start gap-2'>
                           <Box
-                            aria-label={`${test.name} comparison color`}
+                            aria-label={t("compare-series-color", { name: test.name })}
                             title={test.name}
                             className='mt-1.5 h-2.5 w-2.5 flex-none rounded-full'
                             style={{ backgroundColor: colors[index] }}
@@ -412,31 +419,41 @@ function ComparisonDetails({
             </Grid>
           </Grid>
         </Grid>
-        <ComparisonCard title='Preset'>
-          <ComparisonField icon={<Bookmark className='flex-none' />} label='Name' tests={tests} colors={colors} valueForTest={(test) => test.presetSnapshot.name} />
-          <ComparisonField icon={<PencilRuler className='flex-none' />} label='Type' tests={tests} colors={colors} valueForTest={(test) => test.presetSnapshot.type} />
+        <ComparisonCard title={t("preset")}>
+          <ComparisonField icon={<Bookmark className='flex-none' />} label={t("listing-name")} tests={tests} colors={colors} valueForTest={(test) => test.presetSnapshot.name} />
           <ComparisonField
-            icon={<Gauge className='flex-none' />}
-            label='Velocity'
+            icon={<PencilRuler className='flex-none' />}
+            label={t("listing-type")}
             tests={tests}
             colors={colors}
-            valueForTest={(test) => (typeof test.presetSnapshot.velocity === "number" ? `${test.presetSnapshot.velocity} mm/min` : "-")}
+            valueForTest={(test) => (test.presetSnapshot.type === "Tensile" ? t("listing-tensile") : t("listing-compression"))}
+          />
+          <ComparisonField
+            icon={<Gauge className='flex-none' />}
+            label={t("listing-velocity")}
+            tests={tests}
+            colors={colors}
+            valueForTest={(test) =>
+              typeof test.presetSnapshot.velocity === "number" ? `${test.presetSnapshot.velocity} ${t("unit-velocity")}` : "-"
+            }
           />
           <ComparisonField
             icon={<Split className='flex-none' />}
-            label='Base'
+            label={t("listing-method")}
             tests={tests}
             colors={colors}
-            valueForTest={(test) => test.presetSnapshot.base ?? "-"}
+            valueForTest={(test) =>
+              test.presetSnapshot.method === "Load" ? t("listing-load") : test.presetSnapshot.method === "Distance" ? t("listing-distance") : "-"
+            }
           />
-          {tests.some((test) => test.presetSnapshot.base === "Load") && (
+          {tests.some((test) => test.presetSnapshot.method === "Load") && (
             <ComparisonField
               icon={<WeightTilde className='flex-none' />}
-              label='Preload'
+              label={t("add-preload")}
               tests={tests}
               colors={colors}
               valueForTest={(test) =>
-                test.presetSnapshot.base === "Load" ? `${(test.presetSnapshot.preload ?? 0).toFixed(1)} N` : "-"
+                test.presetSnapshot.method === "Load" ? `${(test.presetSnapshot.preload ?? 0).toFixed(1)} N` : "-"
               }
             />
           )}
@@ -444,23 +461,23 @@ function ComparisonDetails({
             <ComparisonField
               key={`preset-target-${index}`}
               icon={<Crosshair className='flex-none' />}
-              label={`Target ${index + 1}`}
+              label={t("compare-target", { index: index + 1 })}
               tests={tests}
               colors={colors}
               valueForTest={(test) => {
                 const target = test.presetSnapshot.targets?.[index];
                 if (typeof target !== "number") return "-";
-                const unit = test.presetSnapshot.base === "Load" ? "N" : test.presetSnapshot.base === "Distance" ? "mm" : "";
+                const unit = test.presetSnapshot.method === "Load" ? "N" : test.presetSnapshot.method === "Distance" ? "mm" : "";
                 return unit
-                  ? `${test.presetSnapshot.base === "Load" ? target.toFixed(1) : target.toFixed(4)} ${unit}`
+                  ? `${test.presetSnapshot.method === "Load" ? target.toFixed(1) : target.toFixed(4)} ${unit}`
                   : String(target);
               }}
             />
           ))}
         </ComparisonCard>
-        <ComparisonCard title='Definition'>
-          <ComparisonField icon={<Bookmark className='flex-none' />} label='Name' tests={tests} colors={colors} valueForTest={(test) => test.name} />
-          <ComparisonField icon={<Machine className='flex-none' />} label='Machine IP' tests={tests} colors={colors} valueForTest={(test) => test.machineIP ?? "-"} />
+        <ComparisonCard title={t("view-definition")}>
+          <ComparisonField icon={<Bookmark className='flex-none' />} label={t("listing-name")} tests={tests} colors={colors} valueForTest={(test) => test.name} />
+          <ComparisonField icon={<Machine className='flex-none' />} label={t("listing-machine-ip")} tests={tests} colors={colors} valueForTest={(test) => test.machineIP ?? "-"} />
           {testFields.map((field) => (
             <ComparisonField
               key={field.id}
@@ -468,26 +485,32 @@ function ComparisonDetails({
               label={field.name}
               tests={tests}
               colors={colors}
-              valueForTest={(test) => renderValue(getSnapshotValue(test.customData, field), field, printMode)}
+              valueForTest={(test) => renderValue(getSnapshotValue(test.customData, field), t, field, printMode)}
             />
           ))}
-          <ComparisonField icon={<CalendarPlus className='flex-none' />} label='Created' tests={tests} colors={colors} valueForTest={(test) => formatDate(test.createdAt)} />
-          <ComparisonField icon={<CalendarCog className='flex-none' />} label='Updated' tests={tests} colors={colors} valueForTest={(test) => formatDate(test.updatedAt)} />
+          <ComparisonField icon={<CalendarPlus className='flex-none' />} label={t("listing-created")} tests={tests} colors={colors} valueForTest={(test) => formatDate(test.createdAt, i18n.resolvedLanguage ?? "en")} />
+          <ComparisonField icon={<CalendarCog className='flex-none' />} label={t("listing-updated")} tests={tests} colors={colors} valueForTest={(test) => formatDate(test.updatedAt, i18n.resolvedLanguage ?? "en")} />
         </ComparisonCard>
       </Grid>
       <Grid container size={{ lg: 4, xs: 12 }} spacing={5}>
-        <ComparisonCard title='Specimen'>
-          <ComparisonField icon={<Hexagon className='flex-none' />} label='Name' tests={tests} colors={colors} valueForTest={(test) => test.specimenSnapshot.name} />
+        <ComparisonCard title={t("specimen")}>
+          <ComparisonField icon={<Hexagon className='flex-none' />} label={t("listing-name")} tests={tests} colors={colors} valueForTest={(test) => test.specimenSnapshot.name} />
           <ComparisonField
             icon={<Shapes className='flex-none' />}
-            label='Geometry'
+            label={t("listing-geometry")}
             tests={tests}
             colors={colors}
-            valueForTest={(test) => test.specimenSnapshot.geometry ?? "Not Specified"}
+            valueForTest={(test) =>
+              test.specimenSnapshot.geometry === "Cylindrical"
+                ? t("listing-cylindrical")
+                : test.specimenSnapshot.geometry === "Rectangular"
+                  ? t("listing-rectangular")
+                  : t("listing-geometry-not-specified")
+            }
           />
           <ComparisonField
             icon={<Diameter className='flex-none' />}
-            label='Diameter'
+            label={t("listing-diameter")}
             tests={tests}
             colors={colors}
             valueForTest={(test) =>
@@ -496,7 +519,7 @@ function ComparisonDetails({
           />
           <ComparisonField
             icon={<RulerDimensionLine className='flex-none' />}
-            label='Side 1'
+            label={t("listing-side-1")}
             tests={tests}
             colors={colors}
             valueForTest={(test) =>
@@ -505,7 +528,7 @@ function ComparisonDetails({
           />
           <ComparisonField
             icon={<RulerDimensionLine className='flex-none rotate-90' />}
-            label='Side 2'
+            label={t("listing-side-2")}
             tests={tests}
             colors={colors}
             valueForTest={(test) =>
@@ -514,7 +537,7 @@ function ComparisonDetails({
           />
           <ComparisonField
             icon={<MoveVertical className='flex-none' />}
-            label='Height'
+            label={t("listing-height")}
             tests={tests}
             colors={colors}
             valueForTest={(test) =>
@@ -528,7 +551,7 @@ function ComparisonDetails({
               label={field.name}
               tests={tests}
               colors={colors}
-              valueForTest={(test) => renderValue(getSnapshotValue(test.specimenSnapshot.customData, field), field, printMode)}
+              valueForTest={(test) => renderValue(getSnapshotValue(test.specimenSnapshot.customData, field), t, field, printMode)}
             />
           ))}
         </ComparisonCard>
@@ -538,6 +561,7 @@ function ComparisonDetails({
 }
 
 export default function CompareTestsPage({ printMode = false }: { printMode?: boolean }) {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const theme = useTheme();
@@ -576,7 +600,7 @@ export default function CompareTestsPage({ printMode = false }: { printMode?: bo
       setTests([]);
       setMissingCount(0);
       if (requestedIds.length < 2) {
-        setLoadError("Select at least two tests from the Tests list to compare them.");
+        setLoadError(t("compare-select-at-least-two"));
         setIsLoading(false);
         return;
       }
@@ -592,13 +616,13 @@ export default function CompareTestsPage({ printMode = false }: { printMode?: bo
         setMissingCount(records.length - foundTests.length);
         setTestFields(currentTestFields);
         setSpecimenFields(currentSpecimenFields);
-        if (foundTests.length < 2) setLoadError("At least two selected tests must still exist to compare them.");
+        if (foundTests.length < 2) setLoadError(t("compare-tests-not-found"));
         else if (new Set(foundTests.map((test) => getTestGraphType(test.specimenSnapshot.geometry))).size > 1) {
-          if (printMode) setLoadError("Cannot generate a comparison PDF for tests with different graph types.");
+          if (printMode) setLoadError(t("compare-mixed-graph-types"));
           else navigate("/tests", { replace: true });
         }
       } catch (error) {
-        if (!cancelled) setLoadError(`Failed to load comparison data: ${String(error)}`);
+        if (!cancelled) setLoadError(t("compare-load-error", { error: String(error) }));
       } finally {
         if (!cancelled) setIsLoading(false);
       }
@@ -607,7 +631,7 @@ export default function CompareTestsPage({ printMode = false }: { printMode?: bo
     return () => {
       cancelled = true;
     };
-  }, [getDataFields, getTest, navigate, printMode, requestedIds]);
+  }, [getDataFields, getTest, navigate, printMode, requestedIds, t]);
 
   useEffect(() => {
     if (isLoading || loadError || !chartElementRef.current) return;
@@ -667,7 +691,7 @@ export default function CompareTestsPage({ printMode = false }: { printMode?: bo
           lineStyle: { type: "solid", color: chartColors.divider },
           label: { backgroundColor: chartColors.hoverLabelBackground, color: chartColors.secondaryText },
         },
-        name: graphType === "stress-strain" ? "Strain %" : "Displacement mm",
+        name: `${graphType === "stress-strain" ? t("overview-strain") : t("overview-displacement")} ${graphType === "stress-strain" ? "%" : "mm"}`,
         nameLocation: "middle",
         nameGap: 32,
         nameTextStyle: { color: chartColors.secondaryText },
@@ -682,7 +706,7 @@ export default function CompareTestsPage({ printMode = false }: { printMode?: bo
           lineStyle: { type: "solid", color: chartColors.divider },
           label: { backgroundColor: chartColors.hoverLabelBackground, color: chartColors.secondaryText },
         },
-        name: graphType === "stress-strain" ? "Stress MPa" : "Load N",
+        name: `${graphType === "stress-strain" ? t("overview-stress") : t("overview-load")} ${graphType === "stress-strain" ? "MPa" : "N"}`,
         nameLocation: "middle",
         nameGap: 48,
         nameTextStyle: { color: chartColors.secondaryText },
@@ -751,7 +775,7 @@ export default function CompareTestsPage({ printMode = false }: { printMode?: bo
       chart.off("updateAxisPointer", handleAxisPointer);
       chart.off("globalout", clearMarkers);
     };
-  }, [colors, graphType, isDarkMode, printMode, tests]);
+  }, [colors, graphType, isDarkMode, printMode, t, tests]);
 
   return (
     <>
@@ -759,23 +783,23 @@ export default function CompareTestsPage({ printMode = false }: { printMode?: bo
         <Box className='flex w-full flex-wrap items-start justify-between gap-3'>
           <Box>
             <Typography variant='h1' component='h1' className='mb-0'>
-              Compare Tests
+              {t("compare-title")}
             </Typography>
             <Breadcrumbs>
               <Link color='inherit' to={LINKS.home}>
-                Home
+                {t("menu-home")}
               </Link>
               <Link color='inherit' to='/tests'>
-                Tests
+                {t("tests")}
               </Link>
-              <Typography variant='body2'>Compare</Typography>
+              <Typography variant='body2'>{t("compare")}</Typography>
             </Breadcrumbs>
           </Box>
           {!printMode && !isLoading && !loadError && tests.length >= 2 && (
             <PopupState variant='popover' popupId='comparison-actions-menu'>
               {(popupState) => (
                 <>
-                  <Tooltip title='Actions' placement='bottom'>
+                  <Tooltip title={t("actions")} placement='bottom'>
                     <Button className='icon-only surface-standard' color='grey' variant='surface' {...bindTrigger(popupState)}>
                       <Box className='w-6 h-6 flex items-center justify-center'>
                         <Ellipsis size={16} />
@@ -798,11 +822,12 @@ export default function CompareTestsPage({ printMode = false }: { printMode?: bo
                           .saveTestComparisonPdf({
                             testIds: tests.map((test) => test.id),
                             name: `Test Comparison ${tests.length} Tests`,
+                            dialogLabels: { title: t("pdf-dialog-save-comparison-title"), filterName: "PDF" },
                           })
                           .then((result) => {
                             if (!result.canceled && result.filePath) showPdfSaved(result.filePath);
                           })
-                          .catch((error: unknown) => showError(`Failed to save PDF: ${String(error)}`))
+                          .catch((error: unknown) => showError(t("compare-save-pdf-error", { error: String(error) })))
                           .finally(() => {
                             removePdfCreatingListener();
                             hidePdfCreating?.();
@@ -812,7 +837,7 @@ export default function CompareTestsPage({ printMode = false }: { printMode?: bo
                       <ListItemIcon>
                         <FileDown size={16} />
                       </ListItemIcon>
-                      <ListItemText>Save as PDF</ListItemText>
+                      <ListItemText>{t("compare-save-pdf")}</ListItemText>
                     </MenuItem>
                   </Menu>
                 </>
@@ -832,7 +857,7 @@ export default function CompareTestsPage({ printMode = false }: { printMode?: bo
               severity='error'
               action={
                 <Button color='inherit' size='small' onClick={() => navigate("/tests")}>
-                  Open Tests
+                  {t("compare-open-tests")}
                 </Button>
               }
             >
@@ -842,7 +867,7 @@ export default function CompareTestsPage({ printMode = false }: { printMode?: bo
             <>
               {missingCount > 0 && (
                 <Alert severity='warning'>
-                  {missingCount} selected test{missingCount === 1 ? " was" : "s were"} not found and {missingCount === 1 ? "has" : "have"} been omitted.
+                  {t(missingCount === 1 ? "compare-missing-test" : "compare-missing-tests", { count: missingCount })}
                 </Alert>
               )}
               <ComparisonDetails
@@ -857,12 +882,18 @@ export default function CompareTestsPage({ printMode = false }: { printMode?: bo
                     <Box
                       ref={chartElementRef}
                       role='img'
-                      aria-label={`Overlaid ${graphType === "stress-strain" ? "stress-strain" : "load-displacement"} curves for selected tests`}
+                      aria-label={t("compare-graph-description", {
+                        graph: t(graphType === "stress-strain" ? "overview-stress-strain" : "overview-load-displacement"),
+                      })}
                       className='h-140 w-full min-w-0'
                       data-print-assets-loading={printMode ? "true" : undefined}
                     />
                   ) : (
-                    <Alert severity='info'>No saved {graphType === "stress-strain" ? "stress-strain" : "load-displacement"} data is available for these tests.</Alert>
+                    <Alert severity='info'>
+                      {t("compare-no-saved-data", {
+                        graph: t(graphType === "stress-strain" ? "overview-stress-strain" : "overview-load-displacement"),
+                      })}
+                    </Alert>
                   )
                 }
               />

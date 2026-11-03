@@ -1,5 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, type PropsWithChildren, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { getStressStrainPoint } from "@/lib/db";
 import { useDb } from "@/context/db-context";
 import { isMachineInterlocked, usePlcData } from "@/context/plc-context";
@@ -17,6 +18,7 @@ export function TestRunProvider({ children }: PropsWithChildren) {
   const { appendTestSample, getTest, updateTestRunStatus } = useDb();
   const { connectionStatus, interlockStatus } = usePlcData();
   const { showError, showSuccess } = useAppNotifications();
+  const { t } = useTranslation();
   const activeTestIdRef = useRef<string | null>(null);
   const updateQueueRef = useRef<Promise<void>>(Promise.resolve());
   const failedPersistenceRef = useRef(new Set<string>());
@@ -28,7 +30,7 @@ export function TestRunProvider({ children }: PropsWithChildren) {
       if (failedPersistenceRef.current.has(update.testId)) return;
       if (update.sample) {
         const test = await getTest(update.testId);
-        if (!test) throw new Error("The test record no longer exists");
+        if (!test) throw new Error(t("test-run-record-missing"));
         const point = { load: update.sample.load, displacement: update.sample.displacement };
         const stressStrainPoint = getStressStrainPoint(point, test.specimenSnapshot);
         const status = update.state === "stopping" ? "stopping" : "running";
@@ -39,14 +41,14 @@ export function TestRunProvider({ children }: PropsWithChildren) {
           update.sample.elapsedMs,
           status,
         );
-        if (updatedCount === 0) throw new Error("The test record could not be updated");
+        if (updatedCount === 0) throw new Error(t("test-run-record-update-error"));
         return;
       }
 
       const updatedCount = await updateTestRunStatus(update.testId, update.state, update.error);
-      if (updatedCount === 0) throw new Error("The test record could not be updated");
+      if (updatedCount === 0) throw new Error(t("test-run-record-update-error"));
     },
-    [appendTestSample, getTest, updateTestRunStatus],
+    [appendTestSample, getTest, t, updateTestRunStatus],
   );
 
   useEffect(
@@ -63,12 +65,12 @@ export function TestRunProvider({ children }: PropsWithChildren) {
 
         if (update.state === "completed") {
           acceptedTestRunIdsRef.current.delete(update.testId);
-          showSuccess("Test completed successfully.");
+          showSuccess(t("test-run-completed"));
         } else if (update.state === "stopped") {
           acceptedTestRunIdsRef.current.delete(update.testId);
-          showSuccess("Test stopped.");
+          showSuccess(t("test-run-stopped"));
         } else if (update.state === "failed" && acceptedTestRunIdsRef.current.delete(update.testId)) {
-          showError(`PLC test failed: ${update.error ?? "Unknown error"}`);
+          showError(t("test-run-failed", { error: update.error ?? t("test-run-unknown-error") }));
         }
 
         updateQueueRef.current = updateQueueRef.current.then(async () => {
@@ -76,29 +78,29 @@ export function TestRunProvider({ children }: PropsWithChildren) {
             await persistUpdate(update);
           } catch (error) {
             failedPersistenceRef.current.add(update.testId);
-            const message = `Failed to save PLC test data: ${String(error)}`;
+            const message = t("test-run-save-error", { error: String(error) });
             showError(message);
             try {
               await updateTestRunStatus(update.testId, "failed", message);
             } catch (statusError) {
-              showError(`Failed to record PLC test failure: ${String(statusError)}`);
+              showError(t("test-run-record-failure-error", { error: String(statusError) }));
             }
             if (update.state === "starting" || update.state === "running" || update.state === "stopping") {
               try {
                 await window.plcAPI.stopTestRun(update.testId);
               } catch (stopError) {
-                showError(`Failed to stop the PLC test after a save error: ${String(stopError)}`);
+                showError(t("test-run-stop-after-save-error", { error: String(stopError) }));
               }
             }
           }
         });
       }),
-    [persistUpdate, showError, showSuccess, updateTestRunStatus],
+    [persistUpdate, showError, showSuccess, t, updateTestRunStatus],
   );
 
   const startTestRun = useCallback(
     async (request: PlcTestRunRequest) => {
-      if (activeTestIdRef.current) throw new Error("A test is already running");
+      if (activeTestIdRef.current) throw new Error(t("quick-test-already-running"));
       activeTestIdRef.current = request.testId;
       setActiveTestId(request.testId);
 
@@ -107,11 +109,11 @@ export function TestRunProvider({ children }: PropsWithChildren) {
           isMachineInterlocked(interlockStatus) ||
           (connectionStatus.state === "online" && !interlockStatus)
         ) {
-          throw new Error("Cannot start a test while the machine is halted or emergency halt is active.");
+          throw new Error(t("quick-test-interlock-error"));
         }
 
         const updatedCount = await updateTestRunStatus(request.testId, "starting");
-        if (updatedCount === 0) throw new Error("The test record could not be found");
+        if (updatedCount === 0) throw new Error(t("test-run-record-missing"));
         await window.plcAPI.startTestRun(request);
         acceptedTestRunIdsRef.current.add(request.testId);
       } catch (error) {
@@ -127,7 +129,7 @@ export function TestRunProvider({ children }: PropsWithChildren) {
         throw error;
       }
     },
-    [connectionStatus.state, interlockStatus, updateTestRunStatus],
+    [connectionStatus.state, interlockStatus, t, updateTestRunStatus],
   );
 
   const stopActiveTest = useCallback(async () => {
@@ -136,9 +138,9 @@ export function TestRunProvider({ children }: PropsWithChildren) {
     try {
       await window.plcAPI.stopTestRun(testId);
     } catch (error) {
-      showError(`Failed to stop PLC test: ${String(error)}`);
+      showError(t("test-run-stop-error", { error: String(error) }));
     }
-  }, [showError]);
+  }, [showError, t]);
 
   const value = useMemo(
     () => ({ hasActiveTest: activeTestId !== null, startTestRun, stopActiveTest }),

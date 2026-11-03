@@ -7,8 +7,8 @@ export const DATA_FIELD_CONTAINERS = ["Specimen", "Test"] as const;
 export type DataFieldContainer = (typeof DATA_FIELD_CONTAINERS)[number];
 export const PRESET_TYPES = ["Tensile", "Compression"] as const;
 export type PresetType = (typeof PRESET_TYPES)[number];
-export const PRESET_BASES = ["Load", "Distance"] as const;
-export type PresetBase = (typeof PRESET_BASES)[number];
+export const PRESET_METHODS = ["Load", "Distance"] as const;
+export type PresetMethod = (typeof PRESET_METHODS)[number];
 export const SPECIMEN_GEOMETRIES = ["Not Specified", "Cylindrical", "Rectangular"] as const;
 export type SpecimenGeometry = (typeof SPECIMEN_GEOMETRIES)[number];
 export type DynamicDataValue = string | number | boolean | string[] | UploadedImage[] | null;
@@ -108,7 +108,7 @@ export interface TestPresetSnapshot {
   name: string;
   type: PresetType;
   velocity?: number;
-  base?: PresetBase;
+  method?: PresetMethod;
   preload?: number;
   targets?: number[];
 }
@@ -134,7 +134,7 @@ export interface PresetRecord {
   name: string;
   type: PresetType;
   velocity: number;
-  base: PresetBase;
+  method: PresetMethod;
   preload?: number;
   targets: number[];
   createdAt: number;
@@ -212,6 +212,7 @@ class AkdiMakineDatabase extends Dexie {
           test.machineIP ??= null;
         });
       });
+
   }
 }
 

@@ -1,5 +1,6 @@
 import { lazy, Suspense } from "react";
 import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Box, Typography } from "@mui/material";
 import { useParams } from "react-router";
 import LoadingFullScreen from "@/components/loading/loading-full-screen";
@@ -18,14 +19,15 @@ function isPrintRecordType(value: string | undefined): value is PrintRecordType 
 }
 
 export default function PrintRecordView() {
+  const { t } = useTranslation();
   const { type } = useParams<{ type: string }>();
   const Page = type === "test" ? TestPage : type === "specimen" ? SpecimenPage : type === "preset" ? PresetPage : type === "data-field" ? DataFieldPage : null;
 
   useEffect(() => {
-    if (!isPrintRecordType(type)) void window.electronAPI.notifyPdfReady("Unsupported PDF record type").catch(() => undefined);
-  }, [type]);
+    if (!isPrintRecordType(type)) void window.electronAPI.notifyPdfReady(t("unsupported-pdf-record-type")).catch(() => undefined);
+  }, [t, type]);
 
-  if (!Page) return <Typography>Unsupported PDF record type</Typography>;
+  if (!Page) return <Typography>{t("unsupported-pdf-record-type")}</Typography>;
 
   return (
     <Box className='print-view'>

@@ -1,4 +1,4 @@
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { HashRouter } from "react-router";
 
@@ -15,8 +15,19 @@ import { PlcProvider } from "./context/plc-context";
 import { LucideProvider } from "lucide-react";
 
 const App = () => {
-  const { i18n } = useTranslation();
+  const { i18n, t } = useTranslation();
   const direction = i18n.language === "ar" ? "rtl" : "ltr";
+
+  useEffect(() => {
+    const locale: AppLocale = i18n.language.startsWith("tr") ? "tr" : "en";
+    void window.electronAPI.setUpdaterMessages({
+      locale,
+      title: t("update-ready-title"),
+      messageTemplate: t("update-ready-message", { version: "__VERSION__" }),
+      restartButton: t("update-restart-now"),
+      laterButton: t("update-later"),
+    });
+  }, [i18n.language, t]);
 
   return (
     <HashRouter>

@@ -24,12 +24,15 @@ contextBridge.exposeInMainWorld("electronAPI", {
   saveImage: (input: { name: string; type: string; bytes: Uint8Array }) => ipcRenderer.invoke("images:save", input),
   readImage: (id: string) => ipcRenderer.invoke("images:read", id) as Promise<{ bytes: Uint8Array } | null>,
   deleteImage: (id: string) => ipcRenderer.invoke("images:delete", id) as Promise<void>,
-  saveBackupArchive: (bytes: Uint8Array) => ipcRenderer.invoke("backup:save", bytes) as Promise<{ canceled: true } | { canceled: false; filePath: string }>,
-  openBackupArchive: () => ipcRenderer.invoke("backup:open") as Promise<{ canceled: true } | { canceled: false; bytes: Uint8Array }>,
-  saveRecordPdf: (request: { type: "test" | "specimen" | "preset" | "data-field"; id: string; name: string }) =>
+  saveBackupArchive: (bytes: Uint8Array, labels: NativeDialogLabels) =>
+    ipcRenderer.invoke("backup:save", { bytes, labels }) as Promise<{ canceled: true } | { canceled: false; filePath: string }>,
+  openBackupArchive: (labels: NativeDialogLabels) =>
+    ipcRenderer.invoke("backup:open", labels) as Promise<{ canceled: true } | { canceled: false; bytes: Uint8Array }>,
+  saveRecordPdf: (request: { type: "test" | "specimen" | "preset" | "data-field"; id: string; name: string; dialogLabels: NativeDialogLabels }) =>
     ipcRenderer.invoke("pdf:save-record", request) as Promise<{ canceled: boolean; filePath?: string }>,
-  saveTestComparisonPdf: (request: { testIds: string[]; name: string }) =>
+  saveTestComparisonPdf: (request: { testIds: string[]; name: string; dialogLabels: NativeDialogLabels }) =>
     ipcRenderer.invoke("pdf:save-record", { ...request, type: "test-comparison" }) as Promise<{ canceled: boolean; filePath?: string }>,
+  setUpdaterMessages: (messages: UpdaterDialogMessages) => ipcRenderer.invoke("app:set-updater-messages", messages) as Promise<void>,
   onPdfCreating: (callback: () => void) => {
     const listener = () => callback();
     ipcRenderer.on("pdf:creating", listener);

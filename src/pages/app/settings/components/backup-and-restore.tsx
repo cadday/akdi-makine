@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useState } from "react";
+import { useNavigate } from "react-router";
 import {
   Box,
   Button,
@@ -13,19 +13,14 @@ import {
   DialogTitle,
   Grid,
   Typography,
-} from '@mui/material';
-import { Download, Upload } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
-import { LINKS } from '@/constants';
-import useAppNotifications from '@/hooks/use-app-notifications';
-import {
-  createDatabaseBackup,
-  prepareDatabaseBackup,
-  replaceDatabaseFromBackup,
-  type PreparedDatabaseBackup,
-} from '@/lib/backup';
+} from "@mui/material";
+import { Download, Upload } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { LINKS } from "@/constants";
+import useAppNotifications from "@/hooks/use-app-notifications";
+import { createDatabaseBackup, prepareDatabaseBackup, replaceDatabaseFromBackup, type PreparedDatabaseBackup } from "@/lib/backup";
 
-type BackupOperation = 'export' | 'inspect' | 'restore' | null;
+type BackupOperation = "export" | "inspect" | "restore" | null;
 
 export default function BackupAndRestore() {
   const { t } = useTranslation();
@@ -35,41 +30,47 @@ export default function BackupAndRestore() {
   const [restoreCandidate, setRestoreCandidate] = useState<PreparedDatabaseBackup | null>(null);
 
   const exportBackup = async () => {
-    setOperation('export');
+    setOperation("export");
     try {
       const archive = await createDatabaseBackup();
-      const result = await window.electronAPI.saveBackupArchive(archive);
-      if (result.canceled === false) showSavedFile(t('backup-export-success'), result.filePath);
+      const result = await window.electronAPI.saveBackupArchive(archive, {
+        title: t("backup-dialog-export-title"),
+        filterName: t("backup-dialog-filter-name"),
+      });
+      if (result.canceled === false) showSavedFile(t("backup-export-success"), result.filePath);
     } catch (error) {
-      showError(t('backup-export-error', { error: String(error) }));
+      showError(t("backup-export-error", { error: String(error) }));
     } finally {
       setOperation(null);
     }
   };
 
   const selectBackup = async () => {
-    setOperation('inspect');
+    setOperation("inspect");
     try {
-      const result = await window.electronAPI.openBackupArchive();
+      const result = await window.electronAPI.openBackupArchive({
+        title: t("backup-dialog-restore-title"),
+        filterName: t("backup-dialog-filter-name"),
+      });
       if (result.canceled === true) return;
       setRestoreCandidate(prepareDatabaseBackup(result.bytes));
     } catch (error) {
-      showError(t('backup-import-error', { error: String(error) }));
+      showError(t("backup-import-error", { error: String(error) }));
     } finally {
       setOperation(null);
     }
   };
 
   const restoreBackup = async () => {
-    if (!restoreCandidate || operation === 'restore') return;
-    setOperation('restore');
+    if (!restoreCandidate || operation === "restore") return;
+    setOperation("restore");
     try {
       await replaceDatabaseFromBackup(restoreCandidate);
-      showSuccess(t('backup-import-success'));
+      showSuccess(t("backup-import-success"));
       setRestoreCandidate(null);
       navigate(LINKS.home, { replace: true });
     } catch (error) {
-      showError(t('backup-import-error', { error: String(error) }));
+      showError(t("backup-import-error", { error: String(error) }));
       setOperation(null);
     }
   };
@@ -77,65 +78,55 @@ export default function BackupAndRestore() {
   return (
     <>
       <Grid size={12}>
-        <Typography variant="h6" component="h2" className="mb-3">
-          {t('backup-title')}
+        <Typography variant='h6' component='h2' className='mb-3'>
+          {t("backup-title")}
         </Typography>
         <Card>
-          <CardContent className="flex flex-col gap-6">
-            <Box className="flex flex-col gap-2">
-              <Typography variant="subtitle1">{t('backup-database-title')}</Typography>
-              <Typography>{t('backup-description')}</Typography>
-              <Typography>{t('backup-scope')}</Typography>
+          <CardContent className='flex flex-col gap-6'>
+            <Box className='flex flex-col gap-2'>
+              <Typography variant='subtitle1'>{t("backup-database-title")}</Typography>
+              <Typography>
+                {t("backup-description")} {t("backup-scope")}
+              </Typography>
             </Box>
-            <Box className="flex flex-col gap-2">
-              <Typography variant="subtitle1">{t('settings-backup-export-heading')}</Typography>
-              <Box className="flex flex-wrap gap-2">
+            <Box className='flex flex-col gap-2'>
+              <Typography variant='subtitle1'>{t("settings-backup-export-heading")}</Typography>
+              <Box className='flex flex-wrap gap-2'>
                 <Button
-                  color="grey"
-                  variant="pastel"
-                  startIcon={
-                    operation === 'export' ? <CircularProgress size={16} color="inherit" /> : <Download size={16} />
-                  }
+                  color='grey'
+                  variant='pastel'
+                  startIcon={operation === "export" ? <CircularProgress size={16} color='inherit' /> : <Download size={16} />}
                   disabled={operation !== null}
                   onClick={() => void exportBackup()}
                 >
-                  {t('settings-backup-download')}
+                  {t("settings-backup-download")}
                 </Button>
               </Box>
             </Box>
-            <Box className="flex flex-col gap-2">
-              <Typography variant="subtitle1">{t('backup-import')}</Typography>
-              <Box className="flex flex-wrap gap-2">
+            <Box className='flex flex-col gap-2'>
+              <Typography variant='subtitle1'>{t("backup-import")}</Typography>
+              <Box className='flex flex-wrap gap-2'>
                 <Button
-                  color="grey"
-                  variant="pastel"
-                  startIcon={
-                    operation === 'inspect' ? <CircularProgress size={16} color="inherit" /> : <Upload size={16} />
-                  }
+                  color='grey'
+                  variant='pastel'
+                  startIcon={operation === "inspect" ? <CircularProgress size={16} color='inherit' /> : <Upload size={16} />}
                   disabled={operation !== null}
                   onClick={() => void selectBackup()}
                 >
-                  {t('settings-backup-restore-select')}
+                  {t("settings-backup-restore-select")}
                 </Button>
               </Box>
             </Box>
           </CardContent>
         </Card>
       </Grid>
-      <Dialog
-        open={Boolean(restoreCandidate)}
-        onClose={() => operation !== 'restore' && setRestoreCandidate(null)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>{t('backup-restore-confirm-title')}</DialogTitle>
+      <Dialog open={Boolean(restoreCandidate)} onClose={() => operation !== "restore" && setRestoreCandidate(null)} maxWidth='sm' fullWidth>
+        <DialogTitle>{t("backup-restore-confirm-title")}</DialogTitle>
         <DialogContent>
-          <DialogContentText className="mb-3">
-            {t('backup-restore-confirm-message')}
-          </DialogContentText>
+          <DialogContentText className='mb-3'>{t("backup-restore-confirm-message")}</DialogContentText>
           {restoreCandidate && (
-            <Typography color="textSecondary">
-              {t('backup-record-summary', {
+            <Typography color='textSecondary'>
+              {t("backup-record-summary", {
                 ...restoreCandidate.manifest.counts,
                 images: restoreCandidate.manifest.images.length,
               })}
@@ -143,11 +134,11 @@ export default function BackupAndRestore() {
           )}
         </DialogContent>
         <DialogActions>
-          <Button color="grey" disabled={operation === 'restore'} onClick={() => setRestoreCandidate(null)}>
-            {t('cancel')}
+          <Button color='grey' disabled={operation === "restore"} onClick={() => setRestoreCandidate(null)}>
+            {t("cancel")}
           </Button>
-          <Button color="error" variant="pastel" loading={operation === 'restore'} onClick={() => void restoreBackup()}>
-            {t('backup-restore-confirm')}
+          <Button color='error' variant='pastel' loading={operation === "restore"} onClick={() => void restoreBackup()}>
+            {t("backup-restore-confirm")}
           </Button>
         </DialogActions>
       </Dialog>

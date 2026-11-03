@@ -22,10 +22,11 @@ electron.contextBridge.exposeInMainWorld("electronAPI", {
   saveImage: (input) => electron.ipcRenderer.invoke("images:save", input),
   readImage: (id) => electron.ipcRenderer.invoke("images:read", id),
   deleteImage: (id) => electron.ipcRenderer.invoke("images:delete", id),
-  saveBackupArchive: (bytes) => electron.ipcRenderer.invoke("backup:save", bytes),
-  openBackupArchive: () => electron.ipcRenderer.invoke("backup:open"),
+  saveBackupArchive: (bytes, labels) => electron.ipcRenderer.invoke("backup:save", { bytes, labels }),
+  openBackupArchive: (labels) => electron.ipcRenderer.invoke("backup:open", labels),
   saveRecordPdf: (request) => electron.ipcRenderer.invoke("pdf:save-record", request),
   saveTestComparisonPdf: (request) => electron.ipcRenderer.invoke("pdf:save-record", { ...request, type: "test-comparison" }),
+  setUpdaterMessages: (messages) => electron.ipcRenderer.invoke("app:set-updater-messages", messages),
   onPdfCreating: (callback) => {
     const listener = () => callback();
     electron.ipcRenderer.on("pdf:creating", listener);

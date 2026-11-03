@@ -249,8 +249,8 @@ export default function Page() {
             name: preset.name,
             type: preset.type,
             velocity: preset.velocity,
-            base: preset.base,
-            preload: preset.base === "Load" ? (preset.preload ?? 0) : undefined,
+            method: preset.method,
+            preload: preset.method === "Load" ? (preset.preload ?? 0) : undefined,
             targets: [...(preset.targets ?? [])],
           },
           customData,
@@ -260,9 +260,9 @@ export default function Page() {
             testId,
             preset: {
               type: preset.type,
-              base: preset.base,
+              method: preset.method,
               velocity: preset.velocity,
-              preload: preset.base === "Load" ? (preset.preload ?? 0) : undefined,
+              preload: preset.method === "Load" ? (preset.preload ?? 0) : undefined,
               targets: [...(preset.targets ?? [])],
             },
           });
@@ -439,6 +439,22 @@ export default function Page() {
                         filterOptions={createFilterOptions<PresetRecord>({ stringify: (preset) => `${preset.name} ${preset.type}` })}
                         getOptionLabel={(preset) => preset.name}
                         isOptionEqualToValue={(option, value) => option.id === value.id}
+                        renderOption={(props, preset) => (
+                          <li {...props}>
+                            <Box className='flex w-full items-center justify-between gap-3'>
+                              <Typography>{preset.name}</Typography>
+                              <Button
+                                component='span'
+                                className='pointer-events-none self-center py-1 rounded-2xs'
+                                size='tiny'
+                                color={preset.type === "Tensile" ? "primary" : "accent-5"}
+                                variant='outlined'
+                              >
+                                {preset.type === "Tensile" ? t("listing-tensile") : t("listing-compression")}
+                              </Button>
+                            </Box>
+                          </li>
+                        )}
                         popupIcon={<ChevronDown />}
                         clearIcon={<X />}
                         loading={isLoading}

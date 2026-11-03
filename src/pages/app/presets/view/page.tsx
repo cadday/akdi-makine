@@ -221,17 +221,17 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                                 <Gauge className='flex-none' />
                                 <Box className='flex flex-col gap-1'>
                                   <Typography variant='subtitle1'>{t("view-velocity")}</Typography>
-                                  <Typography>{typeof preset.velocity === "number" ? `${preset.velocity} mm/min` : "-"}</Typography>
+                                  <Typography>{typeof preset.velocity === "number" ? `${preset.velocity} ${t("unit-velocity")}` : "-"}</Typography>
                                 </Box>
                               </Box>
                               <Box className='flex flex-row gap-2'>
                                 <Split className='flex-none' />
                                 <Box className='flex flex-col gap-1'>
-                                  <Typography variant='subtitle1'>{t("listing-base")}</Typography>
-                                  <Typography>{preset.base === "Load" ? t("listing-load") : preset.base === "Distance" ? t("listing-distance") : "-"}</Typography>
+                                  <Typography variant='subtitle1'>{t("listing-method")}</Typography>
+                                  <Typography>{preset.method === "Load" ? t("listing-load") : preset.method === "Distance" ? t("listing-distance") : "-"}</Typography>
                                 </Box>
                               </Box>
-                              {preset.base === "Load" && (
+                              {preset.method === "Load" && (
                                 <Box className='flex flex-row gap-2'>
                                   <WeightTilde className='flex-none' />
                                   <Box className='flex flex-col gap-1'>
@@ -247,7 +247,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                                     <Typography variant='subtitle1'>{t("view-target", { index: index + 1 })}</Typography>
                                     <Typography>
                                       {typeof target === "number"
-                                        ? `${preset.base === "Load" ? target.toFixed(1) : preset.base === "Distance" ? target.toFixed(4) : target} ${preset.base === "Load" ? "N" : preset.base === "Distance" ? "mm" : ""}`.trim()
+                                        ? `${preset.method === "Load" ? target.toFixed(1) : preset.method === "Distance" ? target.toFixed(4) : target} ${preset.method === "Load" ? "N" : preset.method === "Distance" ? "mm" : ""}`.trim()
                                         : "-"}
                                     </Typography>
                                   </Box>

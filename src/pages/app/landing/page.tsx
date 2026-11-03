@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useFormik } from "formik";
 import * as yup from "yup";
+import { Trans, useTranslation } from "react-i18next";
 import { Machine } from "@/icons/custom-lucide-icons/machine";
 import { Alert, AlertTitle, Box, Button, Divider, FormControl, FormLabel, Input, Paper, Tooltip, Typography } from "@mui/material";
 import { Link, Navigate, useNavigate } from "react-router";
@@ -16,20 +17,9 @@ import useAppNotifications from "@/hooks/use-app-notifications";
 
 type FlowScreen = "initial" | "success" | "error";
 
-const validationSchema = yup.object({
-  ipAddress: yup
-    .string()
-    .trim()
-    .required("IP address is required")
-    .test("ipv4", "Enter a valid IPv4 address", (value) => {
-      if (!value) return false;
-      const octets = value.split(".");
-      return octets.length === 4 && octets.every((octet) => /^\d{1,3}$/.test(octet) && Number(octet) >= 0 && Number(octet) <= 255);
-    }),
-});
-
 export default function Page() {
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
   const { addMachine, deleteMachine, getConnectedMachine, getMachineByIp, setConnectedMachine } = useDb();
   const { showError } = useAppNotifications();
   const [screen, setScreen] = useState<FlowScreen>("initial");
@@ -40,12 +30,23 @@ export default function Page() {
   const candidateTokenRef = useRef<string | null>(null);
 
   const [startupChoice, setStartupChoice] = useLocalStorage(LOCAL_STORAGE_KEYS.startupChoice, null);
+  const validationSchema = yup.object({
+    ipAddress: yup
+      .string()
+      .trim()
+      .required(t("machine-ip-required"))
+      .test("ipv4", t("machine-ip-invalid"), (value) => {
+        if (!value) return false;
+        const octets = value.split(".");
+        return octets.length === 4 && octets.every((octet) => /^\d{1,3}$/.test(octet) && Number(octet) >= 0 && Number(octet) <= 255);
+      }),
+  });
 
   const handleContinueNoConnection = () => {
     const token = candidateTokenRef.current;
     candidateTokenRef.current = null;
     if (token) {
-      void window.plcAPI.cancelConnection(token).catch((error: unknown) => showError(`Failed to cancel prepared PLC connection: ${String(error)}`));
+      void window.plcAPI.cancelConnection(token).catch((error: unknown) => showError(t("machine-cancel-prepared-error", { error: String(error) })));
     }
     setStartupChoice("continue-without-machine");
     navigate(LINKS.home, { replace: true });
@@ -59,7 +60,7 @@ export default function Page() {
     onSubmit: async ({ ipAddress }) => {
       try {
         const existingMachine = await getMachineByIp(ipAddress);
-        if (existingMachine) throw new Error("A machine with this IP address already exists.");
+        if (existingMachine) throw new Error(t("machine-duplicate-ip"));
 
         const prepared = await window.plcAPI.prepareConnection(ipAddress);
         candidateTokenRef.current = prepared.token;
@@ -79,11 +80,16 @@ export default function Page() {
     formik.handleSubmit(event);
   };
 
+  const { validateForm } = formik;
+  useEffect(() => {
+    void validateForm();
+  }, [i18n.language, validateForm]);
+
   const handleBack = () => {
     const token = candidateTokenRef.current;
     candidateTokenRef.current = null;
     if (token) {
-      void window.plcAPI.cancelConnection(token).catch((error: unknown) => showError(`Failed to cancel prepared PLC connection: ${String(error)}`));
+      void window.plcAPI.cancelConnection(token).catch((error: unknown) => showError(t("machine-cancel-prepared-error", { error: String(error) })));
     }
     setScreen("initial");
   };
@@ -91,7 +97,7 @@ export default function Page() {
   const handleComplete = async () => {
     const token = candidateTokenRef.current;
     if (!token) {
-      setConnectionError("The prepared connection expired. Please connect again.");
+      setConnectionError(t("machine-connection-expired"));
       setScreen("error");
       return;
     }
@@ -111,21 +117,22 @@ export default function Page() {
         try {
           await deleteMachine(addedMachineId);
         } catch (rollbackError) {
-          rollbackErrors.push(`Could not remove the newly added machine: ${String(rollbackError)}`);
+          rollbackErrors.push(t("machine-remove-added-error", { error: String(rollbackError) }));
         }
         try {
           await setConnectedMachine(previousMachineId);
         } catch (rollbackError) {
-          rollbackErrors.push(`Could not restore the previous machine selection: ${String(rollbackError)}`);
+          rollbackErrors.push(t("machine-restore-previous-error", { error: String(rollbackError) }));
         }
       }
       try {
         await window.plcAPI.cancelConnection(token);
         candidateTokenRef.current = null;
       } catch (rollbackError) {
-        rollbackErrors.push(`Could not cancel the prepared connection: ${String(rollbackError)}`);
+        rollbackErrors.push(t("machine-cancel-prepared-error", { error: String(rollbackError) }));
       }
-      const message = [`Failed to save machine: ${String(error)}`, ...rollbackErrors].join(" ");
+      const saveError = t("machine-save-error", { ipAddress: submittedIpAddress, error: String(error) });
+      const message = rollbackErrors.length ? t("error-with-rollback", { error: saveError, rollbackErrors: rollbackErrors.join(" ") }) : saveError;
       setConnectionError(message);
       setScreen("error");
       showError(message);
@@ -137,7 +144,7 @@ export default function Page() {
     try {
       setStartupChoice("continue-with-machine");
     } catch (error) {
-      showError(`Machine saved and connected, but the startup preference could not be saved: ${String(error)}`);
+      showError(t("machine-startup-preference-error", { error: String(error) }));
     }
     navigate(LINKS.home, { replace: true });
   };
@@ -158,10 +165,10 @@ export default function Page() {
       <Box className={cn("flex flex-col gap-10", formik.isSubmitting && "opacity-60")}>
         <Box className='flex flex-col'>
           <Typography variant='h3' component='h1' className='mb-2'>
-            Welcome
+            {t("machine-welcome")}
           </Typography>
           <Typography variant='body1' className='text-text-primary'>
-            Add a machine to get started. Make sure the machine and computer are on the same subnet.
+            {t("machine-welcome-description")}
           </Typography>
         </Box>
 
@@ -171,7 +178,7 @@ export default function Page() {
               <Machine className={cn(submitted && formik.errors.ipAddress && "text-error!", "flex-none")} />
               <FormControl className='outlined' variant='standard' size='small' fullWidth required>
                 <FormLabel component='label' className={cn(submitted && formik.errors.ipAddress && "text-error!")}>
-                  IP Address
+                  {t("machine-ip-address")}
                 </FormLabel>
                 <Input name='ipAddress' value={formik.values.ipAddress} onChange={formik.handleChange} />
               </FormControl>
@@ -180,10 +187,10 @@ export default function Page() {
             {submitted && !formik.isValid && (
               <Alert severity='error' icon={<XSquare />} className='neutral rounded-lg! bg-transparent! mb-2 mt-2 p-5 ms-6.5'>
                 <AlertTitle variant='subtitle1' className='pt-0.5'>
-                  The following inputs have errors!
+                  {t("machine-validation-error-summary")}
                 </AlertTitle>
                 <Box className='flex flex-row gap-0.5'>
-                  <Typography className='text-error'>IP Address:</Typography>
+                  <Typography className='text-error'>{t("machine-ip-address")}:</Typography>
                   <Typography className='text-text-primary'>{formik.errors.ipAddress}</Typography>
                 </Box>
               </Alert>
@@ -192,14 +199,14 @@ export default function Page() {
             <Box className='flex flex-row gap-2'>
               <ChevronRight className='opacity-0' />
               <Button type='submit' variant='contained' className='w-full mb-1 mt-4' endIcon={<ChevronRight size={14} />} loading={formik.isSubmitting} loadingPosition='center'>
-                Connect
+                {t("connect")}
               </Button>
             </Box>
 
             <Box className='flex flex-row gap-2'>
               <ChevronRight className='opacity-0' />
               <Button variant='text' color='text-secondary' className='w-full mb-4' onClick={handleContinueNoConnection}>
-                Continue without Connection
+                {t("machine-continue-without-connection")}
               </Button>
             </Box>
           </Box>
@@ -213,12 +220,12 @@ export default function Page() {
       <Box className={cn("flex flex-col gap-10", formik.isSubmitting && "opacity-60")}>
         <Box className='flex flex-col'>
           <Typography variant='h3' component='h1' className='mb-2'>
-            Connection Ready
+            {t("connection-ready")}
           </Typography>
           <Box className='flex flex-row gap-2'>
             <CheckCircle className='flex-none text-success' />
             <Typography variant='body1' className='text-text-primary'>
-              A TCP connection to the machine succeeded. Complete to save and select this IP address.
+              {t("machine-connection-ready-description")}
             </Typography>
           </Box>
         </Box>
@@ -228,21 +235,21 @@ export default function Page() {
             <Box className='flex flex-row gap-2'>
               <Machine className='flex-none' />
               <FormControl className='outlined' variant='standard' size='small' fullWidth required>
-                <FormLabel component='label'>IP Address</FormLabel>
+                <FormLabel component='label'>{t("machine-ip-address")}</FormLabel>
                 <Input readOnly value={formik.values.ipAddress} disabled />
               </FormControl>
             </Box>
             <Box className='flex flex-row gap-2'>
               <Box className='w-5 flex-none'></Box>
               <Button type='button' variant='contained' className='w-full mb-1 mt-4' endIcon={<Check size={14} />} loading={isSavingMachine} onClick={handleComplete}>
-                Complete
+                {t("complete")}
               </Button>
             </Box>
 
             <Box className='flex flex-row gap-2'>
               <Box className='w-5 flex-none'></Box>
               <Button variant='text' color='text-secondary' className='w-full mb-4' onClick={handleContinueNoConnection}>
-                Continue without Connection
+                {t("machine-continue-without-connection")}
               </Button>
             </Box>
           </Box>
@@ -256,18 +263,21 @@ export default function Page() {
       <Box className={cn("flex flex-col gap-10", formik.isSubmitting && "opacity-60")}>
         <Box className='flex flex-col'>
           <Typography variant='h3' component='h1' className='mb-2'>
-            Machine not Found!
+            {t("machine-not-found")}
           </Typography>
           <Box className='flex flex-row gap-2'>
             <XCircle className='flex-none text-error' />
             <Box>
               <Typography variant='body1' className='text-text-primary'>
-                Could not connect to {submittedIpAddress}: {connectionError || "the machine did not accept a TCP connection on port 502."} Please check:
+                {t("machine-flow-connect-error", {
+                  ipAddress: submittedIpAddress,
+                  error: connectionError || t("machine-flow-connect-default-error"),
+                })}
               </Typography>
               <ul className='list-disc [&>li]:ms-4'>
-                <li>The ethernet cable is connected</li>
-                <li>The IP Address is correct</li>
-                <li>The machine and computer are on the same subnet</li>
+                <li>{t("machine-check-ethernet")}</li>
+                <li>{t("machine-check-ip")}</li>
+                <li>{t("machine-check-subnet")}</li>
               </ul>
             </Box>
           </Box>
@@ -279,7 +289,7 @@ export default function Page() {
               <Machine className={cn(submitted && formik.errors.ipAddress && "text-error!", "flex-none")} />
               <FormControl className='outlined' variant='standard' size='small' fullWidth required>
                 <FormLabel component='label' className={submitted && formik.errors.ipAddress ? "text-error!" : undefined}>
-                  IP Address
+                  {t("machine-ip-address")}
                 </FormLabel>
                 <Input name='ipAddress' value={formik.values.ipAddress} onChange={formik.handleChange} />
               </FormControl>
@@ -288,10 +298,10 @@ export default function Page() {
             {submitted && !formik.isValid && (
               <Alert severity='error' icon={<XSquare />} className='neutral rounded-lg! bg-transparent! mb-2 mt-2 p-5 ms-6.5'>
                 <AlertTitle variant='subtitle1' className='pt-0.5'>
-                  The following inputs have errors!
+                  {t("machine-validation-error-summary")}
                 </AlertTitle>
                 <Box className='flex flex-row gap-0.5'>
-                  <Typography className='text-error'>IP Address:</Typography>
+                  <Typography className='text-error'>{t("machine-ip-address")}:</Typography>
                   <Typography className='text-text-primary'>{formik.errors.ipAddress}</Typography>
                 </Box>
               </Alert>
@@ -300,14 +310,14 @@ export default function Page() {
             <Box className='flex flex-row gap-2'>
               <Box className='w-5 flex-none'></Box>
               <Button type='submit' variant='contained' className='w-full mb-1 mt-4' endIcon={<ChevronRight size={14} />} loading={formik.isSubmitting} loadingPosition='center'>
-                Connect
+                {t("connect")}
               </Button>
             </Box>
 
             <Box className='flex flex-row gap-2'>
               <Box className='w-5 flex-none'></Box>
               <Button variant='text' color='text-secondary' className='w-full mb-4' onClick={handleContinueNoConnection}>
-                Continue without Connection
+                {t("machine-continue-without-connection")}
               </Button>
             </Box>
           </Box>
@@ -323,7 +333,7 @@ export default function Page() {
         <Box className='bg-background flex min-h-[calc(100vh-3.5rem)] w-full items-center justify-center bg-cover bg-fixed bg-center p-4'>
           <Paper elevation={3} className='bg-background-paper shadow-darker-xs w-lg max-w-full rounded-4xl py-10 relative'>
             {screen !== "initial" && (
-              <Tooltip title='Back'>
+              <Tooltip title={t("back")}>
                 <Button
                   variant='text'
                   color='grey'
@@ -351,11 +361,12 @@ export default function Page() {
                   <Divider className='text-text-secondary my-0 text-sm'></Divider>
                   <Box className='flex flex-col'>
                     <Typography variant='body2' className='text-center text-text-secondary'>
-                      By using this application, you agree to the{" "}
-                      <Link to='/terms-and-conditions' className='link-primary link-underline-hover'>
-                        Terms and Conditions
-                      </Link>
-                      .
+                      <Trans
+                        i18nKey='machine-terms-notice'
+                        components={{
+                          terms: <Link to='/terms-and-conditions' className='link-primary link-underline-hover' />,
+                        }}
+                      />
                     </Typography>
                   </Box>
                 </Box>

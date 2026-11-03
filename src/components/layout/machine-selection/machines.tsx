@@ -149,12 +149,15 @@ export default function Machines() {
     if (lastConnectionErrorRef.current === errorKey) return;
 
     lastConnectionErrorRef.current = errorKey;
+    const error = connectionStatus.errorCode
+      ? i18n.t(`plc-error-${connectionStatus.errorCode}`, { error: connectionStatus.error })
+      : connectionStatus.error;
     showError(
       connectionStatus.ipAddress
-        ? i18n.t('machine-connection-failed', { ipAddress: connectionStatus.ipAddress, error: connectionStatus.error })
-        : i18n.t('machine-connection-failed-generic', { error: connectionStatus.error }),
+        ? i18n.t('machine-connection-failed', { ipAddress: connectionStatus.ipAddress, error })
+        : i18n.t('machine-connection-failed-generic', { error }),
     );
-  }, [connectionStatus.error, connectionStatus.ipAddress, connectionStatus.state, i18n, showError]);
+  }, [connectionStatus.error, connectionStatus.errorCode, connectionStatus.ipAddress, connectionStatus.state, i18n, showError]);
 
   useEffect(
     () => () => {

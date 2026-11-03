@@ -29,6 +29,7 @@ export interface PlcConnectionStatus {
   plcWorking?: boolean | null;
   clearSelection?: boolean;
   error?: string;
+  errorCode?: PlcConnectionErrorCode;
 }
 
 interface PreparedConnection {
@@ -372,8 +373,8 @@ function validateTestRunRequest(value: unknown): PlcTestRunRequest {
   if (preset.type !== "Tensile" && preset.type !== "Compression") {
     throw new Error("Invalid PLC test type");
   }
-  if (preset.base !== "Load" && preset.base !== "Distance") {
-    throw new Error("Invalid PLC test base");
+  if (preset.method !== "Load" && preset.method !== "Distance") {
+    throw new Error("Invalid PLC test method");
   }
   if (typeof preset.velocity !== "number" || !Number.isFinite(preset.velocity)) {
     throw new Error("Invalid PLC test velocity");
@@ -386,7 +387,7 @@ function validateTestRunRequest(value: unknown): PlcTestRunRequest {
     return target;
   });
   let preload: number | undefined;
-  if (preset.base === "Load") {
+  if (preset.method === "Load") {
     if (preset.preload !== undefined && (typeof preset.preload !== "number" || !Number.isFinite(preset.preload))) {
       throw new Error("Invalid PLC test preload");
     }
@@ -400,7 +401,7 @@ function validateTestRunRequest(value: unknown): PlcTestRunRequest {
     testId: request.testId,
     preset: {
       type: preset.type,
-      base: preset.base,
+      method: preset.method,
       velocity: preset.velocity,
       ...(preload !== undefined ? { preload } : {}),
       targets,

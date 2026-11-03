@@ -1,4 +1,5 @@
 import * as React from "react";
+import { useTranslation } from "react-i18next";
 
 import { FilledInput, FormLabel, Input } from "@mui/material";
 import FormControl from "@mui/material/FormControl";
@@ -33,6 +34,7 @@ export default function NumberField({
   formControlClassName?: string;
   readonly?: boolean;
 }) {
+  const { t } = useTranslation();
   let id = React.useId();
   if (idProp) {
     id = idProp;
@@ -82,14 +84,14 @@ export default function NumberField({
                   >
                     <BaseNumberField.Increment
                       disabled={readOnly}
-                      render={<IconButton size={"tiny"} aria-label="Increase" className="py-0!" />}
+                      render={<IconButton size={"tiny"} aria-label={t("number-increase")} className="py-0!" />}
                     >
                       <ChevronUp size={16} />
                     </BaseNumberField.Increment>
 
                     <BaseNumberField.Decrement
                       disabled={readOnly}
-                      render={<IconButton size={"tiny"} aria-label="Decrease" className="py-0!" />}
+                      render={<IconButton size={"tiny"} aria-label={t("number-decrease")} className="py-0!" />}
                     >
                       <ChevronDown size={16} />
                     </BaseNumberField.Decrement>
@@ -125,13 +127,13 @@ export default function NumberField({
                   >
                     <BaseNumberField.Increment
                       disabled={readOnly}
-                      render={<IconButton size={"tiny"} aria-label="Increase" edge="end" className="mt-0! py-0.5!" />}
+                      render={<IconButton size={"tiny"} aria-label={t("number-increase")} edge="end" className="mt-0! py-0.5!" />}
                     >
                       <ChevronUp size={16} />
                     </BaseNumberField.Increment>
                     <BaseNumberField.Decrement
                       disabled={readOnly}
-                      render={<IconButton size={"tiny"} aria-label="Increase" edge="end" className="mt-0! py-0.5!" />}
+                      render={<IconButton size={"tiny"} aria-label={t("number-decrease")} edge="end" className="mt-0! py-0.5!" />}
                     >
                       <ChevronDown size={16} />
                     </BaseNumberField.Decrement>
@@ -177,14 +179,14 @@ export default function NumberField({
                   >
                     <BaseNumberField.Increment
                       disabled={readOnly}
-                      render={<IconButton size={"tiny"} aria-label="Increase" className="py-0!" />}
+                      render={<IconButton size={"tiny"} aria-label={t("number-increase")} className="py-0!" />}
                     >
                       <ChevronUp size={16} />
                     </BaseNumberField.Increment>
 
                     <BaseNumberField.Decrement
                       disabled={readOnly}
-                      render={<IconButton size={"tiny"} aria-label="Decrease" className="py-0!" />}
+                      render={<IconButton size={"tiny"} aria-label={t("number-decrease")} className="py-0!" />}
                     >
                       <ChevronDown size={16} />
                     </BaseNumberField.Decrement>

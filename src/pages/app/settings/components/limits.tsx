@@ -20,7 +20,7 @@ import { MoveVertical, Save, WeightTilde, XSquare } from 'lucide-react';
 import { usePlcData } from '@/context/plc-context';
 import useAppNotifications from '@/hooks/use-app-notifications';
 import { cn } from '@/lib/utils';
-import { DecimalMaskInput } from './masked-decimal-input';
+import { DecimalMaskInput } from '@/components/base-ui/masked-decimal-input';
 import { PLC_INT32_MAX, requiredScaledNumber } from './plc-numeric-validation';
 
 interface LimitValues {

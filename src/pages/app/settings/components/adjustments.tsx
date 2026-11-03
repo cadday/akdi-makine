@@ -20,7 +20,7 @@ import { Gauge, MoveVertical, Save, WeightTilde, XSquare } from 'lucide-react';
 import { usePlcData } from '@/context/plc-context';
 import useAppNotifications from '@/hooks/use-app-notifications';
 import { cn } from '@/lib/utils';
-import { DecimalMaskInput } from './masked-decimal-input';
+import { DecimalMaskInput } from '@/components/base-ui/masked-decimal-input';
 import { PLC_INT32_MAX, PLC_INT32_MIN, requiredScaledNumber } from './plc-numeric-validation';
 
 interface AdjustmentValues {
@@ -241,7 +241,7 @@ export default function Adjustments() {
                       max: PLC_INT32_MAX / 10,
                       onAccept: handleMaskedInputAccept('manualVelocity'),
                     }}
-                    endAdornment={<InputAdornment position="end">mm/min</InputAdornment>}
+                    endAdornment={<InputAdornment position="end">{t('unit-velocity')}</InputAdornment>}
                     value={isPlcOnline ? formik.values.manualVelocity : ''}
                   />
                 </FormControl>

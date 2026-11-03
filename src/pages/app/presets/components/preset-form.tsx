@@ -18,19 +18,20 @@ import {
   Typography,
 } from "@mui/material";
 import { Bookmark, ChevronDown, Crosshair, Gauge, PencilRuler, Plus, Save, Split, WeightTilde, XSquare } from "lucide-react";
-import type { PresetBase, PresetRecord, PresetType } from "@/context/db-context";
-import { PRESET_BASES, PRESET_TYPES } from "@/lib/db";
+import type { PresetMethod, PresetRecord, PresetType } from "@/context/db-context";
+import { PRESET_METHODS, PRESET_TYPES } from "@/lib/db";
 import useAppNotifications from "@/hooks/use-app-notifications";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
+import { DecimalMaskInput } from "@/components/base-ui/masked-decimal-input";
 
 type PresetSaveInput = Omit<PresetRecord, "id" | "createdAt" | "updatedAt">;
-type PresetFormValues = Omit<PresetSaveInput, "type" | "base" | "velocity" | "preload" | "targets"> & {
+type PresetFormValues = Omit<PresetSaveInput, "type" | "method" | "velocity" | "preload" | "targets"> & {
   type: PresetType | "";
   velocity: number | "";
-  base: PresetBase | "";
+  method: PresetMethod | "";
   preload: string;
-  targets: Array<number | "">;
+  targets: string[];
 };
 
 interface PresetFormProps {
@@ -45,9 +46,9 @@ function getInitialValues(preset?: PresetRecord): PresetFormValues {
     name: preset?.name ?? "",
     type: preset?.type ?? "",
     velocity: preset?.velocity ?? "",
-    base: preset?.base ?? "",
+    method: preset?.method ?? "",
     preload: Math.abs(preset?.preload ?? 0).toFixed(1),
-    targets: preset?.targets?.length ? preset.targets.map(Math.abs) : [""],
+    targets: preset?.targets?.length ? preset.targets.map((target) => Math.abs(target).toFixed(preset.method === "Load" ? 1 : 4)) : [""],
   };
 }
 
@@ -65,7 +66,7 @@ function buildValidationSchema(t: ReturnType<typeof useTranslation>["t"]) {
         return Math.abs(scaled - Math.round(scaled)) < 1e-8;
       })
       .required(t("add-validation-required", { label: t("listing-velocity") })),
-    base: yup.string().oneOf(PRESET_BASES).required(t("add-form-base-required")),
+    method: yup.string().oneOf(PRESET_METHODS).required(t("add-form-method-required")),
     preload: yup
       .number()
       .transform((value, originalValue) => (originalValue === "" ? undefined : value))
@@ -103,7 +104,7 @@ export default function PresetForm({ onSave, preset, initialPreset, saveLabel }:
     validateOnBlur: false,
     validateOnMount: false,
     onSubmit: async (values) => {
-      if (!values.type || !values.base || values.velocity === "" || values.targets.some((target) => target === "")) return;
+      if (!values.type || !values.method || values.velocity === "" || values.targets.some((target) => target === "")) return;
 
       try {
         const targetSign = values.type === "Compression" ? -1 : 1;
@@ -111,8 +112,8 @@ export default function PresetForm({ onSave, preset, initialPreset, saveLabel }:
           name: values.name.trim(),
           type: values.type,
           velocity: Number(values.velocity),
-          base: values.base,
-          preload: values.base === "Load" ? Number(values.preload || 0) * targetSign : undefined,
+          method: values.method,
+          preload: values.method === "Load" ? Number(values.preload || 0) * targetSign : undefined,
           targets: values.targets.map((target) => Number(target) * targetSign),
         });
       } catch (error) {
@@ -191,7 +192,7 @@ export default function PresetForm({ onSave, preset, initialPreset, saveLabel }:
                         if (event.clipboardData.getData("text").trim().startsWith("-")) event.preventDefault();
                       },
                     }}
-                    endAdornment={<InputAdornment position='end'>mm/min</InputAdornment>}
+                    endAdornment={<InputAdornment position='end'>{t("unit-velocity")}</InputAdornment>}
                     value={formik.values.velocity}
                     onChange={(event) => {
                       const value = event.target.value;
@@ -207,22 +208,22 @@ export default function PresetForm({ onSave, preset, initialPreset, saveLabel }:
 
         <Grid size={12}>
           <Typography variant='h6' component='h6' className='mb-3'>
-            {t("add-test-base-parameters")}
+            {t("add-test-method-parameters")}
           </Typography>
           <Card>
             <CardContent className='-mb-4'>
               <Box className='flex flex-row gap-2'>
-                <Split className={cn("flex-none", fieldError("base") && "text-error!")} />
+                <Split className={cn("flex-none", fieldError("method") && "text-error!")} />
                 <FormControl fullWidth size='small' variant='standard' className='outlined' required>
-                  <FormLabel component='label' className={fieldError("base") ? "text-error!" : undefined}>
-                    {t("add-base")}
+                  <FormLabel component='label' className={fieldError("method") ? "text-error!" : undefined}>
+                    {t("add-method")}
                   </FormLabel>
-                  <Select<PresetBase | "">
-                    value={formik.values.base}
+                  <Select<PresetMethod | "">
+                    value={formik.values.method}
                     onChange={(event) => {
-                      const nextBase = event.target.value as PresetBase | "";
-                      void formik.setFieldValue("base", nextBase);
-                      if (nextBase !== formik.values.base) {
+                      const nextMethod = event.target.value as PresetMethod | "";
+                      void formik.setFieldValue("method", nextMethod);
+                      if (nextMethod !== formik.values.method) {
                         void formik.setFieldValue("targets", [""]);
                         void formik.setFieldValue("preload", "0.0");
                       }
@@ -230,15 +231,15 @@ export default function PresetForm({ onSave, preset, initialPreset, saveLabel }:
                     IconComponent={ChevronDown}
                     MenuProps={{ className: "outlined" }}
                   >
-                    {PRESET_BASES.map((base) => (
-                      <MenuItem key={base} value={base}>
-                        {base === "Load" ? t("listing-load") : t("listing-distance")}
+                    {PRESET_METHODS.map((method) => (
+                      <MenuItem key={method} value={method}>
+                        {method === "Load" ? t("listing-load") : t("listing-distance")}
                       </MenuItem>
                     ))}
                   </Select>
                 </FormControl>
               </Box>
-              {formik.values.base === "Load" && (
+              {formik.values.method === "Load" && (
                 <Box className='flex flex-row gap-2'>
                   <WeightTilde className={cn("flex-none", fieldError("preload") && "text-error!")} />
                   <FormControl className='outlined' variant='standard' size='small' fullWidth>
@@ -246,17 +247,14 @@ export default function PresetForm({ onSave, preset, initialPreset, saveLabel }:
                       {t("add-preload")}
                     </FormLabel>
                     <Input
-                      type='number'
+                      inputComponent={DecimalMaskInput}
                       inputProps={{
+                        inputMode: "decimal",
+                        scale: 1,
                         min: 0,
-                        step: "any",
-                        onKeyDown: (event) => {
-                          if (event.key === "-" || event.key === "+" || event.key === "Subtract" || event.key === "Add") {
-                            event.preventDefault();
-                          }
-                        },
-                        onPaste: (event) => {
-                          if (/^[+-]/.test(event.clipboardData.getData("text").trim())) event.preventDefault();
+                        max: 0x7fffffff / 10,
+                        onAccept: (value: string, event?: InputEvent) => {
+                          if (event) void formik.setFieldValue("preload", value);
                         },
                       }}
                       startAdornment={
@@ -266,11 +264,6 @@ export default function PresetForm({ onSave, preset, initialPreset, saveLabel }:
                       }
                       endAdornment={<InputAdornment position='end'>N</InputAdornment>}
                       value={formik.values.preload}
-                      onChange={(event) => {
-                        const value = event.target.value;
-                        if (/^[+-]/.test(value.trim()) || (value !== "" && Number(value) < 0)) return;
-                        void formik.setFieldValue("preload", value);
-                      }}
                     />
                   </FormControl>
                 </Box>
@@ -286,17 +279,17 @@ export default function PresetForm({ onSave, preset, initialPreset, saveLabel }:
                         {t("add-target", { index: index + 1 })}
                       </FormLabel>
                       <Input
-                        type='number'
+                        inputComponent={DecimalMaskInput}
                         inputProps={{
+                          inputMode: "decimal",
+                          scale: formik.values.method === "Load" ? 1 : 4,
                           min: 0,
-                          step: "any",
-                          onKeyDown: (event) => {
-                            if (event.key === "-" || event.key === "+" || event.key === "Subtract" || event.key === "Add") {
-                              event.preventDefault();
-                            }
-                          },
-                          onPaste: (event) => {
-                            if (/^[+-]/.test(event.clipboardData.getData("text").trim())) event.preventDefault();
+                          max: 0x7fffffff / (formik.values.method === "Load" ? 10 : 10000),
+                          onAccept: (value: string, event?: InputEvent) => {
+                            if (!event) return;
+                            const targets = [...formik.values.targets];
+                            targets[index] = value;
+                            void formik.setFieldValue("targets", targets);
                           },
                         }}
                         startAdornment={
@@ -305,16 +298,9 @@ export default function PresetForm({ onSave, preset, initialPreset, saveLabel }:
                           ) : undefined
                         }
                         endAdornment={
-                          <InputAdornment position='end'>{formik.values.base === "Load" ? "N" : formik.values.base === "Distance" ? "mm" : ""}</InputAdornment>
+                          <InputAdornment position='end'>{formik.values.method === "Load" ? "N" : formik.values.method === "Distance" ? "mm" : ""}</InputAdornment>
                         }
                         value={target}
-                        onChange={(event) => {
-                          const value = event.target.value;
-                          if (/^[+-]/.test(value.trim()) || (value !== "" && Number(value) < 0)) return;
-                          const targets = [...formik.values.targets];
-                          targets[index] = value === "" ? "" : Number(value);
-                          void formik.setFieldValue("targets", targets);
-                        }}
                       />
                     </FormControl>
                   </Box>
@@ -362,8 +348,8 @@ export default function PresetForm({ onSave, preset, initialPreset, saveLabel }:
                           ? t("add-type")
                           : key === "velocity"
                             ? t("listing-velocity")
-                            : key === "base"
-                              ? t("add-base")
+                            : key === "method"
+                              ? t("add-method")
                               : key === "preload"
                                 ? t("add-preload")
                                 : t("add-targets")) + ":"}

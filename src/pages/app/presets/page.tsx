@@ -180,7 +180,7 @@ export default function Page() {
           );
         } else if (value === "Compression") {
           return (
-            <Button className='pointer-events-none self-center py-1 rounded-2xs' size='tiny' color='secondary' variant='outlined'>
+            <Button className='pointer-events-none self-center py-1 rounded-2xs' size='tiny' color='accent-5' variant='outlined'>
               {t("listing-compression")}
             </Button>
           );
@@ -194,14 +194,14 @@ export default function Page() {
       },
     },
     { field: "velocity", headerName: t("listing-velocity"), minWidth: 150, type: "number", align: "left", headerAlign: "left" },
-    { field: "base", headerName: t("listing-base"), minWidth: 130, valueFormatter: (value) => (value === "Load" ? t("listing-load") : t("listing-distance")) },
+    { field: "method", headerName: t("listing-method"), minWidth: 130, valueFormatter: (value) => (value === "Load" ? t("listing-load") : t("listing-distance")) },
     {
       field: "targets",
       headerName: t("listing-targets"),
       minWidth: 180,
       valueGetter: (_value, row) =>
         (row.targets ?? [])
-          .map((target) => `${row.base === "Load" ? target.toFixed(1) : target.toFixed(4)} ${row.base === "Load" ? "N" : "mm"}`)
+          .map((target) => `${row.method === "Load" ? target.toFixed(1) : target.toFixed(4)} ${row.method === "Load" ? "N" : "mm"}`)
           .join(", "),
     },
     {

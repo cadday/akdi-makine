@@ -24,7 +24,7 @@ export default function SaveRecordPdfMenuItem({ type, id, name, closeMenu }: Sav
           hidePdfCreating = showPdfCreating();
         });
         void window.electronAPI
-          .saveRecordPdf({ type, id, name })
+          .saveRecordPdf({ type, id, name, dialogLabels: { title: t("pdf-dialog-save-record-title"), filterName: "PDF" } })
           .then((result) => {
             if (!result.canceled && result.filePath) showPdfSaved(result.filePath);
           })
