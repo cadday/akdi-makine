@@ -1,0 +1,58 @@
+﻿AKDI MAKINE - Kullanım Koşulları
+
+Bu kullanım koşulları, AKDI MAKINE uygulamasının kullanımına ilişkin kural ve şartları düzenler. Uygulamaya erişerek bu koşulları kabul etmiş sayılırsınız. Bu sayfada belirtilen koşulların tamamını kabul etmiyorsanız AKDI MAKINE uygulamasını kullanmaya devam etmeyin.
+
+1. Koşulların Kabulü
+
+AKDI MAKINE uygulamasını ("Uygulama") indirerek, yükleyerek veya kullanarak bu Kullanım Koşulları'na bağlı olmayı kabul edersiniz. Kabul etmiyorsanız Uygulama'yı kullanmamalısınız.
+
+2. Kullanım Amacı
+
+- Uygulama yalnızca AKDI MAKINE makineleriyle kullanılmak üzere tasarlanmıştır.
+- Uygulama tek başına veya uyumlu olmayan ekipmanlarla kullanılmamalıdır.
+- Uygulamanın amacı dışında her türlü kullanımı kesinlikle yasaktır.
+
+3. Kullanıcının Sorumlulukları
+
+- Kullanıcılar, AKDI MAKINE tarafından sağlanan tüm kullanım talimatlarına uymalıdır. Talimatlar sağlanmamışsa bu talimatları talep etmekle yükümlüdürler.
+- Makinenin ve Uygulama'nın yürürlükteki güvenlik standartlarına uygun şekilde çalıştırılmasını sağlamak kullanıcıların sorumluluğundadır.
+- Uygulama yalnızca makineyi kullanmaya yetkili, eğitimli personel tarafından kullanılmalıdır.
+
+4. Güvenlik Önlemleri
+
+- Makinenin kullanım kılavuzunda yer alan güvenlik talimatlarına daima uyun; kılavuz sağlanmamışsa bu talimatları AKDI MAKINE'den isteyin.
+- Güvenlik özelliklerini devre dışı bırakmayın veya atlatmayın.
+- Çalışma sırasında uygun kişisel koruyucu donanım kullanıldığından emin olun.
+- Güvenlik talimatlarına uyulmamasından veya bu talimatların talep edilmemesinden kaynaklanan yaralanma ya da zararlardan AKDI MAKINE sorumlu tutulamaz.
+
+5. Güncellemeler ve Değişiklikler
+
+- AKDI MAKINE, işlevselliği veya güvenliği iyileştirmek amacıyla Uygulama'yı dilediği zaman güncelleyebilir ya da değiştirebilir.
+- Güncellemelerden sonra Uygulama'yı kullanmaya devam etmeniz, güncellenmiş Koşulları kabul ettiğiniz anlamına gelir.
+
+6. Sorumluluğun Sınırlandırılması
+
+- Uygulama, herhangi bir garanti verilmeksizin mevcut hâliyle sunulur.
+- Uygulama'nın veya makinenin hatalı kullanımından doğan zarar, kayıp ya da yaralanmalardan AKDI MAKINE sorumlu tutulamaz.
+- Güvenlik ve kullanım gerekliliklerine uyma sorumluluğu tamamen kullanıcılara aittir.
+
+7. Fikri Mülkiyet
+
+- Uygulama ve içeriği AKDI MAKINE'nin mülkiyetindedir.
+- Yetkisiz çoğaltma, dağıtım veya değişiklik yapılması yasaktır.
+
+8. Fesih
+
+- AKDI MAKINE, bu Koşulların ihlal edilmesi hâlinde Uygulama'ya erişimi askıya alma veya sonlandırma hakkını saklı tutar.
+
+9. Uygulanacak Hukuk
+
+- Bu Koşullar, Türkiye Cumhuriyeti kanunlarına tabi olacak ve bu kanunlara göre yorumlanacaktır. Bu Koşullardan doğan veya bunlarla bağlantılı her türlü uyuşmazlıkta Türkiye'deki mahkemeler münhasır yetkilidir.
+
+10. Kullanıcının Beyanı
+
+AKDI MAKINE'yi kullanarak aşağıdakileri kabul ve beyan etmiş olursunuz:
+
+- AKDI MAKINE'den gerekli kullanım ve güvenlik talimatlarını aldığınızı veya başlangıçta sağlanmadıysa bu talimatları talep ettiğinizi;
+- Uygulama'yı ve makineyi bu talimatlara ve güvenlik önlemlerine uygun şekilde kullanma sorumluluğunuzu anladığınızı ve kabul ettiğinizi;
+- Talimatları almamanın veya bunlara uymamanın bu Koşullar kapsamındaki sorumluluğunuzu ortadan kaldırmadığını kabul ettiğinizi.

@@ -39,8 +39,7 @@
     "oneClick": false,
     "perMachine": false,
     "allowToChangeInstallationDirectory": true,
-    "deleteAppDataOnUninstall": false,
-    "license": "LICENSE.txt"
+    "deleteAppDataOnUninstall": false
   },
   "linux": {
     "target": [

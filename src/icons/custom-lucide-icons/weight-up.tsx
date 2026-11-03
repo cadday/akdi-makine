@@ -10,3 +10,4 @@ const node: LucideIconNode[] = [
 export const WeightUp = (props: React.ComponentPropsWithoutRef<"svg">) => {
   return <Icon iconNode={node} {...props} />;
 };
+
