@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useFormik } from "formik";
 import * as yup from "yup";
 import {
@@ -22,6 +22,7 @@ import type { PresetBase, PresetRecord, PresetType } from "@/context/db-context"
 import { PRESET_BASES, PRESET_TYPES } from "@/lib/db";
 import useAppNotifications from "@/hooks/use-app-notifications";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 type PresetSaveInput = Omit<PresetRecord, "id" | "createdAt" | "updatedAt">;
 type PresetFormValues = Omit<PresetSaveInput, "type" | "base" | "velocity" | "preload" | "targets"> & {
@@ -50,41 +51,51 @@ function getInitialValues(preset?: PresetRecord): PresetFormValues {
   };
 }
 
-const validationSchema = yup.object({
-  name: yup.string().trim().required("Name is required"),
-  type: yup.string().oneOf(PRESET_TYPES).required("Type is required"),
-  velocity: yup
-    .number()
-    .typeError("Enter a number")
-    .moreThan(0, "Must be greater than zero")
-    .test("plc-precision", "Velocity can have at most 1 decimal place", (value) => {
-      if (value === undefined) return true;
-      const scaled = value * 10;
-      return Math.abs(scaled - Math.round(scaled)) < 1e-8;
-    })
-    .required("Velocity is required"),
-  base: yup.string().oneOf(PRESET_BASES).required("Base is required"),
-  preload: yup
-    .number()
-    .transform((value, originalValue) => (originalValue === "" ? undefined : value))
-    .min(0, "Must be zero or greater")
-    .test("plc-precision", "Preload can have at most 1 decimal place", (value) => {
-      if (value === undefined) return true;
-      const scaled = value * 10;
-      return Math.abs(scaled - Math.round(scaled)) < 1e-8;
-    })
-    .optional(),
-  targets: yup
-    .array()
-    .of(yup.number().typeError("Enter a number").moreThan(0, "Must be greater than zero").required("Target is required"))
-    .min(1, "At least one target is required")
-    .max(5, "A maximum of five targets is allowed")
-    .required("At least one target is required"),
-});
+function buildValidationSchema(t: ReturnType<typeof useTranslation>["t"]) {
+  return yup.object({
+    name: yup.string().trim().required(t("add-validation-required", { label: t("add-name") })),
+    type: yup.string().oneOf(PRESET_TYPES).required(t("add-form-type-required")),
+    velocity: yup
+      .number()
+      .typeError(t("add-validation-number", { label: t("listing-velocity") }))
+      .moreThan(0, t("add-validation-greater-zero", { label: t("listing-velocity") }))
+      .test("plc-precision", t("add-validation-precision", { label: t("listing-velocity"), decimalPlaces: 1 }), (value) => {
+        if (value === undefined) return true;
+        const scaled = value * 10;
+        return Math.abs(scaled - Math.round(scaled)) < 1e-8;
+      })
+      .required(t("add-validation-required", { label: t("listing-velocity") })),
+    base: yup.string().oneOf(PRESET_BASES).required(t("add-form-base-required")),
+    preload: yup
+      .number()
+      .transform((value, originalValue) => (originalValue === "" ? undefined : value))
+      .min(0, t("add-validation-minimum", { label: t("add-preload") }))
+      .test("plc-precision", t("add-validation-precision", { label: t("add-preload"), decimalPlaces: 1 }), (value) => {
+        if (value === undefined) return true;
+        const scaled = value * 10;
+        return Math.abs(scaled - Math.round(scaled)) < 1e-8;
+      })
+      .optional(),
+    targets: yup
+      .array()
+      .of(
+        yup
+          .number()
+          .typeError(t("add-validation-number", { label: t("add-target-label") }))
+          .moreThan(0, t("add-validation-greater-zero", { label: t("add-target-label") }))
+          .required(t("add-validation-required", { label: t("add-target-label") })),
+      )
+      .min(1, t("add-validation-target-minimum"))
+      .max(5, t("add-validation-target-maximum"))
+      .required(t("add-validation-target-minimum")),
+  });
+}
 
-export default function PresetForm({ onSave, preset, initialPreset, saveLabel = "Save" }: PresetFormProps) {
+export default function PresetForm({ onSave, preset, initialPreset, saveLabel }: PresetFormProps) {
   const [submitted, setSubmitted] = useState(false);
   const { showError } = useAppNotifications();
+  const { t } = useTranslation();
+  const validationSchema = useMemo(() => buildValidationSchema(t), [t]);
   const formik = useFormik<PresetFormValues>({
     initialValues: getInitialValues(preset ?? initialPreset),
     enableReinitialize: true,
@@ -105,7 +116,7 @@ export default function PresetForm({ onSave, preset, initialPreset, saveLabel = 
           targets: values.targets.map((target) => Number(target) * targetSign),
         });
       } catch (error) {
-        showError(`Failed to save preset: ${String(error)}`);
+        showError(t("add-form-save-preset-error", { error: String(error) }));
       }
     },
   });
@@ -118,6 +129,7 @@ export default function PresetForm({ onSave, preset, initialPreset, saveLabel = 
         container
         size={{ xs: 12 }}
         spacing={5}
+        className='w-full'
         component='form'
         noValidate
         onSubmit={(event) => {
@@ -127,7 +139,7 @@ export default function PresetForm({ onSave, preset, initialPreset, saveLabel = 
       >
         <Grid size={12}>
           <Typography variant='h6' component='h6' className='mb-3'>
-            Definition
+            {t("add-definition")}
           </Typography>
           <Card>
             <CardContent className='-mb-4'>
@@ -135,7 +147,7 @@ export default function PresetForm({ onSave, preset, initialPreset, saveLabel = 
                 <Bookmark className={cn("flex-none", fieldError("name") && "text-error!")} />
                 <FormControl className='outlined' variant='standard' size='small' fullWidth required>
                   <FormLabel component='label' className={fieldError("name") ? "text-error!" : undefined}>
-                    Name
+                    {t("add-name")}
                   </FormLabel>
                   <Input name='name' value={formik.values.name} onChange={formik.handleChange} />
                 </FormControl>
@@ -145,7 +157,7 @@ export default function PresetForm({ onSave, preset, initialPreset, saveLabel = 
                 <PencilRuler className={cn("flex-none", fieldError("type") && "text-error!")} />
                 <FormControl fullWidth size='small' variant='standard' className='outlined' required>
                   <FormLabel component='label' className={fieldError("type") ? "text-error!" : undefined}>
-                    Type
+                    {t("add-type")}
                   </FormLabel>
                   <Select<PresetType | "">
                     value={formik.values.type}
@@ -155,7 +167,7 @@ export default function PresetForm({ onSave, preset, initialPreset, saveLabel = 
                   >
                     {PRESET_TYPES.map((presetType) => (
                       <MenuItem key={presetType} value={presetType}>
-                        {presetType}
+                        {presetType === "Tensile" ? t("listing-tensile") : t("listing-compression")}
                       </MenuItem>
                     ))}
                   </Select>
@@ -165,7 +177,7 @@ export default function PresetForm({ onSave, preset, initialPreset, saveLabel = 
                 <Gauge className={cn("flex-none", fieldError("velocity") && "text-error!")} />
                 <FormControl className='outlined' variant='standard' size='small' fullWidth required>
                   <FormLabel component='label' className={fieldError("velocity") ? "text-error!" : undefined}>
-                    Velocity
+                    {t("listing-velocity")}
                   </FormLabel>
                   <Input
                     type='number'
@@ -195,7 +207,7 @@ export default function PresetForm({ onSave, preset, initialPreset, saveLabel = 
 
         <Grid size={12}>
           <Typography variant='h6' component='h6' className='mb-3'>
-            Test Base and Parameters
+            {t("add-test-base-parameters")}
           </Typography>
           <Card>
             <CardContent className='-mb-4'>
@@ -203,7 +215,7 @@ export default function PresetForm({ onSave, preset, initialPreset, saveLabel = 
                 <Split className={cn("flex-none", fieldError("base") && "text-error!")} />
                 <FormControl fullWidth size='small' variant='standard' className='outlined' required>
                   <FormLabel component='label' className={fieldError("base") ? "text-error!" : undefined}>
-                    Base
+                    {t("add-base")}
                   </FormLabel>
                   <Select<PresetBase | "">
                     value={formik.values.base}
@@ -220,7 +232,7 @@ export default function PresetForm({ onSave, preset, initialPreset, saveLabel = 
                   >
                     {PRESET_BASES.map((base) => (
                       <MenuItem key={base} value={base}>
-                        {base}
+                        {base === "Load" ? t("listing-load") : t("listing-distance")}
                       </MenuItem>
                     ))}
                   </Select>
@@ -231,7 +243,7 @@ export default function PresetForm({ onSave, preset, initialPreset, saveLabel = 
                   <WeightTilde className={cn("flex-none", fieldError("preload") && "text-error!")} />
                   <FormControl className='outlined' variant='standard' size='small' fullWidth>
                     <FormLabel component='label' className={fieldError("preload") ? "text-error!" : undefined}>
-                      Preload
+                      {t("add-preload")}
                     </FormLabel>
                     <Input
                       type='number'
@@ -271,7 +283,7 @@ export default function PresetForm({ onSave, preset, initialPreset, saveLabel = 
                     <Crosshair className={cn("mb-2 flex-none", targetError && "text-error!")} />
                     <FormControl className='outlined' variant='standard' size='small' fullWidth required>
                       <FormLabel component='label' className={targetError ? "text-error!" : undefined}>
-                        Target {index + 1}
+                        {t("add-target", { index: index + 1 })}
                       </FormLabel>
                       <Input
                         type='number'
@@ -316,7 +328,7 @@ export default function PresetForm({ onSave, preset, initialPreset, saveLabel = 
                   startIcon={<Plus size={16} />}
                   onClick={() => void formik.setFieldValue("targets", [...formik.values.targets, ""])}
                 >
-                  Add Target
+                  {t("add-add-target")}
                 </Button>
               )}
             </CardContent>
@@ -327,14 +339,14 @@ export default function PresetForm({ onSave, preset, initialPreset, saveLabel = 
           {submitted && !formik.isValid && (
             <Alert severity='error' icon={<XSquare />} className='neutral rounded-3xl! bg-transparent! mb-2 mt-2 p-5'>
               <AlertTitle variant='subtitle1' className='pt-0.5'>
-                The following inputs have errors!
+                {t("add-validation-summary")}
               </AlertTitle>
               {Object.entries(formik.errors).flatMap(([key, value]) => {
                 if (key === "targets" && Array.isArray(value)) {
                   return value.flatMap((targetError, index) =>
                     typeof targetError === "string" ? (
                       <Box className='flex flex-row gap-0.5' key={`target-${index}`}>
-                        <Typography className='text-error'>Target {index + 1}:</Typography>
+                        <Typography className='text-error'>{t("add-target", { index: index + 1 })}:</Typography>
                         <Typography className='text-text-primary'>{targetError}</Typography>
                       </Box>
                     ) : [],
@@ -343,7 +355,19 @@ export default function PresetForm({ onSave, preset, initialPreset, saveLabel = 
 
                 return (
                   <Box className='flex flex-row gap-0.5' key={key}>
-                    <Typography className='text-error'>{key[0].toUpperCase() + key.slice(1)}:</Typography>
+                    <Typography className='text-error'>
+                      {(key === "name"
+                        ? t("add-name")
+                        : key === "type"
+                          ? t("add-type")
+                          : key === "velocity"
+                            ? t("listing-velocity")
+                            : key === "base"
+                              ? t("add-base")
+                              : key === "preload"
+                                ? t("add-preload")
+                                : t("add-targets")) + ":"}
+                    </Typography>
                     <Typography className='text-text-primary'>{typeof value === "string" ? value : JSON.stringify(value)}</Typography>
                   </Box>
                 );
@@ -360,7 +384,7 @@ export default function PresetForm({ onSave, preset, initialPreset, saveLabel = 
             type='submit'
             startIcon={<Save />}
           >
-            {saveLabel}
+            {saveLabel ?? t("save")}
           </Button>
         </Grid>
       </Grid>

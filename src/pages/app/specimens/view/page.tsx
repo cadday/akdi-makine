@@ -24,34 +24,8 @@ import usePrintReadiness from "@/hooks/use-print-readiness";
 import { cn } from "@/lib/utils";
 import { NoTestsFound } from "../../components/no-entity-found";
 
-const latestTestColumns: GridColDef<TestRecord>[] = [
-  {
-    field: "name",
-    headerName: "Name",
-    align: "left",
-    headerAlign: "left",
-    minWidth: 180,
-    sortable: false,
-    renderCell: (params: GridRenderCellParams<TestRecord, string>) => (
-      <Link to={`/tests/${params.row.id}`} className='text-text-primary link-primary link-underline hover:text-primary py-2 font-semibold transition-colors'>
-        {params.value}
-      </Link>
-    ),
-  },
-  {
-    field: "createdAt",
-    headerName: "Date",
-    minWidth: 120,
-    align: "right",
-    headerAlign: "right",
-    flex: 1,
-    sortable: false,
-    valueFormatter: (value) => new Date(Number(value)).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short" }),
-  },
-];
-
 export default function Page({ printMode = false }: { printMode?: boolean }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { getSpecimen, getDataFields, getTestsForSpecimen, deleteSpecimen } = useDb();
@@ -73,7 +47,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
       setLoadError(null);
       if (!id) {
         setSpecimen(null);
-        setLoadError("Specimen not found");
+        setLoadError(t("view-specimen-not-found"));
         setIsLoading(false);
         return;
       }
@@ -93,9 +67,9 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
         setFields(dataFields);
         setSpecimenTests(tests);
         setTestFields(testDataFields);
-        if (!record) setLoadError("Specimen not found");
+        if (!record) setLoadError(t("view-specimen-not-found"));
       } catch (error) {
-        if (!cancelled) setLoadError(`Failed to load specimen: ${String(error)}`);
+        if (!cancelled) setLoadError(t("view-load-specimen-error", { error: String(error) }));
       } finally {
         if (!cancelled) setIsLoading(false);
       }
@@ -105,7 +79,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
     return () => {
       cancelled = true;
     };
-  }, [getDataFields, getSpecimen, getTestsForSpecimen, id]);
+  }, [getDataFields, getSpecimen, getTestsForSpecimen, id, t]);
 
   useEffect(() => {
     if (loadError) showError(loadError);
@@ -116,12 +90,37 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
     if (field.type === "Image" && Array.isArray(value)) {
       return <ImageLightboxGallery images={value as UploadedImage[]} printMode={printMode} />;
     }
-    if (typeof value === "boolean") return value ? "True" : "False";
+    if (typeof value === "boolean") return value ? t("listing-true") : t("listing-false");
     const displayValue = Array.isArray(value) ? value.join(", ") : String(value);
     return field.unit ? `${displayValue} ${field.unit}` : displayValue;
   };
 
   const latestTests = specimenTests.slice(0, 10);
+  const latestTestColumns: GridColDef<TestRecord>[] = [
+    {
+      field: "name",
+      headerName: t("listing-name"),
+      align: "left",
+      headerAlign: "left",
+      minWidth: 180,
+      sortable: false,
+      renderCell: (params: GridRenderCellParams<TestRecord, string>) => (
+        <Link to={`/tests/${params.row.id}`} className='text-text-primary link-primary link-underline hover:text-primary py-2 font-semibold transition-colors'>
+          {params.value}
+        </Link>
+      ),
+    },
+    {
+      field: "createdAt",
+      headerName: t("view-date"),
+      minWidth: 120,
+      align: "right",
+      headerAlign: "right",
+      flex: 1,
+      sortable: false,
+      valueFormatter: (value) => new Date(Number(value)).toLocaleString(i18n.resolvedLanguage ?? "en", { dateStyle: "short", timeStyle: "short" }),
+    },
+  ];
   const [tabValue, setTabValue] = useState("Overview");
   const handleTabChange = (_event: SyntheticEvent, newValue: string) => {
     setTabValue(newValue);
@@ -139,7 +138,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                 <Grid size={12} container spacing={2.5}>
                   <Grid size={{ xs: 12, md: "grow" }}>
                     <Typography variant='h1' component='h1' className='mb-0'>
-                      {specimen?.name ?? "Specimen"}
+                      {specimen?.name ?? t("view-specimen")}
                     </Typography>
                     <Breadcrumbs>
                       <Link color='inherit' to={LINKS.home}>
@@ -155,7 +154,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                     <PopupState variant='popover' popupId='specimen-actions-menu'>
                       {(popupState) => (
                         <>
-                          <Tooltip title='Actions' placement='bottom'>
+                          <Tooltip title={t("view-actions")} placement='bottom'>
                             <Button className='icon-only surface-standard' color='grey' variant='surface' {...bindTrigger(popupState)}>
                               <Box className='w-6 h-6 flex items-center justify-center'>
                                 <Ellipsis size={16} />
@@ -167,17 +166,17 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                             anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
                             transformOrigin={{ vertical: "top", horizontal: "right" }}
                           >
-                            <SaveRecordPdfMenuItem type='specimen' id={id} name={specimen?.name ?? "Specimen"} closeMenu={popupState.close} />
+                            <SaveRecordPdfMenuItem type='specimen' id={id} name={specimen?.name ?? t("view-specimen")} closeMenu={popupState.close} />
                             <MenuItem
                               onClick={() => {
                                 popupState.close();
                                 if (!id) return;
                                 requestDelete({
-                                  title: "Delete Specimen",
+                                  title: t("view-delete-specimen-title"),
                                   message: specimen?.name
-                                    ? `Delete “${specimen.name}”? This action cannot be undone.`
-                                    : "Delete this specimen? This action cannot be undone.",
-                                  errorMessage: "Failed to delete specimen:",
+                                    ? t("view-delete-confirm-named", { name: specimen.name })
+                                    : t("view-delete-specimen-confirm"),
+                                  errorMessage: (error) => `${t("view-delete-specimen-error")} ${String(error)}`,
                                   onConfirm: async () => {
                                     await deleteSpecimen(id);
                                     navigate("/specimens");
@@ -189,7 +188,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                               <ListItemIcon>
                                 <X size={16} />
                               </ListItemIcon>
-                              <ListItemText>Delete</ListItemText>
+                              <ListItemText>{t("view-delete")}</ListItemText>
                             </MenuItem>
                           </Menu>
                         </>
@@ -212,8 +211,8 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                       },
                     }}
                   >
-                    <Tab label='Overview' value='Overview' />
-                    <Tab label='Tests' value='Tests' />
+                    <Tab label={t("view-overview")} value='Overview' />
+                    <Tab label={t("view-tests")} value='Tests' />
                   </TabList>
                 </Box>
               </TitleWrapper>
@@ -225,15 +224,15 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                       <Grid container spacing={5} size={{ lg: 8, xs: 12 }}>
                         <Grid size={12}>
                           <Typography variant='h6' component='h6' className='mb-3'>
-                            Definition
+                            {t("view-definition")}
                           </Typography>
                           <Card>
                             <CardContent className='flex flex-col gap-5'>
                               <Box className='flex flex-row gap-2'>
                                 <Shapes className='flex-none' />
                                 <Box className='flex flex-col gap-1'>
-                                  <Typography variant='subtitle1'>Geometry</Typography>
-                                  <Typography>{specimen.geometry ?? "Not Specified"}</Typography>
+                                  <Typography variant='subtitle1'>{t("listing-geometry")}</Typography>
+                                  <Typography>{specimen.geometry === "Cylindrical" ? t("listing-cylindrical") : specimen.geometry === "Rectangular" ? t("listing-rectangular") : t("listing-geometry-not-specified")}</Typography>
                                 </Box>
                               </Box>
                               {specimen.geometry === "Cylindrical" && (
@@ -241,14 +240,14 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                                   <Box className='flex flex-row gap-2'>
                                     <Diameter className='flex-none' />
                                     <Box className='flex flex-col gap-1'>
-                                      <Typography variant='subtitle1'>Diameter</Typography>
+                                        <Typography variant='subtitle1'>{t("listing-diameter")}</Typography>
                                       <Typography>{specimen.diameter} mm</Typography>
                                     </Box>
                                   </Box>
                                   <Box className='flex flex-row gap-2'>
                                     <MoveVertical className='flex-none' />
                                     <Box className='flex flex-col gap-1'>
-                                      <Typography variant='subtitle1'>Height</Typography>
+                                        <Typography variant='subtitle1'>{t("listing-height")}</Typography>
                                       <Typography>{specimen.height} mm</Typography>
                                     </Box>
                                   </Box>
@@ -259,21 +258,21 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                                   <Box className='flex flex-row gap-2'>
                                     <RulerDimensionLine className='flex-none' />
                                     <Box className='flex flex-col gap-1'>
-                                      <Typography variant='subtitle1'>Side 1</Typography>
+                                      <Typography variant='subtitle1'>{t("listing-side-1")}</Typography>
                                       <Typography>{specimen.side1} mm</Typography>
                                     </Box>
                                   </Box>
                                   <Box className='flex flex-row gap-2'>
                                     <RulerDimensionLine className='flex-none rotate-90' />
                                     <Box className='flex flex-col gap-1'>
-                                      <Typography variant='subtitle1'>Side 2</Typography>
+                                      <Typography variant='subtitle1'>{t("listing-side-2")}</Typography>
                                       <Typography>{specimen.side2} mm</Typography>
                                     </Box>
                                   </Box>
                                   <Box className='flex flex-row gap-2'>
                                     <MoveVertical className='flex-none' />
                                     <Box className='flex flex-col gap-1'>
-                                      <Typography variant='subtitle1'>Height</Typography>
+                                      <Typography variant='subtitle1'>{t("listing-height")}</Typography>
                                       <Typography>{specimen.height} mm</Typography>
                                     </Box>
                                   </Box>
@@ -282,15 +281,15 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                               <Box className='flex flex-row gap-2'>
                                 <CalendarPlus className='flex-none' />
                                 <Box className='flex flex-col gap-1'>
-                                  <Typography variant='subtitle1'>Created</Typography>
-                                  <Typography>{new Date(specimen.createdAt).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short" })}</Typography>
+                                  <Typography variant='subtitle1'>{t("listing-created")}</Typography>
+                                  <Typography>{new Date(specimen.createdAt).toLocaleString(i18n.resolvedLanguage ?? "en", { dateStyle: "short", timeStyle: "short" })}</Typography>
                                 </Box>
                               </Box>
                               <Box className='flex flex-row gap-2'>
                                 <CalendarCog className='flex-none' />
                                 <Box className='flex flex-col gap-1'>
-                                  <Typography variant='subtitle1'>Updated</Typography>
-                                  <Typography>{new Date(specimen.updatedAt).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short" })}</Typography>
+                                  <Typography variant='subtitle1'>{t("listing-updated")}</Typography>
+                                  <Typography>{new Date(specimen.updatedAt).toLocaleString(i18n.resolvedLanguage ?? "en", { dateStyle: "short", timeStyle: "short" })}</Typography>
                                 </Box>
                               </Box>
                               {fields.map((field) => (
@@ -309,7 +308,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                       <Grid container spacing={5} size={{ lg: 4, xs: 12 }}>
                         <Grid size={12}>
                           <Typography variant='h6' component='h6' className='mb-3'>
-                            Latest Tests
+                            {t("view-latest-tests")}
                           </Typography>
                           <Card>
                             <CardContent>

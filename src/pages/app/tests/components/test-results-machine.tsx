@@ -3,6 +3,8 @@ import * as echarts from "echarts";
 import type { EChartsOption } from "echarts";
 import { renderToStaticMarkup } from "react-dom/server";
 import { useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { ArrowUpWideNarrow, RulerDimensionLine, TicketPercent, Timer, WeightTilde } from "lucide-react";
 import type { TestRecord } from "@/context/db-context";
 import { getStressStrainMaximums, getTestGraphType, getYieldStrengthCalculation } from "@/lib/db";
@@ -37,8 +39,10 @@ const chartColors = {
   },
 } as const;
 
-function TestGraphTooltip({ x, y, graphType }: { x: number; y: number; graphType: "load-displacement" | "stress-strain" }) {
-  const [xLabel, xUnit, yLabel, yUnit] = graphType === "stress-strain" ? ["Strain", "%", "Stress", "MPa"] : ["Displacement", "mm", "Load", "N"];
+function TestGraphTooltip({ x, y, graphType, t }: { x: number; y: number; graphType: "load-displacement" | "stress-strain"; t: TFunction }) {
+  const [xLabel, xUnit, yLabel, yUnit] = graphType === "stress-strain"
+    ? [t("view-axis-strain"), "%", t("view-axis-stress"), "MPa"]
+    : [t("view-axis-displacement"), "mm", t("view-axis-load"), "N"];
   return (
     <Box className='bg-background-paper shadow-darker-sm! outline-grey-50 rounded-lg p-5 outline-1 flex flex-col gap-2'>
       <Box className='flex flex-row gap-2'>
@@ -64,6 +68,7 @@ function TestGraphTooltip({ x, y, graphType }: { x: number; y: number; graphType
 }
 
 export default function TestResultsMachine({ test }: TestResultsMachineProps) {
+  const { t } = useTranslation();
   const graphType = getTestGraphType(test.specimenSnapshot.geometry);
   const loadDisplacementData = test.results?.loadDisplacementData ?? [];
   const stressStrainData = test.results?.stressStrainData ?? [];
@@ -85,8 +90,8 @@ export default function TestResultsMachine({ test }: TestResultsMachineProps) {
     typeof results?.tensileStrength === "number" ? results.tensileStrength : stressStrainMaximums?.maxStress;
   const elongation =
     typeof results?.elongation === "number" ? results.elongation : stressStrainMaximums?.maxStrain;
-  const xAxisLabel = graphType === "stress-strain" ? "Strain %" : "Displacement mm";
-  const yAxisLabel = graphType === "stress-strain" ? "Stress MPa" : "Load N";
+  const xAxisLabel = graphType === "stress-strain" ? `${t("view-axis-strain")} %` : `${t("view-axis-displacement")} mm`;
+  const yAxisLabel = graphType === "stress-strain" ? `${t("view-axis-stress")} MPa` : `${t("view-axis-load")} N`;
   const isTestRunning = test.runStatus === "starting" || test.runStatus === "running" || test.runStatus === "stopping";
 
   useEffect(() => {
@@ -128,7 +133,7 @@ export default function TestResultsMachine({ test }: TestResultsMachineProps) {
           if (!Array.isArray(values)) return "";
 
           const [x, y] = values;
-          return renderToStaticMarkup(<TestGraphTooltip x={Number(x)} y={Number(y)} graphType={graphType} />);
+          return renderToStaticMarkup(<TestGraphTooltip x={Number(x)} y={Number(y)} graphType={graphType} t={t} />);
         },
       },
       dataZoom: [{ type: "inside", filterMode: "none", zoomOnMouseWheel: true, moveOnMouseMove: true, moveOnMouseWheel: false }],
@@ -174,32 +179,32 @@ export default function TestResultsMachine({ test }: TestResultsMachineProps) {
           itemStyle: { color: colors.primary, borderWidth: 0 },
         },
         {
-          name: "Elastic fit",
+          name: t("view-elastic-fit"),
           type: "line",
           showSymbol: false,
           lineStyle: { width: 2, color: colors.elasticFit },
           itemStyle: { color: colors.elasticFit },
         },
         {
-          name: "0.2% offset",
+          name: t("view-offset-line"),
           type: "line",
           showSymbol: false,
           lineStyle: { width: 2, type: "dashed", color: colors.offsetLine },
           itemStyle: { color: colors.offsetLine },
         },
         {
-          name: "Yield strength",
+          name: t("view-yield-strength-series"),
           type: "scatter",
           symbol: "circle",
           symbolSize: 10,
           itemStyle: { color: colors.yieldPoint },
-          label: { show: true, formatter: "Yield strength", position: "top" },
+          label: { show: true, formatter: t("view-yield-strength-series"), position: "top" },
         },
       ],
     };
 
     chartRef.current?.setOption(option, { lazyUpdate: true });
-  }, [graphType, isDarkMode, yieldCalculation, xAxisLabel, yAxisLabel]);
+  }, [graphType, isDarkMode, yieldCalculation, xAxisLabel, yAxisLabel, t]);
 
   useEffect(() => {
     chartRef.current?.setOption({
@@ -243,17 +248,17 @@ export default function TestResultsMachine({ test }: TestResultsMachineProps) {
         <Grid container size={12} spacing={5} className={cn(isTestRunning && "relative z-5001")}>
           <Grid size={12}>
             <Typography variant='h6' component='h6' className='mb-3'>
-              {graphType === "stress-strain" ? "Stress Strain Graph" : "Load Displacement Graph"}
+              {graphType === "stress-strain" ? t("view-stress-strain-graph") : t("view-load-displacement-graph")}
             </Typography>
             <Card>
               <CardContent>
-                <Box ref={chartElementRef} role='img' aria-label={`Live ${graphType === "stress-strain" ? "stress-strain" : "load-displacement"} line chart`} className='h-140 w-full' />
+                <Box ref={chartElementRef} role='img' aria-label={t("view-live-chart", { graph: graphType === "stress-strain" ? t("listing-graph-stress-strain") : t("listing-graph-load-displacement") })} className='h-140 w-full' />
               </CardContent>
             </Card>
           </Grid>
           <Grid size={12}>
             <Typography variant='h6' component='h6' className='mb-3'>
-              Results
+              {t("view-results")}
             </Typography>
             <Grid size={12} container spacing={2.5}>
               {graphType === "stress-strain" && (
@@ -264,7 +269,7 @@ export default function TestResultsMachine({ test }: TestResultsMachineProps) {
                     <Box className='flex flex-row gap-2'>
                       <Yeild className='flex-none' />
                       <Box className='flex flex-col gap-1 flex-1'>
-                        <Typography variant='subtitle1'>Yield Strength</Typography>
+                        <Typography variant='subtitle1'>{t("view-yield-strength")}</Typography>
                         <Typography>
                           {typeof results?.yieldStrength === "number" ? `${results.yieldStrength} MPa` : "-"}
                         </Typography>
@@ -283,7 +288,7 @@ export default function TestResultsMachine({ test }: TestResultsMachineProps) {
                     <Box className='flex flex-row gap-2'>
                       <Tensile className='flex-none' />
                       <Box className='flex flex-col gap-1 flex-1'>
-                        <Typography variant='subtitle1'>Tensile Strength</Typography>
+                        <Typography variant='subtitle1'>{t("view-tensile-strength")}</Typography>
                         <Typography>
                           {typeof tensileStrength === "number" ? `${tensileStrength.toFixed(1)} MPa` : "-"}
                         </Typography>
@@ -302,7 +307,7 @@ export default function TestResultsMachine({ test }: TestResultsMachineProps) {
                     <Box className='flex flex-row gap-2'>
                       <ArrowUpWideNarrow className='flex-none' />
                       <Box className='flex flex-col gap-1 flex-1'>
-                        <Typography variant='subtitle1'>Elongation</Typography>
+                        <Typography variant='subtitle1'>{t("view-elongation")}</Typography>
                         <Typography>
                           {typeof elongation === "number" ? `${elongation.toFixed(1)} %` : "-"}
                         </Typography>
@@ -319,7 +324,7 @@ export default function TestResultsMachine({ test }: TestResultsMachineProps) {
                     <Box className='flex flex-row gap-2'>
                       <WeightTilde className='flex-none' />
                       <Box className='flex flex-col gap-1 flex-1'>
-                        <Typography variant='subtitle1'>Max Load</Typography>
+                        <Typography variant='subtitle1'>{t("view-max-load")}</Typography>
                         <Typography>
                           {typeof results?.maxLoad === "number" ? `${results.maxLoad.toFixed(1)} N` : "-"}
                         </Typography>
@@ -334,7 +339,7 @@ export default function TestResultsMachine({ test }: TestResultsMachineProps) {
                     <Box className='flex flex-row gap-2'>
                       <RulerDimensionLine className='flex-none' />
                       <Box className='flex flex-col gap-1 flex-1'>
-                        <Typography variant='subtitle1'>Max Distance</Typography>
+                        <Typography variant='subtitle1'>{t("view-max-distance")}</Typography>
                         <Typography>
                           {typeof results?.maxDistance === "number" ? `${results.maxDistance.toFixed(4)} mm` : "-"}
                         </Typography>
@@ -349,7 +354,7 @@ export default function TestResultsMachine({ test }: TestResultsMachineProps) {
                     <Box className='flex flex-row gap-2'>
                       <Timer className='flex-none' />
                       <Box className='flex flex-col gap-1 flex-1'>
-                        <Typography variant='subtitle1'>Test Duration</Typography>
+                        <Typography variant='subtitle1'>{t("view-test-duration")}</Typography>
                         <Typography>
                           {typeof results?.testDuration === "number" ? `${results.testDuration} s` : "-"}
                         </Typography>

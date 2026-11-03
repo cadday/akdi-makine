@@ -57,8 +57,10 @@ interface RawGraphDataRow {
   y: number;
 }
 
-function getRawGraphDataColumns(graphType: "load-displacement" | "stress-strain"): GridColDef<RawGraphDataRow>[] {
-  const [xLabel, yLabel] = graphType === "stress-strain" ? ["Strain %", "Stress MPa"] : ["Displacement mm", "Load N"];
+function getRawGraphDataColumns(graphType: "load-displacement" | "stress-strain", t: (key: string) => string): GridColDef<RawGraphDataRow>[] {
+  const [xLabel, yLabel] = graphType === "stress-strain"
+    ? [`${t("view-axis-strain")} %`, `${t("view-axis-stress")} MPa`]
+    : [`${t("view-axis-displacement")} mm`, `${t("view-axis-load")} N`];
   return [
     {
       field: "x",
@@ -100,7 +102,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
     setSpecimenFields([]);
 
     if (!id) {
-      setLoadError("Test not found");
+      setLoadError(t("view-test-not-found"));
       setIsLoading(false);
       return;
     }
@@ -111,7 +113,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
         recordLoaded = true;
         if (!record) {
           setTest(null);
-          setLoadError("Test not found");
+          setLoadError(t("view-test-not-found"));
           setIsLoading(false);
           return;
         }
@@ -122,7 +124,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
       },
       error: (error) => {
         if (cancelled) return;
-        setLoadError(`Failed to load test: ${String(error)}`);
+        setLoadError(t("view-load-test-error", { error: String(error) }));
         setIsLoading(false);
       },
     });
@@ -137,7 +139,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
       })
       .catch((error: unknown) => {
         if (cancelled) return;
-        setLoadError(`Failed to load test data fields: ${String(error)}`);
+        setLoadError(t("view-load-test-fields-error", { error: String(error) }));
         setIsLoading(false);
       });
 
@@ -145,7 +147,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
       cancelled = true;
       subscription.unsubscribe();
     };
-  }, [db, getDataFields, id]);
+  }, [db, getDataFields, id, t]);
 
   useEffect(() => {
     if (loadError) showError(loadError);
@@ -158,7 +160,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
   const renderValue = (field: DataFieldDefinition, value: DynamicDataValue) => {
     if (value == null) return "-";
     if (field.type === "Image" && Array.isArray(value)) return <ImageLightboxGallery images={value as UploadedImage[]} printMode={printMode} />;
-    if (typeof value === "boolean") return value ? "True" : "False";
+    if (typeof value === "boolean") return value ? t("listing-true") : t("listing-false");
     const displayValue = Array.isArray(value)
       ? value.map((item) => (item && typeof item === "object" && "name" in item ? item.name : String(item))).join(", ")
       : String(value);
@@ -186,7 +188,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
               <Grid size={12} container spacing={2.5}>
                 <Grid size={{ xs: 12, md: "grow" }}>
                   <Typography variant='h1' component='h1' className='mb-0'>
-                    {test?.name ?? "Test"}
+                    {test?.name ?? t("view-test")}
                   </Typography>
                   <Breadcrumbs>
                     <Link color='inherit' to={LINKS.home}>
@@ -202,7 +204,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                   <PopupState variant='popover' popupId='test-actions-menu'>
                     {(popupState) => (
                       <>
-                        <Tooltip title='Actions' placement='bottom'>
+                        <Tooltip title={t("view-actions")} placement='bottom'>
                           <Button className='icon-only surface-standard' color='grey' variant='surface' {...bindTrigger(popupState)}>
                             <Box className='w-6 h-6 flex items-center justify-center'>
                               <Ellipsis size={16} />
@@ -214,17 +216,17 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                           anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
                           transformOrigin={{ vertical: "top", horizontal: "right" }}
                         >
-                          <SaveRecordPdfMenuItem type='test' id={id} name={test?.name ?? "Test"} closeMenu={popupState.close} />
+                          <SaveRecordPdfMenuItem type='test' id={id} name={test?.name ?? t("view-test")} closeMenu={popupState.close} />
                           <MenuItem
                             onClick={() => {
                               popupState.close();
                               if (!id) return;
                               requestDelete({
-                                title: "Delete Test",
+                                title: t("view-delete-test-title"),
                                 message: test?.name
-                                  ? `Delete “${test.name}”? This action cannot be undone.`
-                                  : "Delete this test? This action cannot be undone.",
-                                errorMessage: "Failed to delete test:",
+                                  ? t("view-delete-confirm-named", { name: test.name })
+                                  : t("view-delete-test-confirm"),
+                                errorMessage: (error) => t("view-delete-test-error") + ` ${String(error)}`,
                                 onConfirm: async () => {
                                   await deleteTest(id);
                                   navigate("/tests");
@@ -236,7 +238,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                             <ListItemIcon>
                               <X size={16} />
                             </ListItemIcon>
-                            <ListItemText>Delete</ListItemText>
+                            <ListItemText>{t("view-delete")}</ListItemText>
                           </MenuItem>
                         </Menu>
                       </>
@@ -255,8 +257,8 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                     startScrollButtonIcon: () => <ChevronLeft size={12} />,
                   }}
                 >
-                  <Tab label='Result' value='Result' />
-                  <Tab label='Raw Test Data' value='Raw Test Data' />
+                  <Tab label={t("view-result")} value='Result' />
+                  <Tab label={t("view-raw-test-data")} value='Raw Test Data' />
                 </TabList>
               </Box>
             </TitleWrapper>
@@ -272,7 +274,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
 
                       <Grid size={12}>
                         <Typography variant='h6' component='h6' className='mb-3'>
-                          Preset
+                          {t("add-preset-section")}
                         </Typography>
                         <Card>
                           <CardContent className='flex flex-col gap-5'>
@@ -281,36 +283,36 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                                 <Box className='flex flex-row gap-2'>
                                   <Bookmark className='flex-none' />
                                   <Box className='flex flex-col gap-1'>
-                                    <Typography variant='subtitle1'>Name</Typography>
+                                    <Typography variant='subtitle1'>{t("listing-name")}</Typography>
                                     <Typography>{preset.name}</Typography>
                                   </Box>
                                 </Box>
                                 <Box className='flex flex-row gap-2'>
                                   <PencilRuler className='flex-none' />
                                   <Box className='flex flex-col gap-1'>
-                                    <Typography variant='subtitle1'>Type</Typography>
-                                    <Typography>{preset.type}</Typography>
+                                    <Typography variant='subtitle1'>{t("listing-type")}</Typography>
+                                    <Typography>{preset.type === "Tensile" ? t("listing-tensile") : t("listing-compression")}</Typography>
                                   </Box>
                                 </Box>
                                 <Box className='flex flex-row gap-2'>
                                   <Gauge className='flex-none' />
                                   <Box className='flex flex-col gap-1'>
-                                    <Typography variant='subtitle1'>Velocity</Typography>
+                                    <Typography variant='subtitle1'>{t("view-velocity")}</Typography>
                                     <Typography>{typeof preset.velocity === "number" ? `${preset.velocity} mm/min` : "-"}</Typography>
                                   </Box>
                                 </Box>
                                 <Box className='flex flex-row gap-2'>
                                   <Split className='flex-none' />
                                   <Box className='flex flex-col gap-1'>
-                                    <Typography variant='subtitle1'>Base</Typography>
-                                    <Typography>{preset.base ?? "-"}</Typography>
+                                    <Typography variant='subtitle1'>{t("listing-base")}</Typography>
+                                    <Typography>{preset.base === "Load" ? t("listing-load") : preset.base === "Distance" ? t("listing-distance") : "-"}</Typography>
                                   </Box>
                                 </Box>
                                 {preset.base === "Load" && (
                                   <Box className='flex flex-row gap-2'>
                                     <WeightTilde className='flex-none' />
                                     <Box className='flex flex-col gap-1'>
-                                      <Typography variant='subtitle1'>Preload</Typography>
+                                      <Typography variant='subtitle1'>{t("view-preload")}</Typography>
                                       <Typography>{`${(preset.preload ?? 0).toFixed(1)} N`}</Typography>
                                     </Box>
                                   </Box>
@@ -319,7 +321,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                                   <Box className='flex flex-row gap-2' key={`target-${index}`}>
                                     <Crosshair className='flex-none' />
                                     <Box className='flex flex-col gap-1'>
-                                      <Typography variant='subtitle1'>Target {index + 1}</Typography>
+                                      <Typography variant='subtitle1'>{t("view-target", { index: index + 1 })}</Typography>
                                       <Typography>
                                         {typeof target === "number"
                                           ? `${preset.base === "Load" ? target.toFixed(1) : preset.base === "Distance" ? target.toFixed(4) : target} ${preset.base === "Load" ? "N" : preset.base === "Distance" ? "mm" : ""}`.trim()
@@ -330,7 +332,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                                 ))}
                               </>
                             ) : (
-                              <Typography color='textSecondary'>No related preset</Typography>
+                              <Typography color='textSecondary'>{t("view-no-related-preset")}</Typography>
                             )}
                           </CardContent>
                         </Card>
@@ -341,7 +343,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                     <Grid container spacing={5} size={{ lg: 4, xs: 12 }}>
                       <Grid size={12}>
                         <Typography variant='h6' component='h6' className='mb-3'>
-                          Specimen
+                          {t("add-specimen-section")}
                         </Typography>
                         <Card>
                           <CardContent className='flex flex-col gap-5'>
@@ -350,15 +352,15 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                                 <Box className='flex flex-row gap-2'>
                                   <Hexagon className='flex-none' />
                                   <Box className='flex flex-col gap-1'>
-                                    <Typography variant='subtitle1'>Name</Typography>
+                                    <Typography variant='subtitle1'>{t("listing-name")}</Typography>
                                     <Typography>{specimen.name}</Typography>
                                   </Box>
                                 </Box>
                                 <Box className='flex flex-row gap-2'>
                                   <Shapes className='flex-none' />
                                   <Box className='flex flex-col gap-1'>
-                                    <Typography variant='subtitle1'>Geometry</Typography>
-                                    <Typography>{specimen.geometry ?? "Not Specified"}</Typography>
+                                    <Typography variant='subtitle1'>{t("listing-geometry")}</Typography>
+                                    <Typography>{specimen.geometry === "Cylindrical" ? t("listing-cylindrical") : specimen.geometry === "Rectangular" ? t("listing-rectangular") : t("listing-geometry-not-specified")}</Typography>
                                   </Box>
                                 </Box>
                                 {specimen.geometry === "Cylindrical" && (
@@ -366,14 +368,14 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                                     <Box className='flex flex-row gap-2'>
                                       <Diameter className='flex-none' />
                                       <Box className='flex flex-col gap-1'>
-                                        <Typography variant='subtitle1'>Diameter</Typography>
+                                        <Typography variant='subtitle1'>{t("listing-diameter")}</Typography>
                                         <Typography>{specimen.diameter != null ? `${specimen.diameter} mm` : "-"}</Typography>
                                       </Box>
                                     </Box>
                                     <Box className='flex flex-row gap-2'>
                                       <MoveVertical className='flex-none' />
                                       <Box className='flex flex-col gap-1'>
-                                        <Typography variant='subtitle1'>Height</Typography>
+                                        <Typography variant='subtitle1'>{t("listing-height")}</Typography>
                                         <Typography>{specimen.height != null ? `${specimen.height} mm` : "-"}</Typography>
                                       </Box>
                                     </Box>
@@ -384,21 +386,21 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                                     <Box className='flex flex-row gap-2'>
                                       <RulerDimensionLine className='flex-none' />
                                       <Box className='flex flex-col gap-1'>
-                                        <Typography variant='subtitle1'>Side 1</Typography>
+                                        <Typography variant='subtitle1'>{t("listing-side-1")}</Typography>
                                         <Typography>{specimen.side1 != null ? `${specimen.side1} mm` : "-"}</Typography>
                                       </Box>
                                     </Box>
                                     <Box className='flex flex-row gap-2'>
                                       <RulerDimensionLine className='flex-none rotate-90' />
                                       <Box className='flex flex-col gap-1'>
-                                        <Typography variant='subtitle1'>Side 2</Typography>
+                                        <Typography variant='subtitle1'>{t("listing-side-2")}</Typography>
                                         <Typography>{specimen.side2 != null ? `${specimen.side2} mm` : "-"}</Typography>
                                       </Box>
                                     </Box>
                                     <Box className='flex flex-row gap-2'>
                                       <MoveVertical className='flex-none' />
                                       <Box className='flex flex-col gap-1'>
-                                        <Typography variant='subtitle1'>Height</Typography>
+                                        <Typography variant='subtitle1'>{t("listing-height")}</Typography>
                                         <Typography>{specimen.height != null ? `${specimen.height} mm` : "-"}</Typography>
                                       </Box>
                                     </Box>
@@ -415,7 +417,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                                 ))}
                               </>
                             ) : (
-                              <Typography color='textSecondary'>No related specimen</Typography>
+                              <Typography color='textSecondary'>{t("view-no-related-specimen")}</Typography>
                             )}
                           </CardContent>
                         </Card>
@@ -429,7 +431,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                   <DataGrid
                     autoHeight
                     rows={rawGraphDataRows}
-                    columns={getRawGraphDataColumns(graphType)}
+                    columns={getRawGraphDataColumns(graphType, t)}
                     initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
                     getRowSpacing={getRowSpacing}
                     pageSizeOptions={[10, 20, 50, 100]}

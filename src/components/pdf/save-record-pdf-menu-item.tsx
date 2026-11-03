@@ -1,5 +1,6 @@
 import { ListItemIcon, ListItemText, MenuItem } from "@mui/material";
 import { FileDown } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import useAppNotifications from "@/hooks/use-app-notifications";
 
 interface SaveRecordPdfMenuItemProps {
@@ -10,6 +11,7 @@ interface SaveRecordPdfMenuItemProps {
 }
 
 export default function SaveRecordPdfMenuItem({ type, id, name, closeMenu }: SaveRecordPdfMenuItemProps) {
+  const { t } = useTranslation();
   const { showError, showPdfCreating, showPdfSaved } = useAppNotifications();
 
   return (
@@ -26,7 +28,7 @@ export default function SaveRecordPdfMenuItem({ type, id, name, closeMenu }: Sav
           .then((result) => {
             if (!result.canceled && result.filePath) showPdfSaved(result.filePath);
           })
-          .catch((error: unknown) => showError(`Failed to save PDF: ${String(error)}`))
+          .catch((error: unknown) => showError(t("view-save-pdf-error", { error: String(error) })))
           .finally(() => {
             removePdfCreatingListener();
             hidePdfCreating?.();
@@ -36,7 +38,7 @@ export default function SaveRecordPdfMenuItem({ type, id, name, closeMenu }: Sav
       <ListItemIcon>
         <FileDown size={16} />
       </ListItemIcon>
-      <ListItemText>Save as PDF</ListItemText>
+      <ListItemText>{t("view-save-as-pdf")}</ListItemText>
     </MenuItem>
   );
 }

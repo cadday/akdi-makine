@@ -30,7 +30,7 @@ export default function Page() {
         if (!cancelled) setFields(data);
       } catch (error) {
         if (!cancelled) {
-          const message = `Failed to load specimen fields: ${String(error)}`;
+          const message = t("add-form-load-specimen-fields-error", { error: String(error) });
           setLoadError(message);
           showError(message);
         }
@@ -43,7 +43,7 @@ export default function Page() {
     return () => {
       cancelled = true;
     };
-  }, [getDataFields, showError]);
+  }, [getDataFields, showError, t]);
 
   return (
     <>
@@ -51,7 +51,7 @@ export default function Page() {
         <Grid size={12} container spacing={2.5}>
           <Grid size={{ xs: 12, md: "grow" }}>
             <Typography variant='h1' component='h1' className='mb-0'>
-              Add Specimen
+              {t("add-specimen-title")}
             </Typography>
             <Breadcrumbs>
               <Link color='inherit' to={LINKS.home}>
@@ -60,7 +60,7 @@ export default function Page() {
               <Link color='inherit' to='/specimens'>
                 {t("specimens")}
               </Link>
-              <Typography variant='body2'>Add Specimen</Typography>
+              <Typography variant='body2'>{t("add-specimen-title")}</Typography>
             </Breadcrumbs>
           </Grid>
         </Grid>

@@ -4,6 +4,7 @@ import { ChevronDown, Hexagon } from "lucide-react";
 import { DynamicIcon } from "lucide-react/dynamic";
 import { cn } from "@/lib/utils";
 import ImageDataFieldInput, { ImageDataFieldInputEdit } from "@/components/data-fields/image-data-field-input";
+import { useTranslation } from "react-i18next";
 
 interface DataFieldInputProps {
   field: Pick<DataFieldDefinition, "type" | "name" | "unit" | "mandatory" | "icon" | "options" | "multipleSelection" | "accept" | "multiple">;
@@ -21,6 +22,7 @@ function isUploadedImage(value: unknown): value is UploadedImage {
 }
 
 export default function DataFieldInput({ field, value, onChange, error, pendingFiles, previewOnly, editableImages, onPendingFilesChange }: DataFieldInputProps) {
+  const { t } = useTranslation();
   const fieldIcon = field.icon ? <DynamicIcon name={field.icon} className={cn("flex-none", error && "text-error!")} /> : <Hexagon className={cn("flex-none", error && "text-error!")} />;
   const label = field.name;
   const labelClassName = cn(error && "text-error!");
@@ -102,7 +104,7 @@ export default function DataFieldInput({ field, value, onChange, error, pendingF
                   </MenuItem>
                 ))}
               </Select>
-              {options.length === 0 && <FormHelperText>No options are configured.</FormHelperText>}
+              {options.length === 0 && <FormHelperText>{t("add-datagrid-no-options")}</FormHelperText>}
             </FormControl>
           </Box>
         );
@@ -131,7 +133,7 @@ export default function DataFieldInput({ field, value, onChange, error, pendingF
                 </MenuItem>
               ))}
             </Select>
-            {options.length === 0 && <FormHelperText>No options are configured.</FormHelperText>}
+            {options.length === 0 && <FormHelperText>{t("add-datagrid-no-options")}</FormHelperText>}
           </FormControl>
         </Box>
       );
@@ -148,8 +150,8 @@ export default function DataFieldInput({ field, value, onChange, error, pendingF
               IconComponent={ChevronDown}
               onChange={(event) => onChange(event.target.value === "" ? null : event.target.value === "true")}
             >
-              <MenuItem value='true'>True</MenuItem>
-              <MenuItem value='false'>False</MenuItem>
+              <MenuItem value='true'>{t("listing-true")}</MenuItem>
+              <MenuItem value='false'>{t("listing-false")}</MenuItem>
             </Select>
           </FormControl>
         </Box>

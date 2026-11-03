@@ -40,7 +40,7 @@ interface TestFormValues {
   pendingImages: Record<string, File[]>;
 }
 
-function buildTestValidationSchema(fields: DataFieldDefinition[]) {
+function buildTestValidationSchema(fields: DataFieldDefinition[], t: ReturnType<typeof useTranslation>["t"]) {
   const customDataShape: Record<string, yup.AnySchema> = {};
   const pendingImagesShape: Record<string, yup.AnySchema> = {};
 
@@ -49,13 +49,13 @@ function buildTestValidationSchema(fields: DataFieldDefinition[]) {
       case "Text":
       case "Textarea": {
         let schema = yup.string().nullable();
-        if (field.mandatory) schema = schema.required(`${field.name} is required`).trim();
+        if (field.mandatory) schema = schema.required(t("add-validation-required", { label: field.name })).trim();
         customDataShape[field.id] = schema;
         break;
       }
       case "Number": {
-        let schema = yup.number().nullable().typeError(`${field.name} must be a number`);
-        if (field.mandatory) schema = schema.required(`${field.name} is required`);
+        let schema = yup.number().nullable().typeError(t("add-validation-number", { label: field.name }));
+        if (field.mandatory) schema = schema.required(t("add-validation-required", { label: field.name }));
         customDataShape[field.id] = schema;
         break;
       }
@@ -68,18 +68,18 @@ function buildTestValidationSchema(fields: DataFieldDefinition[]) {
           : yup
               .string()
               .nullable()
-              .oneOf(field.options ?? [], `${field.name} must be one of its configured options`);
+              .oneOf(field.options ?? [], t("add-validation-select-option", { label: field.name }));
         if (field.mandatory) {
           schema = field.multipleSelection
-            ? schema.required(`${field.name} is required`).min(1, `${field.name} is required`)
-            : schema.required(`${field.name} is required`);
+            ? schema.required(t("add-validation-required", { label: field.name })).min(1, t("add-validation-required", { label: field.name }))
+            : schema.required(t("add-validation-required", { label: field.name }));
         }
         customDataShape[field.id] = schema;
         break;
       }
       case "Boolean": {
         let schema = yup.boolean().nullable();
-        if (field.mandatory) schema = schema.required(`${field.name} is required`);
+        if (field.mandatory) schema = schema.required(t("add-validation-required", { label: field.name }));
         customDataShape[field.id] = schema;
         break;
       }
@@ -92,19 +92,19 @@ function buildTestValidationSchema(fields: DataFieldDefinition[]) {
 
   return yup
     .object({
-      specimenId: yup.string().required("Specimen is required"),
-      presetId: yup.string().required("Preset is required"),
-      name: yup.string().trim().required("Test name is required"),
+      specimenId: yup.string().required(t("quick-test-specimen-required")),
+      presetId: yup.string().required(t("quick-test-preset-required")),
+      name: yup.string().trim().required(t("quick-test-name-required")),
       customData: yup.object().shape(customDataShape),
       pendingImages: yup.object().shape(pendingImagesShape),
     })
-    .test("required-images", "Required image is missing", function (values) {
+    .test("required-images", t("add-validation-image-missing"), function (values) {
       for (const field of fields) {
         if (field.type !== "Image" || !field.mandatory) continue;
         const savedImages = values?.customData?.[field.id];
         const pendingFiles = values?.pendingImages?.[field.id];
         if ((!Array.isArray(savedImages) || savedImages.length === 0) && (!Array.isArray(pendingFiles) || pendingFiles.length === 0)) {
-          return this.createError({ path: `pendingImages.${field.id}`, message: `${field.name} is required` });
+          return this.createError({ path: `pendingImages.${field.id}`, message: t("add-validation-required", { label: field.name }) });
         }
       }
       return true;
@@ -137,7 +137,7 @@ export default function Page() {
   const [defaultTestName] = useState(() => {
     const now = new Date();
     const twoDigits = (value: number) => String(value).padStart(2, "0");
-    return `Test ${twoDigits(now.getDate())}-${twoDigits(now.getMonth() + 1)}-${String(now.getFullYear()).slice(-2)} ${twoDigits(now.getHours())}:${twoDigits(now.getMinutes())}`;
+    return `${t("test")} ${twoDigits(now.getDate())}-${twoDigits(now.getMonth() + 1)}-${String(now.getFullYear()).slice(-2)} ${twoDigits(now.getHours())}:${twoDigits(now.getMinutes())}`;
   });
 
   useEffect(() => {
@@ -154,7 +154,7 @@ export default function Page() {
         }
       } catch (error) {
         if (!cancelled) {
-          const message = `Failed to load test form data: ${String(error)}`;
+          const message = t("add-form-load-test-error", { error: String(error) });
           setLoadError(message);
           showError(message);
         }
@@ -167,9 +167,9 @@ export default function Page() {
     return () => {
       cancelled = true;
     };
-  }, [getDataFields, getPresets, getSpecimens, showError]);
+  }, [getDataFields, getPresets, getSpecimens, showError, t]);
 
-  const validationSchema = useMemo(() => buildTestValidationSchema(fields), [fields]);
+  const validationSchema = useMemo(() => buildTestValidationSchema(fields, t), [fields, t]);
   const formik = useFormik<TestFormValues>({
     initialValues: { specimenId: "", presetId: "", name: defaultTestName, customData: {}, pendingImages: {} },
     validationSchema,
@@ -177,12 +177,12 @@ export default function Page() {
     validateOnChange: true,
     onSubmit: async (values) => {
       if (testCreationDisabled) {
-        showError("Cannot create or start a test while the machine is halted or emergency halt is active.");
+        showError(t("quick-test-interlock-error"));
         return;
       }
 
       if (hasActiveTest) {
-        showError("A test is already running");
+        showError(t("quick-test-already-running"));
         return;
       }
 
@@ -196,7 +196,7 @@ export default function Page() {
       const specimen = specimens.find((item) => item.id === values.specimenId);
       const preset = presets.find((item) => item.id === values.presetId);
       if (!specimen || !preset) {
-        showError("The selected specimen or preset is no longer available.");
+        showError(t("quick-test-selection-unavailable"));
         return;
       }
 
@@ -267,12 +267,12 @@ export default function Page() {
             },
           });
         } catch (error) {
-          showError(`Test saved, but the PLC could not start it: ${String(error)}`);
+          showError(t("add-form-start-test-error", { error: String(error) }));
         }
         navigate(`/tests/${testId}`);
       } catch (error) {
         await Promise.allSettled(savedImageIds.map((imageId) => window.electronAPI.deleteImage(imageId)));
-        showError(`Failed to save test: ${String(error)}`);
+        showError(t("add-form-save-test-error", { error: String(error) }));
       }
     },
   });
@@ -288,7 +288,7 @@ export default function Page() {
         <Grid size={12} container spacing={2.5}>
           <Grid size={{ xs: 12, md: "grow" }}>
             <Typography variant='h1' component='h1' className='mb-0'>
-              Add Test
+              {t("add-test-title")}
             </Typography>
             <Breadcrumbs>
               <Link color='inherit' to={LINKS.home}>
@@ -297,7 +297,7 @@ export default function Page() {
               <Link color='inherit' to='/tests'>
                 {t("tests")}
               </Link>
-              <Typography variant='body2'>Add Test</Typography>
+              <Typography variant='body2'>{t("add-test-title")}</Typography>
             </Breadcrumbs>
           </Grid>
         </Grid>
@@ -315,7 +315,7 @@ export default function Page() {
             event.preventDefault();
             setSubmitted(true);
             if (testCreationDisabled) {
-              showError("Cannot create or start a test while the machine is halted or emergency halt is active.");
+              showError(t("quick-test-interlock-error"));
               return;
             }
             setIsCheckingMachine(true);
@@ -329,14 +329,14 @@ export default function Page() {
                 setMachineConnectionError(false);
                 return formik.submitForm();
               })
-              .catch((error: unknown) => showError(`Failed to check connected machine: ${String(error)}`))
+              .catch((error: unknown) => showError(t("add-form-connected-machine-error", { error: String(error) })))
               .finally(() => setIsCheckingMachine(false));
           }}
         >
           <Grid size={{ xs: 12 }} container spacing={5}>
             <Grid size={12}>
               <Typography variant='h6' component='h6' className='mb-3'>
-                Definition
+                  {t("add-definition")}
               </Typography>
               <Card>
                 <CardContent className='flex flex-col -mb-4'>
@@ -344,7 +344,7 @@ export default function Page() {
                     <Bookmark className={cn("flex-none", submitted && formik.errors.name && "text-error!")} />
                     <FormControl className='outlined' variant='standard' size='small' fullWidth required>
                       <FormLabel component='label' className={cn(submitted && formik.errors.name && "text-error!")}>
-                        Name
+                        {t("add-name")}
                       </FormLabel>
                       <Input name='name' value={formik.values.name} onChange={formik.handleChange} onBlur={formik.handleBlur} />
                     </FormControl>
@@ -356,7 +356,7 @@ export default function Page() {
             <Grid size={12} className='group/grid'>
               <Box className='flex flex-row items-center justify-between'>
                 <Typography variant='h6' component='h6' className='mb-3'>
-                  Specimen
+                  {t("add-specimen-section")}
                 </Typography>
                 {/* <Button
                   size='tiny'
@@ -374,7 +374,7 @@ export default function Page() {
                     <DraftingCompass className={cn("flex-none", specimenError && "text-error!")} />
                     <FormControl fullWidth required>
                       <FormLabel component='label' className={cn(specimenError && "text-error!")}>
-                        Specimen
+                        {t("specimen")}
                       </FormLabel>
                       <Autocomplete<SpecimenRecord, false, false, false>
                         size='small'
@@ -387,14 +387,14 @@ export default function Page() {
                         popupIcon={<ChevronDown />}
                         clearIcon={<X />}
                         loading={isLoading}
-                        noOptionsText={isLoading ? "Loading specimens..." : "No specimens found"}
+                        noOptionsText={isLoading ? t("quick-test-loading-specimens") : t("no-specimens-found")}
                         slotProps={{ popper: { className: "outlined" } }}
                         renderInput={(params) => (
                           <TextField
                             {...params}
                             variant='standard'
                             className='outlined'
-                            placeholder='Search specimens'
+                            placeholder={t("quick-test-search-specimens")}
                             slotProps={{
                               htmlInput: { ...params.slotProps.htmlInput, autoComplete: "new-password" },
                               input: params.slotProps.input,
@@ -411,7 +411,7 @@ export default function Page() {
             <Grid size={12} className='group/grid'>
               <Box className='flex flex-row items-center justify-between'>
                 <Typography variant='h6' component='h6' className='mb-3'>
-                  Preset
+                  {t("add-preset-section")}
                 </Typography>
                 {/* <Button
                   size='tiny'
@@ -429,7 +429,7 @@ export default function Page() {
                     <SlidersVertical className={cn("flex-none", presetError && "text-error!")} />
                     <FormControl fullWidth required>
                       <FormLabel component='label' className={cn(presetError && "text-error!")}>
-                        Preset
+                        {t("preset")}
                       </FormLabel>
                       <Autocomplete<PresetRecord, false, false, false>
                         size='small'
@@ -442,14 +442,14 @@ export default function Page() {
                         popupIcon={<ChevronDown />}
                         clearIcon={<X />}
                         loading={isLoading}
-                        noOptionsText={isLoading ? "Loading presets..." : "No presets found"}
+                        noOptionsText={isLoading ? t("quick-test-loading-presets") : t("no-presets-found")}
                         slotProps={{ popper: { className: "outlined" } }}
                         renderInput={(params) => (
                           <TextField
                             {...params}
                             variant='standard'
                             className='outlined'
-                            placeholder='Search presets'
+                            placeholder={t("quick-test-search-presets")}
                             slotProps={{
                               htmlInput: { ...params.slotProps.htmlInput, autoComplete: "new-password" },
                               input: params.slotProps.input,
@@ -466,7 +466,7 @@ export default function Page() {
             {fields.length > 0 && (
               <Grid size={12}>
                 <Typography variant='h6' component='h6' className='mb-3'>
-                  Data Fields
+                  {t("add-data-fields-section")}
                 </Typography>
                 <Card>
                   <CardContent className='flex flex-col -mb-4'>
@@ -493,15 +493,15 @@ export default function Page() {
               {machineConnectionError && (
                 <Alert severity='error' icon={<XSquare />} className='neutral rounded-3xl! bg-transparent! mb-2 mt-2 p-5'>
                   <AlertTitle variant='subtitle1' className='pt-0.5'>
-                    No machine connected
+                    {t("add-no-machine-title")}
                   </AlertTitle>
-                  <Typography className='text-text-primary'>Connect a machine before starting a test.</Typography>
+                  <Typography className='text-text-primary'>{t("add-no-machine-description")}</Typography>
                 </Alert>
               )}
               {submitted && !formik.isValid && (
                 <Alert severity='error' icon={<XSquare />} className='neutral rounded-3xl! bg-transparent! mb-2 mt-2 p-5'>
                   <AlertTitle variant='subtitle1' className='pt-0.5'>
-                    The following inputs have errors!
+                    {t("add-validation-summary")}
                   </AlertTitle>
                   {collectErrorMessages(formik.errors).map(([key, message]) => {
                     const fieldId = key.startsWith("customData.")
@@ -512,9 +512,11 @@ export default function Page() {
                     const label = fieldId
                       ? (fields.find((field) => field.id === fieldId)?.name ?? fieldId)
                       : key === "specimenId"
-                        ? "Specimen"
+                        ? t("specimen")
                         : key === "presetId"
-                          ? "Preset"
+                          ? t("preset")
+                          : key === "name"
+                            ? t("add-name")
                           : capitalize(key);
                     return (
                       <Box className='flex flex-row gap-0.5' key={key}>
@@ -536,7 +538,7 @@ export default function Page() {
                 className='surface-standard'
                 startIcon={<Play />}
               >
-                Start
+                {t("quick-test-start")}
               </Button>
             </Grid>
           </Grid>

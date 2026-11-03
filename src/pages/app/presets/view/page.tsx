@@ -21,34 +21,8 @@ import usePrintReadiness from "@/hooks/use-print-readiness";
 import { cn } from "@/lib/utils";
 import { NoTestsFound } from "../../components/no-entity-found";
 
-const latestTestColumns: GridColDef<TestRecord>[] = [
-  {
-    field: "name",
-    headerName: "Name",
-    align: "left",
-    headerAlign: "left",
-    minWidth: 180,
-    sortable: false,
-    renderCell: (params: GridRenderCellParams<TestRecord, string>) => (
-      <Link to={`/tests/${params.row.id}`} className='text-text-primary link-primary link-underline hover:text-primary py-2 font-semibold transition-colors'>
-        {params.value}
-      </Link>
-    ),
-  },
-  {
-    field: "createdAt",
-    headerName: "Date",
-    minWidth: 120,
-    align: "right",
-    headerAlign: "right",
-    flex: 1,
-    sortable: false,
-    valueFormatter: (value) => new Date(Number(value)).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short" }),
-  },
-];
-
 export default function Page({ printMode = false }: { printMode?: boolean }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { getPreset, getTestsForPreset, getDataFields, deletePreset } = useDb();
@@ -75,7 +49,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
       setPreset(null);
 
       if (!id) {
-        setLoadError("Preset not found");
+        setLoadError(t("view-preset-not-found"));
         setIsLoading(false);
         return;
       }
@@ -87,9 +61,9 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
         setPreset(record ?? null);
         setTests(presetTests);
         setTestFields(fields);
-        if (!record) setLoadError("Preset not found");
+        if (!record) setLoadError(t("view-preset-not-found"));
       } catch (error) {
-        if (!cancelled) setLoadError(`Failed to load preset: ${String(error)}`);
+        if (!cancelled) setLoadError(t("view-load-preset-error", { error: String(error) }));
       } finally {
         if (!cancelled) setIsLoading(false);
       }
@@ -99,13 +73,38 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
     return () => {
       cancelled = true;
     };
-  }, [getDataFields, getPreset, getTestsForPreset, id]);
+  }, [getDataFields, getPreset, getTestsForPreset, id, t]);
 
   useEffect(() => {
     if (loadError) showError(loadError);
   }, [loadError, showError]);
 
   const latestTests = tests.slice(0, 10);
+  const latestTestColumns: GridColDef<TestRecord>[] = [
+    {
+      field: "name",
+      headerName: t("listing-name"),
+      align: "left",
+      headerAlign: "left",
+      minWidth: 180,
+      sortable: false,
+      renderCell: (params: GridRenderCellParams<TestRecord, string>) => (
+        <Link to={`/tests/${params.row.id}`} className='text-text-primary link-primary link-underline hover:text-primary py-2 font-semibold transition-colors'>
+          {params.value}
+        </Link>
+      ),
+    },
+    {
+      field: "createdAt",
+      headerName: t("view-date"),
+      minWidth: 120,
+      align: "right",
+      headerAlign: "right",
+      flex: 1,
+      sortable: false,
+      valueFormatter: (value) => new Date(Number(value)).toLocaleString(i18n.resolvedLanguage ?? "en", { dateStyle: "short", timeStyle: "short" }),
+    },
+  ];
 
   return (
     <>
@@ -119,7 +118,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                 <Grid size={12} container spacing={2.5}>
                   <Grid size={{ xs: 12, md: "grow" }}>
                     <Typography variant='h1' component='h1' className='mb-0'>
-                      {preset?.name ?? "Preset"}
+                      {preset?.name ?? t("view-preset")}
                     </Typography>
                     <Breadcrumbs>
                       <Link color='inherit' to={LINKS.home}>
@@ -135,7 +134,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                     <PopupState variant='popover' popupId='popup-menu'>
                       {(popupState) => (
                         <>
-                          <Tooltip title='Actions' placement='bottom'>
+                          <Tooltip title={t("view-actions")} placement='bottom'>
                             <Button className='icon-only surface-standard' color='grey' variant='surface' {...bindTrigger(popupState)}>
                               <Box className='w-6 h-6 flex items-center justify-center '>
                                 <Ellipsis size={16} />
@@ -153,17 +152,17 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                               horizontal: "right",
                             }}
                           >
-                            <SaveRecordPdfMenuItem type='preset' id={id} name={preset?.name ?? "Preset"} closeMenu={popupState.close} />
+                            <SaveRecordPdfMenuItem type='preset' id={id} name={preset?.name ?? t("view-preset")} closeMenu={popupState.close} />
                             <MenuItem
                               onClick={() => {
                                 popupState.close();
                                 if (!id) return;
                                 requestDelete({
-                                  title: "Delete Preset",
+                                  title: t("view-delete-preset-title"),
                                   message: preset?.name
-                                    ? `Delete “${preset.name}”? This action cannot be undone.`
-                                    : "Delete this preset? This action cannot be undone.",
-                                  errorMessage: "Failed to delete preset:",
+                                    ? t("view-delete-confirm-named", { name: preset.name })
+                                    : t("view-delete-preset-confirm"),
+                                  errorMessage: (error) => `${t("view-delete-preset-error")} ${String(error)}`,
                                   onConfirm: async () => {
                                     await deletePreset(id);
                                     navigate("/presets");
@@ -175,7 +174,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                               <ListItemIcon>
                                 <X size={16} />
                               </ListItemIcon>
-                              <ListItemText>Delete</ListItemText>
+                              <ListItemText>{t("view-delete")}</ListItemText>
                             </MenuItem>
                           </Menu>
                         </>
@@ -194,8 +193,8 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                       startScrollButtonIcon: () => <ChevronLeft size={12} />,
                     }}
                   >
-                    <Tab label='Overview' value='Overview' />
-                    <Tab label='Tests' value='Tests' />
+                    <Tab label={t("view-overview")} value='Overview' />
+                    <Tab label={t("view-tests")} value='Tests' />
                   </TabList>
                 </Box>
               </TitleWrapper>
@@ -207,36 +206,36 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                       <Grid container spacing={5} size={{ lg: 8, xs: 12 }}>
                         <Grid size={12}>
                           <Typography variant='h6' component='h6' className='mb-3'>
-                            Definition
+                            {t("view-definition")}
                           </Typography>
                           <Card>
                             <CardContent className='flex flex-col gap-5'>
                               <Box className='flex flex-row gap-2'>
                                 <PencilRuler className='flex-none' />
                                 <Box className='flex flex-col gap-1'>
-                                  <Typography variant='subtitle1'>Type</Typography>
-                                  <Typography>{preset.type}</Typography>
+                                  <Typography variant='subtitle1'>{t("listing-type")}</Typography>
+                                  <Typography>{preset.type === "Tensile" ? t("listing-tensile") : t("listing-compression")}</Typography>
                                 </Box>
                               </Box>
                               <Box className='flex flex-row gap-2'>
                                 <Gauge className='flex-none' />
                                 <Box className='flex flex-col gap-1'>
-                                  <Typography variant='subtitle1'>Velocity</Typography>
+                                  <Typography variant='subtitle1'>{t("view-velocity")}</Typography>
                                   <Typography>{typeof preset.velocity === "number" ? `${preset.velocity} mm/min` : "-"}</Typography>
                                 </Box>
                               </Box>
                               <Box className='flex flex-row gap-2'>
                                 <Split className='flex-none' />
                                 <Box className='flex flex-col gap-1'>
-                                  <Typography variant='subtitle1'>Base</Typography>
-                                  <Typography>{preset.base ?? "-"}</Typography>
+                                  <Typography variant='subtitle1'>{t("listing-base")}</Typography>
+                                  <Typography>{preset.base === "Load" ? t("listing-load") : preset.base === "Distance" ? t("listing-distance") : "-"}</Typography>
                                 </Box>
                               </Box>
                               {preset.base === "Load" && (
                                 <Box className='flex flex-row gap-2'>
                                   <WeightTilde className='flex-none' />
                                   <Box className='flex flex-col gap-1'>
-                                    <Typography variant='subtitle1'>Preload</Typography>
+                                    <Typography variant='subtitle1'>{t("view-preload")}</Typography>
                                     <Typography>{`${(preset.preload ?? 0).toFixed(1)} N`}</Typography>
                                   </Box>
                                 </Box>
@@ -245,7 +244,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                                 <Box className='flex flex-row gap-2' key={`target-${index}`}>
                                   <Crosshair className='flex-none' />
                                   <Box className='flex flex-col gap-1'>
-                                    <Typography variant='subtitle1'>Target {index + 1}</Typography>
+                                    <Typography variant='subtitle1'>{t("view-target", { index: index + 1 })}</Typography>
                                     <Typography>
                                       {typeof target === "number"
                                         ? `${preset.base === "Load" ? target.toFixed(1) : preset.base === "Distance" ? target.toFixed(4) : target} ${preset.base === "Load" ? "N" : preset.base === "Distance" ? "mm" : ""}`.trim()
@@ -257,15 +256,15 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                               <Box className='flex flex-row gap-2'>
                                 <CalendarPlus className='flex-none' />
                                 <Box className='flex flex-col gap-1'>
-                                  <Typography variant='subtitle1'>Created</Typography>
-                                  <Typography>{new Date(preset.createdAt).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short" })}</Typography>
+                                  <Typography variant='subtitle1'>{t("listing-created")}</Typography>
+                                  <Typography>{new Date(preset.createdAt).toLocaleString(i18n.resolvedLanguage ?? "en", { dateStyle: "short", timeStyle: "short" })}</Typography>
                                 </Box>
                               </Box>
                               <Box className='flex flex-row gap-2'>
                                 <CalendarCog className='flex-none' />
                                 <Box className='flex flex-col gap-1'>
-                                  <Typography variant='subtitle1'>Updated</Typography>
-                                  <Typography>{new Date(preset.updatedAt).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short" })}</Typography>
+                                  <Typography variant='subtitle1'>{t("listing-updated")}</Typography>
+                                  <Typography>{new Date(preset.updatedAt).toLocaleString(i18n.resolvedLanguage ?? "en", { dateStyle: "short", timeStyle: "short" })}</Typography>
                                 </Box>
                               </Box>
                             </CardContent>
@@ -275,7 +274,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                       <Grid container spacing={5} size={{ lg: 4, xs: 12 }}>
                         <Grid size={12}>
                           <Typography variant='h6' component='h6' className='mb-3'>
-                            Latest Tests
+                            {t("view-latest-tests")}
                           </Typography>
                           <Card>
                             <CardContent>

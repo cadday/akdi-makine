@@ -5,6 +5,7 @@ import { ImagePlus, Trash2 } from "lucide-react";
 import { DynamicIcon, type IconName } from "lucide-react/dynamic";
 import type { UploadedImage } from "@/context/db-context";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const EMPTY_IMAGES: UploadedImage[] = [];
@@ -82,6 +83,7 @@ interface EditableStoredImagePreviewsProps {
 }
 
 function EditableStoredImagePreviews({ images, onRemove }: EditableStoredImagePreviewsProps) {
+  const { t } = useTranslation();
   const previews = useStoredImagePreviews(images);
 
   return previews.map((preview) => (
@@ -98,7 +100,7 @@ function EditableStoredImagePreviews({ images, onRemove }: EditableStoredImagePr
           {preview.name}
         </Typography>
         <Button
-          aria-label={`Remove ${preview.name}`}
+          aria-label={t("add-image-remove", { name: preview.name })}
           className='icon-only flex-none'
           size='tiny'
           color='grey'
@@ -159,6 +161,7 @@ function ImageDataFieldInputBase({
   onPendingFilesChange,
   editableStoredImages = false,
 }: ImageDataFieldInputBaseProps) {
+  const { t } = useTranslation();
   const [dropError, setDropError] = useState<string | null>(null);
   const [previewFiles, setPreviewFiles] = useState<File[]>([]);
   const canSelectFiles = Boolean(onPendingFilesChange || previewOnly);
@@ -183,7 +186,20 @@ function ImageDataFieldInputBase({
     maxSize: MAX_IMAGE_BYTES,
     disabled: !canSelectFiles,
     onDrop: (acceptedFiles, rejectedFiles) => {
-      setDropError(rejectedFiles.length ? rejectedFiles[0].errors.map((item) => item.message).join(" ") : null);
+      const firstRejectionCode = rejectedFiles[0]?.errors[0]?.code;
+      setDropError(
+        firstRejectionCode
+          ? t(
+              firstRejectionCode === "file-invalid-type"
+                ? "add-image-invalid-type"
+                : firstRejectionCode === "file-too-large"
+                  ? "add-image-too-large"
+                  : firstRejectionCode === "too-many-files"
+                    ? "add-image-too-many"
+                    : "add-image-rejected",
+            )
+          : null,
+      );
       if (acceptedFiles.length) {
         const nextFiles = multiple ? [...activePendingFiles, ...acceptedFiles] : acceptedFiles.slice(0, 1);
         if (onPendingFilesChange) onPendingFilesChange(nextFiles);
@@ -225,7 +241,7 @@ function ImageDataFieldInputBase({
                     </Typography>
                   </Box>
                   <Button
-                    aria-label={`Remove ${file.name}`}
+                    aria-label={t("add-image-remove", { name: file.name })}
                     className='icon-only flex-none'
                     size='tiny'
                     color='grey'
@@ -247,11 +263,11 @@ function ImageDataFieldInputBase({
             ))}
             <Box className='flex min-h-12 flex-1 items-center justify-center gap-2 px-3'>
               <ImagePlus size={18} />
-              <Typography variant='body2'>{isDragActive ? "Drop images here" : "Add or drop images"}</Typography>
+              <Typography variant='body2'>{isDragActive ? t("add-image-drop-here") : t("add-image-add-or-drop")}</Typography>
             </Box>
           </Box>
         ) : (
-          <Alert severity='info'>Image upload is available when entering a specimen value.</Alert>
+          <Alert severity='info'>{t("add-form-image-upload-context")}</Alert>
         )}
         {dropError && (
           <Alert severity='error' className='mt-2'>

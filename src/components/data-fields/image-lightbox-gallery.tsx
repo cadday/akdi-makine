@@ -2,6 +2,7 @@ import "yet-another-react-lightbox/styles.css";
 
 import { useEffect, useState } from "react";
 import Lightbox from "yet-another-react-lightbox";
+import { useTranslation } from "react-i18next";
 import { Box, ButtonBase, Grid } from "@mui/material";
 import { ChevronLeft, ChevronRight, TriangleAlert, X } from "lucide-react";
 import type { UploadedImage } from "@/context/db-context";
@@ -27,6 +28,7 @@ function toBase64(bytes: Uint8Array) {
 }
 
 export default function ImageLightboxGallery({ images, printMode = false }: ImageLightboxGalleryProps) {
+  const { t } = useTranslation();
   const [previews, setPreviews] = useState<ImagePreview[]>([]);
   const [index, setIndex] = useState(-1);
   const [isLoading, setIsLoading] = useState(true);
@@ -91,7 +93,7 @@ export default function ImageLightboxGallery({ images, printMode = false }: Imag
               <Grid container spacing={1}>
                 {previews.map((preview, previewIndex) => (
                   <Grid size='auto' key={preview.id}>
-                    <ButtonBase aria-label={`Open ${preview.name}`} className='h-24 w-32 overflow-hidden rounded-lg' onClick={() => setIndex(previewIndex)}>
+                    <ButtonBase aria-label={t("view-open-image", { name: preview.name })} className='h-24 w-32 overflow-hidden rounded-lg' onClick={() => setIndex(previewIndex)}>
                       <img alt={preview.name} src={preview.src} className='h-full w-full object-cover' />
                     </ButtonBase>
                   </Grid>

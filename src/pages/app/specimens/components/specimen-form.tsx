@@ -24,6 +24,7 @@ import { type DataFieldDefinition, type DynamicDataValue, type SpecimenGeometry,
 import { SPECIMEN_GEOMETRIES } from "@/lib/db";
 import useAppNotifications from "@/hooks/use-app-notifications";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 interface SpecimenFormValues {
   name: string;
@@ -48,7 +49,7 @@ interface SpecimenFormProps {
   onSave: (input: SpecimenSaveInput) => Promise<void>;
 }
 
-function buildSpecimenValidationSchema(fields: DataFieldDefinition[]) {
+function buildSpecimenValidationSchema(fields: DataFieldDefinition[], t: ReturnType<typeof useTranslation>["t"]) {
   const customDataShape: Record<string, yup.AnySchema> = {};
   const pendingImagesShape: Record<string, yup.AnySchema> = {};
 
@@ -57,13 +58,13 @@ function buildSpecimenValidationSchema(fields: DataFieldDefinition[]) {
       case "Text":
       case "Textarea": {
         let schema = yup.string().nullable();
-        if (field.mandatory) schema = schema.required(`${field.name} is required`).trim();
+        if (field.mandatory) schema = schema.required(t("add-validation-required", { label: field.name })).trim();
         customDataShape[field.id] = schema;
         break;
       }
       case "Number": {
-        let schema = yup.number().nullable().typeError(`${field.name} must be a number`);
-        if (field.mandatory) schema = schema.required(`${field.name} is required`);
+        let schema = yup.number().nullable().typeError(t("add-validation-number", { label: field.name }));
+        if (field.mandatory) schema = schema.required(t("add-validation-required", { label: field.name }));
         customDataShape[field.id] = schema;
         break;
       }
@@ -76,18 +77,18 @@ function buildSpecimenValidationSchema(fields: DataFieldDefinition[]) {
           : yup
               .string()
               .nullable()
-              .oneOf(field.options ?? [], `${field.name} must be one of its configured options`);
+              .oneOf(field.options ?? [], t("add-validation-select-option", { label: field.name }));
         if (field.mandatory) {
           schema = field.multipleSelection
-            ? schema.required(`${field.name} is required`).min(1, `${field.name} is required`)
-            : schema.required(`${field.name} is required`);
+            ? schema.required(t("add-validation-required", { label: field.name })).min(1, t("add-validation-required", { label: field.name }))
+            : schema.required(t("add-validation-required", { label: field.name }));
         }
         customDataShape[field.id] = schema;
         break;
       }
       case "Boolean": {
         let schema = yup.boolean().nullable();
-        if (field.mandatory) schema = schema.required(`${field.name} is required`);
+        if (field.mandatory) schema = schema.required(t("add-validation-required", { label: field.name }));
         customDataShape[field.id] = schema;
         break;
       }
@@ -100,14 +101,18 @@ function buildSpecimenValidationSchema(fields: DataFieldDefinition[]) {
 
   return yup
     .object({
-      name: yup.string().trim().required("Specimen name is required"),
-      geometry: yup.string().oneOf(SPECIMEN_GEOMETRIES).required(),
+      name: yup.string().trim().required(t("add-validation-required", { label: t("specimen") })),
+      geometry: yup.string().oneOf(SPECIMEN_GEOMETRIES).required(t("add-validation-required", { label: t("add-geometry") })),
       diameter: yup
         .number()
         .transform((value, originalValue) => (originalValue === "" ? undefined : value))
         .when("geometry", {
           is: "Cylindrical",
-          then: (schema) => schema.typeError("Enter a number").moreThan(0, "Must be greater than zero").required("Diameter is required"),
+          then: (schema) =>
+            schema
+              .typeError(t("add-validation-number", { label: t("add-diameter") }))
+              .moreThan(0, t("add-validation-greater-zero", { label: t("add-diameter") }))
+              .required(t("add-validation-required", { label: t("add-diameter") })),
           otherwise: (schema) => schema.notRequired().nullable(),
         }),
       side1: yup
@@ -115,7 +120,11 @@ function buildSpecimenValidationSchema(fields: DataFieldDefinition[]) {
         .transform((value, originalValue) => (originalValue === "" ? undefined : value))
         .when("geometry", {
           is: "Rectangular",
-          then: (schema) => schema.typeError("Enter a number").moreThan(0, "Must be greater than zero").required("Side 1 is required"),
+          then: (schema) =>
+            schema
+              .typeError(t("add-validation-number", { label: t("add-side-1") }))
+              .moreThan(0, t("add-validation-greater-zero", { label: t("add-side-1") }))
+              .required(t("add-validation-required", { label: t("add-side-1") })),
           otherwise: (schema) => schema.notRequired().nullable(),
         }),
       side2: yup
@@ -123,7 +132,11 @@ function buildSpecimenValidationSchema(fields: DataFieldDefinition[]) {
         .transform((value, originalValue) => (originalValue === "" ? undefined : value))
         .when("geometry", {
           is: "Rectangular",
-          then: (schema) => schema.typeError("Enter a number").moreThan(0, "Must be greater than zero").required("Side 2 is required"),
+          then: (schema) =>
+            schema
+              .typeError(t("add-validation-number", { label: t("add-side-2") }))
+              .moreThan(0, t("add-validation-greater-zero", { label: t("add-side-2") }))
+              .required(t("add-validation-required", { label: t("add-side-2") })),
           otherwise: (schema) => schema.notRequired().nullable(),
         }),
       height: yup
@@ -131,19 +144,23 @@ function buildSpecimenValidationSchema(fields: DataFieldDefinition[]) {
         .transform((value, originalValue) => (originalValue === "" ? undefined : value))
         .when("geometry", {
           is: (geometry: SpecimenGeometry) => geometry !== "Not Specified",
-          then: (schema) => schema.typeError("Enter a number").moreThan(0, "Must be greater than zero").required("Height is required"),
+          then: (schema) =>
+            schema
+              .typeError(t("add-validation-number", { label: t("add-height") }))
+              .moreThan(0, t("add-validation-greater-zero", { label: t("add-height") }))
+              .required(t("add-validation-required", { label: t("add-height") })),
           otherwise: (schema) => schema.notRequired().nullable(),
         }),
       customData: yup.object().shape(customDataShape),
       pendingImages: yup.object().shape(pendingImagesShape),
     })
-    .test("required-images", "Required image is missing", function (values) {
+    .test("required-images", t("add-validation-image-missing"), function (values) {
       for (const field of fields) {
         if (field.type !== "Image" || !field.mandatory) continue;
         const savedImages = values?.customData?.[field.id];
         const pendingFiles = values?.pendingImages?.[field.id];
         if ((!Array.isArray(savedImages) || savedImages.length === 0) && (!Array.isArray(pendingFiles) || pendingFiles.length === 0)) {
-          return this.createError({ path: `pendingImages.${field.id}`, message: `${field.name} is required` });
+          return this.createError({ path: `pendingImages.${field.id}`, message: t("add-validation-required", { label: field.name }) });
         }
       }
       return true;
@@ -177,10 +194,11 @@ function getInitialValues(specimen: SpecimenRecord | undefined, fields: DataFiel
   };
 }
 
-export default function SpecimenForm({ fields, isLoadingFields = false, loadError, specimen, initialSpecimen, saveLabel = "Save", onSave }: SpecimenFormProps) {
+export default function SpecimenForm({ fields, isLoadingFields = false, loadError, specimen, initialSpecimen, saveLabel, onSave }: SpecimenFormProps) {
   const [submitted, setSubmitted] = useState(false);
   const { showError } = useAppNotifications();
-  const validationSchema = useMemo(() => buildSpecimenValidationSchema(fields), [fields]);
+  const { t } = useTranslation();
+  const validationSchema = useMemo(() => buildSpecimenValidationSchema(fields, t), [fields, t]);
   const initialValues = useMemo(() => getInitialValues(specimen ?? initialSpecimen, fields), [fields, specimen, initialSpecimen]);
   const formik = useFormik<SpecimenFormValues>({
     validationSchema,
@@ -235,7 +253,7 @@ export default function SpecimenForm({ fields, isLoadingFields = false, loadErro
         });
       } catch (error) {
         await Promise.allSettled(savedImageIds.map((imageId) => window.electronAPI.deleteImage(imageId)));
-        showError(`Failed to save specimen: ${String(error)}`);
+        showError(t("add-form-save-specimen-error", { error: String(error) }));
       }
     },
   });
@@ -261,7 +279,7 @@ export default function SpecimenForm({ fields, isLoadingFields = false, loadErro
       <Grid size={{ xs: 12 }} container spacing={5}>
         <Grid size={12}>
           <Typography variant='h6' component='h6' className='mb-3'>
-            Definition
+            {t("add-definition")}
           </Typography>
           <Card>
             <CardContent className='-mb-4'>
@@ -269,7 +287,7 @@ export default function SpecimenForm({ fields, isLoadingFields = false, loadErro
                 <Bookmark className={cn("flex-none", formik.touched.name && formik.errors.name && submitted && "text-error!")} />
                 <FormControl className='outlined' variant='standard' size='small' fullWidth required>
                   <FormLabel component='label' className={cn(formik.touched.name && formik.errors.name && submitted && "text-error!")}>
-                    Name
+                    {t("add-name")}
                   </FormLabel>
                   <Input name='name' value={formik.values.name} onChange={formik.handleChange} onBlur={formik.handleBlur} />
                 </FormControl>
@@ -278,7 +296,7 @@ export default function SpecimenForm({ fields, isLoadingFields = false, loadErro
                 <Shapes className={cn("flex-none", fieldError("geometry") && "text-error!")} />
                 <FormControl fullWidth size='small' variant='standard' className='outlined'>
                   <FormLabel component='label' className={fieldError("geometry") ? "text-error!" : undefined}>
-                    Geometry
+                    {t("add-geometry")}
                   </FormLabel>
                   <Select<SpecimenGeometry>
                     value={formik.values.geometry}
@@ -291,7 +309,11 @@ export default function SpecimenForm({ fields, isLoadingFields = false, loadErro
                   >
                     {SPECIMEN_GEOMETRIES.map((geometry) => (
                       <MenuItem key={geometry} value={geometry}>
-                        {geometry}
+                        {geometry === "Cylindrical"
+                          ? t("add-geometry-cylindrical")
+                          : geometry === "Rectangular"
+                            ? t("add-geometry-rectangular")
+                            : t("add-geometry-not-specified")}
                       </MenuItem>
                     ))}
                   </Select>
@@ -302,7 +324,7 @@ export default function SpecimenForm({ fields, isLoadingFields = false, loadErro
                   <Diameter className={cn("flex-none", fieldError("diameter") && "text-error!")} />
                   <FormControl className='outlined' variant='standard' size='small' fullWidth required>
                     <FormLabel component='label' className={fieldError("diameter") ? "text-error!" : undefined}>
-                      Diameter
+                      {t("add-diameter")}
                     </FormLabel>
                     <Input
                       type='number'
@@ -320,7 +342,7 @@ export default function SpecimenForm({ fields, isLoadingFields = false, loadErro
                     <RulerDimensionLine className={cn("flex-none", fieldError("side1") && "text-error!")} />
                     <FormControl className='outlined' variant='standard' size='small' fullWidth required>
                       <FormLabel component='label' className={fieldError("side1") ? "text-error!" : undefined}>
-                        Side 1
+                        {t("add-side-1")}
                       </FormLabel>
                       <Input
                         type='number'
@@ -335,7 +357,7 @@ export default function SpecimenForm({ fields, isLoadingFields = false, loadErro
                     <RulerDimensionLine className={cn("flex-none rotate-90", fieldError("side2") && "text-error!")} />
                     <FormControl className='outlined' variant='standard' size='small' fullWidth required>
                       <FormLabel component='label' className={fieldError("side2") ? "text-error!" : undefined}>
-                        Side 2
+                        {t("add-side-2")}
                       </FormLabel>
                       <Input
                         type='number'
@@ -353,7 +375,7 @@ export default function SpecimenForm({ fields, isLoadingFields = false, loadErro
                   <MoveVertical className={cn("flex-none", fieldError("height") && "text-error!")} />
                   <FormControl className='outlined' variant='standard' size='small' fullWidth required>
                     <FormLabel component='label' className={fieldError("height") ? "text-error!" : undefined}>
-                      Height
+                      {t("add-height")}
                     </FormLabel>
                     <Input
                       type='number'
@@ -372,7 +394,7 @@ export default function SpecimenForm({ fields, isLoadingFields = false, loadErro
         {fields.length !== 0 && (
           <Grid size={12}>
             <Typography variant='h6' component='h6' className='mb-3'>
-              Data Fields
+              {t("add-data-fields-section")}
             </Typography>
             <Card>
               <CardContent className='flex flex-col gap-5 -mb-4'>
@@ -400,7 +422,7 @@ export default function SpecimenForm({ fields, isLoadingFields = false, loadErro
           {submitted && !formik.isValid && (
             <Alert severity='error' icon={<XSquare />} className='neutral rounded-3xl! bg-transparent! mb-2 mt-2 p-5'>
               <AlertTitle variant='subtitle1' className='pt-0.5'>
-                The following inputs have errors!
+                {t("add-validation-summary")}
               </AlertTitle>
               {collectErrorMessages(formik.errors).map(([key, message]) => {
                 const fieldId = key.startsWith("customData.")
@@ -408,7 +430,22 @@ export default function SpecimenForm({ fields, isLoadingFields = false, loadErro
                   : key.startsWith("pendingImages.")
                     ? key.slice("pendingImages.".length)
                     : null;
-                const label = fieldId ? (fields.find((field) => field.id === fieldId)?.name ?? fieldId) : capitalize(key);
+                const label =
+                  fieldId
+                    ? (fields.find((field) => field.id === fieldId)?.name ?? fieldId)
+                    : key === "name"
+                      ? t("add-name")
+                      : key === "geometry"
+                        ? t("add-geometry")
+                        : key === "diameter"
+                          ? t("add-diameter")
+                          : key === "side1"
+                            ? t("add-side-1")
+                            : key === "side2"
+                              ? t("add-side-2")
+                              : key === "height"
+                                ? t("add-height")
+                                : capitalize(key);
                 return (
                   <Box className='flex flex-row gap-0.5' key={key}>
                     <Typography className='text-error'>{label}:</Typography>
@@ -429,7 +466,7 @@ export default function SpecimenForm({ fields, isLoadingFields = false, loadErro
             className='surface-standard'
             startIcon={<Save />}
           >
-            {saveLabel}
+            {saveLabel ?? t("save")}
           </Button>
         </Grid>
       </Grid>

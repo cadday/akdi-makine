@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useRef, useState, type SyntheticEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type SyntheticEvent } from 'react';
 import { useLocation } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Button,
@@ -26,6 +27,7 @@ const PLC_LOAD_SCALE_DIVISOR = 10;
 const PLC_DISTANCE_SCALE_DIVISOR = 10000;
 
 export default function MachineControls() {
+  const { t, i18n } = useTranslation();
   const [quickTestOpen, setQuickTestOpen] = useState(false);
   const [quickTestTooltipOpen, setQuickTestTooltipOpen] = useState(false);
   const [quickTestCounts, setQuickTestCounts] = useState<{ specimens: number; presets: number } | null>(null);
@@ -43,6 +45,14 @@ export default function MachineControls() {
   const { connectionStatus, interlockStatus, updateInterlockStatus } = usePlcData();
   const { pathname } = useLocation();
   const { hasActiveTest, stopActiveTest } = useTestRun();
+  const loadFormatter = useMemo(
+    () => new Intl.NumberFormat(i18n.resolvedLanguage ?? 'en', { minimumFractionDigits: 1, maximumFractionDigits: 1 }),
+    [i18n.resolvedLanguage],
+  );
+  const distanceFormatter = useMemo(
+    () => new Intl.NumberFormat(i18n.resolvedLanguage ?? 'en', { minimumFractionDigits: 4, maximumFractionDigits: 4 }),
+    [i18n.resolvedLanguage],
+  );
   const machineControlsDisabled = !hasConnectedMachine || connectionStatus.state !== 'online';
   const machineInterlocked = isMachineInterlocked(interlockStatus) || emergencyHaltActive;
   const interlockStatusUnavailable = connectionStatus.state === 'online' && !interlockStatus;
@@ -73,7 +83,7 @@ export default function MachineControls() {
       } catch (error: unknown) {
         if (!cancelled) updateInterlockStatus(ipAddress, null);
         if (!cancelled && !hasReportedReadError) {
-          showError(`Failed to read PLC overview values: ${String(error)}`);
+          showError(t('machine-controls-read-values-error', { error: String(error) }));
           hasReportedReadError = true;
         }
       } finally {
@@ -90,7 +100,7 @@ export default function MachineControls() {
       cancelled = true;
       window.clearInterval(intervalId);
     };
-  }, [connectionStatus, showError, updateInterlockStatus]);
+  }, [connectionStatus, showError, t, updateInterlockStatus]);
 
   const displayedPlcValues =
     connectionStatus.state === 'online' && plcValues?.ipAddress === connectionStatus.ipAddress
@@ -102,11 +112,11 @@ export default function MachineControls() {
       (await db.machines.toArray()).some((machine) => machine.connected),
     ).subscribe({
       next: setHasConnectedMachine,
-      error: (error: unknown) => showError(`Failed to check connected machines: ${String(error)}`),
+      error: (error: unknown) => showError(t('machine-controls-check-machines-error', { error: String(error) })),
     });
 
     return () => subscription.unsubscribe();
-  }, [db, showError]);
+  }, [db, showError, t]);
 
   useEffect(() => {
     if (!quickTestOpen) return;
@@ -122,7 +132,7 @@ export default function MachineControls() {
       .catch((error: unknown) => {
         if (cancelled) return;
         setCountsLoadError(true);
-        showError(`Failed to load Quick Test options: ${String(error)}`);
+        showError(t('quick-test-load-error', { error: String(error) }));
       })
       .finally(() => {
         if (!cancelled) setIsLoadingCounts(false);
@@ -131,7 +141,7 @@ export default function MachineControls() {
     return () => {
       cancelled = true;
     };
-  }, [getRecordCounts, quickTestOpen, showError]);
+  }, [getRecordCounts, quickTestOpen, showError, t]);
 
   useEffect(() => {
     setQuickTestOpen(false);
@@ -147,16 +157,16 @@ export default function MachineControls() {
     moveUpPressedRef.current = false;
     void window.plcAPI
       .setMoveUp(false)
-      .catch((error: unknown) => showError(`Failed to stop upward movement: ${String(error)}`));
-  }, [showError]);
+        .catch((error: unknown) => showError(t('machine-controls-stop-up-error', { error: String(error) })));
+      }, [showError, t]);
 
   const releaseMoveDown = useCallback(() => {
     if (!moveDownPressedRef.current) return;
     moveDownPressedRef.current = false;
     void window.plcAPI
       .setMoveDown(false)
-      .catch((error: unknown) => showError(`Failed to stop downward movement: ${String(error)}`));
-  }, [showError]);
+        .catch((error: unknown) => showError(t('machine-controls-stop-down-error', { error: String(error) })));
+      }, [showError, t]);
 
   const pressMoveUp = useCallback(() => {
     if (manualControlsDisabled || moveUpPressedRef.current) return;
@@ -167,11 +177,11 @@ export default function MachineControls() {
       if (releaseAfterFailure) {
         void window.plcAPI
           .setMoveUp(false)
-          .catch((releaseError: unknown) => showError(`Failed to clear the Move Up command: ${String(releaseError)}`));
+          .catch((releaseError: unknown) => showError(t('machine-controls-clear-up-error', { error: String(releaseError) })));
       }
-      showError(`Failed to start upward movement: ${String(error)}`);
+      showError(t('machine-controls-start-up-error', { error: String(error) }));
     });
-  }, [manualControlsDisabled, showError]);
+  }, [manualControlsDisabled, showError, t]);
 
   const pressMoveDown = useCallback(() => {
     if (manualControlsDisabled || moveDownPressedRef.current) return;
@@ -183,38 +193,38 @@ export default function MachineControls() {
         void window.plcAPI
           .setMoveDown(false)
           .catch((releaseError: unknown) =>
-            showError(`Failed to clear the Move Down command: ${String(releaseError)}`),
+            showError(t('machine-controls-clear-down-error', { error: String(releaseError) })),
           );
       }
-      showError(`Failed to start downward movement: ${String(error)}`);
+      showError(t('machine-controls-start-down-error', { error: String(error) }));
     });
-  }, [manualControlsDisabled, showError]);
+  }, [manualControlsDisabled, showError, t]);
 
   const triggerResetLoad = useCallback(() => {
     if (manualControlsDisabled) return;
     void window.plcAPI
       .resetLoad()
-      .catch((error: unknown) => showError(`Failed to activate Reset Load: ${String(error)}`));
-  }, [manualControlsDisabled, showError]);
+        .catch((error: unknown) => showError(t('machine-controls-reset-load-error', { error: String(error) })));
+      }, [manualControlsDisabled, showError, t]);
 
   const triggerResetStroke = useCallback(() => {
     if (manualControlsDisabled) return;
     void window.plcAPI
       .resetStroke()
-      .catch((error: unknown) => showError(`Failed to activate Reset Stroke: ${String(error)}`));
-  }, [manualControlsDisabled, showError]);
+        .catch((error: unknown) => showError(t('machine-controls-reset-stroke-error', { error: String(error) })));
+      }, [manualControlsDisabled, showError, t]);
 
   const handleMachineHalt = useCallback(() => {
     if (machineControlsDisabled || !interlockStatus || isMachineInterlocked(interlockStatus)) return;
-    void window.plcAPI.haltMachine().catch((error: unknown) => showError(`Failed to halt machine: ${String(error)}`));
-  }, [interlockStatus, machineControlsDisabled, showError]);
+    void window.plcAPI.haltMachine().catch((error: unknown) => showError(t('machine-controls-halt-error', { error: String(error) })));
+  }, [interlockStatus, machineControlsDisabled, showError, t]);
 
   const handleMachineResume = useCallback(() => {
     if (machineControlsDisabled || !interlockStatus?.machineHalted || interlockStatus.emergencyHaltActive) return;
     void window.plcAPI
       .resumeMachine()
-      .catch((error: unknown) => showError(`Failed to resume machine: ${String(error)}`));
-  }, [interlockStatus, machineControlsDisabled, showError]);
+        .catch((error: unknown) => showError(t('machine-controls-resume-error', { error: String(error) })));
+      }, [interlockStatus, machineControlsDisabled, showError, t]);
 
   useEffect(() => {
     if (manualControlsDisabled) {
@@ -242,12 +252,12 @@ export default function MachineControls() {
       {emergencyHaltActive ? (
         <Box className="text-error bg-error-light/10 h-10 font-semibold flex flex-row gap-2 items-center px-6 rounded-md">
           <OctagonX></OctagonX>
-          <Box>Emergency halt is active, release it on the machine if it is safe!</Box>
+          <Box>{t('machine-controls-emergency-halt-active')}</Box>
         </Box>
       ) : (
         <Box className={'flex flex-row'}>
           <Box className="flex flex-row">
-            <Tooltip title="Quick Test" placement="top" open={quickTestTooltipOpen}>
+            <Tooltip title={t('overview-quick-test')} placement="top" open={quickTestTooltipOpen}>
               <span
                 className="inline-flex"
                 onMouseEnter={() => setQuickTestTooltipOpen(true)}
@@ -255,6 +265,7 @@ export default function MachineControls() {
               >
                 <Button
                   ref={quickTestAnchorRef}
+                  aria-label={t('overview-quick-test')}
                   onClick={() => {
                     setQuickTestTooltipOpen(false);
                     setQuickTestOpen((open) => !open);
@@ -268,10 +279,11 @@ export default function MachineControls() {
                 />
               </span>
             </Tooltip>
-            <Tooltip title="Stop Test" placement="top">
+            <Tooltip title={t('machine-controls-stop-test')} placement="top">
               <span className="inline-flex">
                 <Button
                   onClick={stopActiveTest}
+                  aria-label={t('machine-controls-stop-test')}
                   disabled={machineControlsDisabled || !hasActiveTest}
                   variant="text"
                   size="large"
@@ -283,11 +295,11 @@ export default function MachineControls() {
             </Tooltip>
           </Box>
           <Box className="flex flex-row">
-            <Tooltip title="Reset Load" placement="top">
+            <Tooltip title={t('machine-controls-reset-load')} placement="top">
               <span className="inline-flex">
                 <Button
                   type="button"
-                  aria-label="Reset Load"
+                  aria-label={t('machine-controls-reset-load')}
                   disabled={manualControlsDisabled}
                   onClick={triggerResetLoad}
                   variant="text"
@@ -298,11 +310,11 @@ export default function MachineControls() {
                 />
               </span>
             </Tooltip>
-            <Tooltip title="Reset Stroke" placement="top">
+            <Tooltip title={t('machine-controls-reset-stroke')} placement="top">
               <span className="inline-flex">
                 <Button
                   type="button"
-                  aria-label="Reset Stroke"
+                  aria-label={t('machine-controls-reset-stroke')}
                   disabled={manualControlsDisabled}
                   onClick={triggerResetStroke}
                   variant="text"
@@ -315,10 +327,11 @@ export default function MachineControls() {
             </Tooltip>
           </Box>
           <Box className="flex flex-row">
-            <Tooltip title="Move Up" placement="top">
+            <Tooltip title={t('machine-controls-move-up')} placement="top">
               <span className="inline-flex">
                 <Button
                   type="button"
+                  aria-label={t('machine-controls-move-up')}
                   disabled={manualControlsDisabled}
                   onPointerDown={(event) => {
                     if (event.button === 0) pressMoveUp();
@@ -344,10 +357,11 @@ export default function MachineControls() {
                 />
               </span>
             </Tooltip>
-            <Tooltip title="Move Down" placement="top">
+            <Tooltip title={t('machine-controls-move-down')} placement="top">
               <span className="inline-flex">
                 <Button
                   type="button"
+                  aria-label={t('machine-controls-move-down')}
                   disabled={manualControlsDisabled}
                   onPointerDown={(event) => {
                     if (event.button === 0) pressMoveDown();
@@ -375,10 +389,11 @@ export default function MachineControls() {
             </Tooltip>
             {displayedPlcValues &&
               (displayedPlcValues.machineHalted ? (
-                <Tooltip title="Resume" placement="top">
+                <Tooltip title={t('machine-controls-resume')} placement="top">
                   <span className="inline-flex">
                     <Button
                       onClick={handleMachineResume}
+                      aria-label={t('machine-controls-resume')}
                       disabled={
                         machineControlsDisabled ||
                         !interlockStatus?.machineHalted ||
@@ -394,10 +409,11 @@ export default function MachineControls() {
                   </span>
                 </Tooltip>
               ) : (
-                <Tooltip title="Halt" placement="top">
+                <Tooltip title={t('machine-controls-halt')} placement="top">
                   <span className="inline-flex">
                     <Button
                       onClick={handleMachineHalt}
+                      aria-label={t('machine-controls-halt')}
                       disabled={machineControlsDisabled || !interlockStatus || machineInterlocked}
                       variant="text"
                       size="large"
@@ -409,14 +425,14 @@ export default function MachineControls() {
                 </Tooltip>
               ))}
           </Box>
-          <Box className="hidden lg:flex bg-grey-50 flex-row items-center  rounded-lg px-4 ms-2">
+          <Box className="flex bg-grey-50 flex-row items-center  rounded-lg px-4 ms-2">
             <Box className="w-28 flex flex-row items-center gap-2 px-1">
               <Weight />
-              {displayedPlcValues ? (displayedPlcValues.load / PLC_LOAD_SCALE_DIVISOR).toFixed(1) : '0.0'} N
+              {loadFormatter.format(displayedPlcValues ? displayedPlcValues.load / PLC_LOAD_SCALE_DIVISOR : 0)} N
             </Box>
             <Box className="min-w-36 flex flex-row items-center gap-2 px-1">
               <Ruler />
-              {displayedPlcValues ? (displayedPlcValues.distance / PLC_DISTANCE_SCALE_DIVISOR).toFixed(4) : '0.0000'} mm
+              {distanceFormatter.format(displayedPlcValues ? displayedPlcValues.distance / PLC_DISTANCE_SCALE_DIVISOR : 0)} mm
             </Box>
           </Box>
         </Box>
@@ -436,7 +452,7 @@ export default function MachineControls() {
               <ClickAwayListener onClickAway={handleQuickTestClose}>
                 <Card className="shadow-darker-sm! w-sm max-w-[calc(100vw-2rem)] outline outline-grey-50">
                   <Typography variant="h6" component="h2" className="px-4 pt-4">
-                    Quick Test
+                    {t('overview-quick-test')}
                   </Typography>
                   <Box className="p-4">
                     {isLoadingCounts ? (
@@ -444,7 +460,7 @@ export default function MachineControls() {
                         <CircularProgress size={24} />
                       </Box>
                     ) : countsLoadError ? (
-                      <Typography className="text-error">Unable to load Quick Test options.</Typography>
+                      <Typography className="text-error">{t('machine-controls-quick-test-unavailable')}</Typography>
                     ) : quickTestCounts && (quickTestCounts.specimens === 0 || quickTestCounts.presets === 0) ? (
                       <NoWayToTest />
                     ) : (

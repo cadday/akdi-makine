@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import { useFormik } from "formik";
 import * as yup from "yup";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { Alert, AlertTitle, Box, Button, capitalize, Card, CardContent, FormControl, FormLabel, Grid, Input, Typography } from "@mui/material";
 import { Bookmark, CalendarCog, CalendarPlus, Hexagon, Pen, Save, X, XSquare } from "lucide-react";
 import { DynamicIcon } from "lucide-react/dynamic";
@@ -23,7 +25,7 @@ interface TestDefinitionProps {
   onTestUpdated: (test: TestRecord) => void;
 }
 
-function buildValidationSchema(fields: DataFieldDefinition[]) {
+function buildValidationSchema(fields: DataFieldDefinition[], t: TFunction) {
   const customDataShape: Record<string, yup.AnySchema> = {};
   const pendingImagesShape: Record<string, yup.AnySchema> = {};
 
@@ -32,13 +34,13 @@ function buildValidationSchema(fields: DataFieldDefinition[]) {
       case "Text":
       case "Textarea": {
         let schema = yup.string().nullable();
-        if (field.mandatory) schema = schema.required(`${field.name} is required`).trim();
+        if (field.mandatory) schema = schema.required(t("view-field-required", { name: field.name })).trim();
         customDataShape[field.id] = schema;
         break;
       }
       case "Number": {
-        let schema = yup.number().nullable().typeError(`${field.name} must be a number`);
-        if (field.mandatory) schema = schema.required(`${field.name} is required`);
+        let schema = yup.number().nullable().typeError(t("view-field-number", { name: field.name }));
+        if (field.mandatory) schema = schema.required(t("view-field-required", { name: field.name }));
         customDataShape[field.id] = schema;
         break;
       }
@@ -51,18 +53,18 @@ function buildValidationSchema(fields: DataFieldDefinition[]) {
           : yup
               .string()
               .nullable()
-              .oneOf(field.options ?? [], `${field.name} must be one of its configured options`);
+              .oneOf(field.options ?? [], t("view-field-select-option", { name: field.name }));
         if (field.mandatory) {
           schema = field.multipleSelection
-            ? schema.required(`${field.name} is required`).min(1, `${field.name} is required`)
-            : schema.required(`${field.name} is required`);
+            ? schema.required(t("view-field-required", { name: field.name })).min(1, t("view-field-required", { name: field.name }))
+            : schema.required(t("view-field-required", { name: field.name }));
         }
         customDataShape[field.id] = schema;
         break;
       }
       case "Boolean": {
         let schema = yup.boolean().nullable();
-        if (field.mandatory) schema = schema.required(`${field.name} is required`);
+        if (field.mandatory) schema = schema.required(t("view-field-required", { name: field.name }));
         customDataShape[field.id] = schema;
         break;
       }
@@ -75,17 +77,17 @@ function buildValidationSchema(fields: DataFieldDefinition[]) {
 
   return yup
     .object({
-      name: yup.string().trim().required("Test name is required"),
+      name: yup.string().trim().required(t("view-test-name-required")),
       customData: yup.object().shape(customDataShape),
       pendingImages: yup.object().shape(pendingImagesShape),
     })
-    .test("required-images", "Required image is missing", function (values) {
+    .test("required-images", t("view-required-image-missing"), function (values) {
       for (const field of fields) {
         if (field.type !== "Image" || !field.mandatory) continue;
         const savedImages = values?.customData?.[field.id];
         const pendingFiles = values?.pendingImages?.[field.id];
         if ((!Array.isArray(savedImages) || savedImages.length === 0) && (!Array.isArray(pendingFiles) || pendingFiles.length === 0)) {
-          return this.createError({ path: `pendingImages.${field.id}`, message: `${field.name} is required` });
+          return this.createError({ path: `pendingImages.${field.id}`, message: t("view-field-required", { name: field.name }) });
         }
       }
       return true;
@@ -107,10 +109,10 @@ function getInitialValues(test: TestRecord, fields: DataFieldDefinition[]): Test
   return { name: test.name, customData, pendingImages: {} };
 }
 
-function renderValue(field: DataFieldDefinition, value: DynamicDataValue) {
+function renderValue(field: DataFieldDefinition, value: DynamicDataValue, t: TFunction) {
   if (value == null) return "-";
   if (field.type === "Image" && Array.isArray(value)) return <ImageLightboxGallery images={value as UploadedImage[]} />;
-  if (typeof value === "boolean") return value ? "True" : "False";
+  if (typeof value === "boolean") return value ? t("listing-true") : t("listing-false");
   const displayValue = Array.isArray(value)
     ? value.map((item) => (item && typeof item === "object" && "name" in item ? item.name : String(item))).join(", ")
     : String(value);
@@ -118,11 +120,12 @@ function renderValue(field: DataFieldDefinition, value: DynamicDataValue) {
 }
 
 export default function TestDefinition({ test, fields, onTestUpdated }: TestDefinitionProps) {
+  const { t, i18n } = useTranslation();
   const { updateTest } = useDb();
   const { showError } = useAppNotifications();
   const [isEditing, setIsEditing] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const validationSchema = useMemo(() => buildValidationSchema(fields), [fields]);
+  const validationSchema = useMemo(() => buildValidationSchema(fields, t), [fields, t]);
   const initialValues = useMemo(() => getInitialValues(test, fields), [fields, test]);
   const formik = useFormik<TestDefinitionValues>({
     initialValues,
@@ -164,14 +167,14 @@ export default function TestDefinition({ test, fields, onTestUpdated }: TestDefi
 
         const name = values.name.trim();
         const updatedCount = await updateTest(test.id, { name, customData });
-        if (updatedCount === 0) throw new Error("Test was not found and could not be updated.");
+        if (updatedCount === 0) throw new Error(t("view-test-update-missing"));
 
         onTestUpdated({ ...test, name, customData, updatedAt: Date.now() });
         setIsEditing(false);
         setSubmitted(false);
       } catch (error) {
         await Promise.allSettled(savedImageIds.map((imageId) => window.electronAPI.deleteImage(imageId)));
-        showError(`Failed to update test: ${String(error)}`);
+        showError(t("view-test-update-error", { error: String(error) }));
       }
     },
   });
@@ -186,12 +189,12 @@ export default function TestDefinition({ test, fields, onTestUpdated }: TestDefi
     <Grid size={12} className='group/grid'>
       <Box className='flex flex-row items-center justify-between'>
         <Typography variant='h6' component='h6' className='mb-3'>
-          Definition
+          {t("view-definition")}
         </Typography>
         {isEditing ? (
           <Box className='flex items-center gap-1'>
             <Button size='tiny' color='grey' variant='text' onClick={handleCancel} startIcon={<X size={16} />}>
-              Cancel
+              {t("cancel")}
             </Button>
             <Button
               size='tiny'
@@ -202,7 +205,7 @@ export default function TestDefinition({ test, fields, onTestUpdated }: TestDefi
               loading={formik.isSubmitting}
               startIcon={<Save size={16} />}
             >
-              Update
+              {t("view-update")}
             </Button>
           </Box>
         ) : (
@@ -214,7 +217,7 @@ export default function TestDefinition({ test, fields, onTestUpdated }: TestDefi
             onClick={() => setIsEditing(true)}
             startIcon={<Pen size={16} />}
           >
-            Edit
+            {t("view-edit")}
           </Button>
         )}
       </Box>
@@ -236,7 +239,7 @@ export default function TestDefinition({ test, fields, onTestUpdated }: TestDefi
                 <Bookmark className={cn("flex-none", submitted && formik.errors.name && "text-error!")} />
                 <FormControl className='outlined' variant='standard' size='small' fullWidth required>
                   <FormLabel component='label' className={cn(submitted && formik.errors.name && "text-error!")}>
-                    Name
+                    {t("listing-name")}
                   </FormLabel>
                   <Input name='name' value={formik.values.name} onChange={formik.handleChange} onBlur={formik.handleBlur} />
                 </FormControl>
@@ -258,7 +261,7 @@ export default function TestDefinition({ test, fields, onTestUpdated }: TestDefi
               })}
               {submitted && !formik.isValid && (
                 <Alert severity='error' icon={<XSquare />}>
-                  <AlertTitle>Check the highlighted fields</AlertTitle>
+                  <AlertTitle>{t("view-check-highlighted-fields")}</AlertTitle>
                   {collectErrorMessages(formik.errors).map(([key, message]) => {
                     const fieldId = key.startsWith("customData.")
                       ? key.slice("customData.".length)
@@ -277,10 +280,10 @@ export default function TestDefinition({ test, fields, onTestUpdated }: TestDefi
               )}
               <Box className='flex gap-1'>
                 <Button type='submit' color='grey' variant='pastel' loading={formik.isSubmitting} startIcon={<Save size={16} />}>
-                  Update
+                  {t("view-update")}
                 </Button>
                 <Button color='grey' variant='text' onClick={handleCancel} startIcon={<X size={16} />}>
-                  Cancel
+                  {t("cancel")}
                 </Button>
               </Box>
             </Box>
@@ -289,7 +292,7 @@ export default function TestDefinition({ test, fields, onTestUpdated }: TestDefi
               <Box className='flex flex-row gap-2'>
                 <Bookmark className='flex-none' />
                 <Box className='flex flex-col gap-1'>
-                  <Typography variant='subtitle1'>Name</Typography>
+                  <Typography variant='subtitle1'>{t("listing-name")}</Typography>
                   <Typography>{test.name}</Typography>
                 </Box>
               </Box>
@@ -298,28 +301,28 @@ export default function TestDefinition({ test, fields, onTestUpdated }: TestDefi
                   {field.icon ? <DynamicIcon name={field.icon} className='flex-none' /> : <Hexagon className='flex-none' />}
                   <Box className='flex flex-col gap-1'>
                     <Typography variant='subtitle1'>{field.name}</Typography>
-                    {renderValue(field, test.customData?.[field.id] ?? test.customData?.[field.name] ?? null)}
+                    {renderValue(field, test.customData?.[field.id] ?? test.customData?.[field.name] ?? null, t)}
                   </Box>
                 </Box>
               ))}
               <Box className='flex flex-row gap-2'>
                 <CalendarPlus className='flex-none' />
                 <Box className='flex flex-col gap-1'>
-                  <Typography variant='subtitle1'>Created</Typography>
-                  <Typography>{new Date(test.createdAt).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short" })}</Typography>
+                  <Typography variant='subtitle1'>{t("listing-created")}</Typography>
+                  <Typography>{new Date(test.createdAt).toLocaleString(i18n.resolvedLanguage ?? "en", { dateStyle: "short", timeStyle: "short" })}</Typography>
                 </Box>
               </Box>
               <Box className='flex flex-row gap-2'>
                 <CalendarCog className='flex-none' />
                 <Box className='flex flex-col gap-1'>
-                  <Typography variant='subtitle1'>Updated</Typography>
-                  <Typography>{new Date(test.updatedAt).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short" })}</Typography>
+                  <Typography variant='subtitle1'>{t("listing-updated")}</Typography>
+                  <Typography>{new Date(test.updatedAt).toLocaleString(i18n.resolvedLanguage ?? "en", { dateStyle: "short", timeStyle: "short" })}</Typography>
                 </Box>
               </Box>
               <Box className='flex flex-row gap-2'>
                 <Machine className='flex-none' />
                 <Box className='flex flex-col gap-1'>
-                  <Typography variant='subtitle1'>Machine IP</Typography>
+                  <Typography variant='subtitle1'>{t("listing-machine-ip")}</Typography>
                   <Typography>{test.machineIP ?? "-"}</Typography>
                 </Box>
               </Box>
