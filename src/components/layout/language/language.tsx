@@ -1,5 +1,6 @@
 import { SyntheticEvent, useState } from "react";
-
+import { ENFlag } from "@/icons/flags/en";
+import { TRFlag } from "@/icons/flags/tr";
 import { Avatar, Fade, ListItemIcon, MenuItem, Menu, PopoverVirtualElement, Tooltip, Button, Box } from "@mui/material";
 
 import { cn } from "@/lib/utils";
@@ -65,7 +66,9 @@ export default function Language() {
           }}
         >
           <ListItemIcon>
-            <Avatar className='nano circular' alt='Türkçe' src='/images/flags/tr.jpg' />
+            <Avatar className='nano circular' alt='Türkçe'>
+              <TRFlag />
+            </Avatar>
           </ListItemIcon>
           {t("tr")}
         </MenuItem>
@@ -77,7 +80,9 @@ export default function Language() {
           }}
         >
           <ListItemIcon>
-            <Avatar className='nano circular' alt='English' src='/images/flags/en.jpg' />
+            <Avatar className='nano circular' alt='English'>
+              <ENFlag />
+            </Avatar>
           </ListItemIcon>
           {t("en")}
         </MenuItem>

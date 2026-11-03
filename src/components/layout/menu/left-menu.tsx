@@ -9,7 +9,6 @@ import { PrimaryItem } from "@/components/layout/menu/primary-item";
 import { SecondaryItem } from "@/components/layout/menu/secondary-item";
 import Logo from "@/components/logo/logo";
 import { DEFAULTS } from "@/config";
-import IllustrationLaunch from "@/icons/illustrations/illustration-launch";
 import { cn, isPathMatch } from "@/lib/utils";
 import { leftMenuBottomItems, leftMenuItems } from "@/menu-items";
 import { MenuItem, MenuShowState, MenuType } from "@/types/types";
@@ -304,7 +303,6 @@ export default function LeftMenu() {
                           </Box>
 
                           <Box component='a' href='#' className='group flex w-full cursor-pointer flex-col items-center justify-center gap-2'>
-                            <IllustrationLaunch className='text-primary h-45 w-45 bg-cover bg-center' />
                             <Typography variant='body1' className='px-4 text-center'>
                               {t("menu-cta-copy")}
                             </Typography>
