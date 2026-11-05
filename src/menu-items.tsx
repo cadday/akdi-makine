@@ -34,5 +34,5 @@ export const leftMenuBottomItems: MenuItem[] = [
     href: "/data-fields",
     icon: "network",
   },
-  { id: "settings", label: "menu-settings", href: "/settings", icon: "settings" },
+  { id: "settings", label: "menu-settings", href: "/settings", icon: "cog" },
 ];
