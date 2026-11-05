@@ -23,7 +23,7 @@ export default function Header({ minimal = false }: { minimal?: boolean }) {
 
   return (
     <Box
-      className="flex-none drag mui-fixed shadow-grey-75 bg-background/75 sticky top-0 z-1 h-14 w-full shadow-[0_1px_0px_0px_rgba(0,0,0,0.1)] backdrop-blur-xs"
+      className="flex-none drag mui-fixed shadow-grey-75 bg-background/75 sticky top-0 z-1 h-12 w-full shadow-[0_1px_0px_0px_rgba(0,0,0,0.1)] backdrop-blur-xs"
       component="header"
     >
       {/* 1px line to cover left side */}
@@ -74,21 +74,6 @@ export default function Header({ minimal = false }: { minimal?: boolean }) {
 
         {!minimal && (
           <Box className="flex flex-row gap-1  no-drag">
-            {/* <Button
-              size='large'
-              variant='pastel'
-              color='grey'
-              component={Link}
-              to={"/tests/add"}
-              startIcon={
-                <Box className='w-6 h-6 flex items-center justify-center '>
-                  <Play />
-                </Box>
-              }
-            >
-              Add Test
-            </Button> */}
-
             <Machines />
           </Box>
         )}

@@ -151,7 +151,7 @@
   "machine-check-ethernet": "Ethernet kablosu bağlı",
   "machine-check-ip": "IP adresi doğru",
   "machine-check-subnet": "Makine ve bilgisayar aynı alt ağda",
-  "machine-no-connection": "Makine bağlantısı yok!",
+  "machine-no-connection": "Makine bağlı değil!",
   "error-with-rollback": "{{error}} {{rollbackErrors}}",
 
   "backup-title": "Yedekleme ve Geri Yükleme",

@@ -620,7 +620,7 @@ export default function Machines() {
         ref={anchorRef}
         onClick={handleToggle}
         size="large"
-        variant="pastel"
+        variant="outlined"
         color="grey"
         className={cn('px-4 hover:bg-grey-50', open && 'active bg-grey-50')}
         startIcon={

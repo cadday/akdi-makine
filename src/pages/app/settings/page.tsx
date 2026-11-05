@@ -31,7 +31,7 @@ export default function Page() {
       </TitleWrapper>
 
       <ContentWrapper>
-        <Alert icon={<AlertTriangleIcon />} severity='warning' className='mb-6 rounded-3xl! py-4 px-7'>
+        <Alert icon={<AlertTriangleIcon />} severity='error' className='mb-6 rounded-3xl! py-4 px-7'>
           <AlertTitle variant='subtitle1' className='pt-0.5'>
             {t("settings-warning-title")}
           </AlertTitle>
