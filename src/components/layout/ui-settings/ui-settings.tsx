@@ -90,15 +90,6 @@ export default function UISettings() {
                       <MenuPopup>
                         <MenuRadioGroup value={content} onValueChange={setContent}>
                           <MenuRadioItem
-                            value='fluid'
-                            className='[&_.MuiListItemText-root_span.MuiTypography-root]:flex [&_.MuiListItemText-root_span.MuiTypography-root]:flex-row [&_.MuiListItemText-root_span.MuiTypography-root]:gap-2'
-                          >
-                            <Box className='w-5 h-5 flex items-center justify-center '>
-                              <UnfoldHorizontal />
-                            </Box>
-                            {t("expand-fluid")}
-                          </MenuRadioItem>
-                          <MenuRadioItem
                             value='boxed'
                             className='[&_.MuiListItemText-root_span.MuiTypography-root]:flex [&_.MuiListItemText-root_span.MuiTypography-root]:flex-row [&_.MuiListItemText-root_span.MuiTypography-root]:gap-2'
                           >
@@ -106,6 +97,15 @@ export default function UISettings() {
                               <FoldHorizontal />
                             </Box>
                             {t("expand-boxed")}
+                          </MenuRadioItem>
+                          <MenuRadioItem
+                            value='fluid'
+                            className='[&_.MuiListItemText-root_span.MuiTypography-root]:flex [&_.MuiListItemText-root_span.MuiTypography-root]:flex-row [&_.MuiListItemText-root_span.MuiTypography-root]:gap-2'
+                          >
+                            <Box className='w-5 h-5 flex items-center justify-center '>
+                              <UnfoldHorizontal />
+                            </Box>
+                            {t("expand-fluid")}
                           </MenuRadioItem>
                         </MenuRadioGroup>
                       </MenuPopup>

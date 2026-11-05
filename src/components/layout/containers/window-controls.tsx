@@ -61,7 +61,7 @@ export default function WindowControls() {
         color='text-primary'
         className={cn(
           "relative! icon-only hover:bg-error-light/10 hover:text-error cursor-default flex-none me-4",
-          "before:content-[''] before:absolute before:h-14 before:w-14 before:left-0",
+          "before:content-[''] before:absolute before:h-12 before:w-14 before:left-0",
         )}
         onClick={() => {
           window.electronAPI.close();

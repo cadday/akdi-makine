@@ -14,6 +14,7 @@ import RouterNav from "../router-nav/router-nav";
 import Machines from "../machine-selection/machines";
 import { useTranslation } from "react-i18next";
 import UISettings from "../ui-settings/ui-settings";
+import Tabs from "../tabs/tabs";
 
 export default function Header({ minimal = false }: { minimal?: boolean }) {
   const { t } = useTranslation();
@@ -27,7 +28,7 @@ export default function Header({ minimal = false }: { minimal?: boolean }) {
       {/* 1px line to cover left side */}
       <Box className='bg-background absolute -left-0.25 h-12 w-0.25 rtl:-right-0.25 rtl:left-[unset]'></Box>
       <Box
-        className={cn("flex h-full w-full flex-none flex-row items-center pe-0!", leftShowBackdrop && "pointer-events-none")}
+        className={cn("flex h-full w-full flex-none flex-row items-center pe-0! gap-2", leftShowBackdrop && "pointer-events-none")}
         style={{ padding: `0 var(--main-padding)` }}
       >
         {/* Left menu button */}
@@ -36,7 +37,7 @@ export default function Header({ minimal = false }: { minimal?: boolean }) {
           size='large'
           color='text-primary'
           className={cn(
-            "icon-only hover-icon-shrink [&.active]:text-primary [&.active]:bg-grey-75 hover:bg-grey-75",
+            "icon-only hover-icon-shrink [&.active]:text-primary [&.active]:bg-grey-75 hover:bg-grey-75 no-drag",
             showLeftMobileButton ? "flex" : "hidden",
             leftPrimaryCurrent !== MenuShowState.Hide && "active",
           )}
@@ -46,20 +47,16 @@ export default function Header({ minimal = false }: { minimal?: boolean }) {
           startIcon={<Menu />}
         />
 
-        <Box className='flex h-full flex-1 flex-row items-center gap-4 md:gap-6'>
+        <Box className='flex h-full flex-row items-center gap-4 md:gap-6 '>
           {/* Logo */}
-          <Link to={LINKS.home} className='ms-2 flex md:hidden'>
-            <Logo classNameFull='hidden' classNameMobile='md:hidden' />
+          <Link to={LINKS.home} className='ms-2 flex md:hidden no-drag'>
+            <Logo classNameFull='hidden' classNameMobile='md:hidden w-8 h-8' />
           </Link>
 
           <Box className='flex flex-row sm:gap-1 no-drag'>
             <RouterNav />
             {!minimal && (
               <>
-                {/* <Expand />
-                <Language />
-                <Mode /> */}
-
                 <UISettings />
                 <Search />
               </>
@@ -67,11 +64,11 @@ export default function Header({ minimal = false }: { minimal?: boolean }) {
           </Box>
         </Box>
 
-        {!minimal && (
-          <Box className='flex flex-row gap-1  no-drag'>
-            <Machines />
-          </Box>
-        )}
+        <Tabs />
+
+        <Box className='flex flex-row gap-1 no-drag ms-4'>
+          <Machines />
+        </Box>
         <WindowControls />
       </Box>
     </Box>
