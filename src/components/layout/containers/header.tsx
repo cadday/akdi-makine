@@ -64,11 +64,13 @@ export default function Header({ minimal = false }: { minimal?: boolean }) {
           </Box>
         </Box>
 
-        <Tabs />
+        {!minimal && <Tabs />}
 
-        <Box className='flex flex-row gap-1 no-drag ms-4'>
-          <Machines />
-        </Box>
+        {!minimal && (
+          <Box className='flex flex-row gap-1 no-drag ms-4'>
+            <Machines />
+          </Box>
+        )}
         <WindowControls />
       </Box>
     </Box>
