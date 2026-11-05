@@ -71,10 +71,18 @@ export default function Tabs() {
               : basePath === "settings"
                 ? t("menu-settings")
                 : t("menu-overview");
-          if (pathname === "/tests/add") return t("add-test");
-          if (pathname === "/specimens/add") return t("add-specimen");
-          if (pathname === "/presets/add") return t("add-preset");
-          if (pathname === "/data-fields/add") return t("add-data-field-title");
+
+        if (pathname === "/tests/compare") return t("compare-title");
+        if (pathname === "/tests/add") return t("add-test");
+        if (pathname === "/specimens/add") return t("add-specimen");
+        if (pathname === "/presets/add") return t("add-preset");
+        if (pathname === "/data-fields/add") return t("add-data-field-title");
+
+        const editMatch = pathname.match(/^\/(tests|specimens|presets)\/[^/]+\/edit$/);
+        if (editMatch?.[1] === "tests") return t("edit-test-title");
+        if (editMatch?.[1] === "specimens") return t("edit-specimen-title");
+        if (editMatch?.[1] === "presets") return t("edit-preset-title");
+
     const recordId = pathname.match(/^\/(?:tests|specimens|presets|data-fields)\/([^/]+)(?:\/|$)/)?.[1];
     if (recordId && (basePath === "specimens" || basePath === "presets") && recordId !== "add") {
       return recordNames[tabId] ?? "";
