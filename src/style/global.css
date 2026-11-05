@@ -114,10 +114,6 @@
   @apply box-border;
 }
 
-*:focus {
-  outline: 0;
-}
-
 .MuiPopper-root {
   @apply z-100;
 }

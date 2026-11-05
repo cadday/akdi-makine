@@ -36,12 +36,14 @@ import DataGridDateTimeFilter from "@/components/data-grid/data-grid-date-time-f
 import useAppNotifications from "@/hooks/use-app-notifications";
 import useDeleteConfirmation from "@/hooks/use-delete-confirmation";
 import { NoDataFieldsFound } from "../components/no-entity-found";
+import { useTabs } from "@/components/layout/tabs/tab-context";
 
 type DataFieldGridRow = DataFieldDefinition;
 
 export default function Page() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const { openTab } = useTabs();
 
   const { getDataFields, deleteDataField, deleteDataFields } = useDb();
   const { showError } = useAppNotifications();
@@ -153,9 +155,13 @@ export default function Page() {
     [dataFields, deleteRow, navigate, t],
   );
 
-  const handleAddItem = useCallback(() => {
-    navigate("/data-fields/add");
-  }, [navigate]);
+  const handleAddItem = useCallback(
+    (openInBackground = false) => {
+      if (openInBackground) openTab("/data-fields/add", false);
+      else navigate("/data-fields/add");
+    },
+    [navigate, openTab],
+  );
 
   const [rowSelectionModel, setRowSelectionModel] = useState<GridRowSelectionModel>({
     type: "include",

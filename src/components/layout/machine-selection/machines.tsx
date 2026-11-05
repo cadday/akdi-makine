@@ -622,7 +622,7 @@ export default function Machines() {
         size="large"
         variant="outlined"
         color="grey"
-        className={cn('px-4 hover:bg-grey-50', open && 'active bg-grey-50')}
+        className={cn('px-4 hover:bg-grey-50 shrink-0', open && 'active bg-grey-50')}
         startIcon={
           <Box className="w-6 h-6 flex items-center justify-center">
             {selectedMachineIsWorking ? <CheckCircle2 className="text-success" /> : <XCircle className="text-error" />}

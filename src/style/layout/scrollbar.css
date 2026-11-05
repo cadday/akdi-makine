@@ -37,3 +37,9 @@
 .os-scrollbar-body .os-scrollbar-vertical {
   @apply pt-15;
 }
+
+.vertical-scrollbar-hidden {
+  ::-webkit-scrollbar {
+    height: 0 !important;
+  }
+}

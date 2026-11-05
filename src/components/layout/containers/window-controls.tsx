@@ -24,7 +24,7 @@ export default function WindowControls() {
   }, []);
 
   return (
-    <Box className='flex flex-row gap-0 no-drag ms-4 h-full items-center'>
+    <Box className='flex flex-row gap-0 no-drag ms-4 h-full shrink-0 items-center'>
       <Button
         aria-label={t("minimize")}
         title={t("minimize")}

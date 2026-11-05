@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
+import { useTabs } from "@/components/layout/tabs/tab-context";
 import { Box, Breadcrumbs, Button, Grid, Typography } from "@mui/material";
 import { OctagonAlert, Repeat2 } from "lucide-react";
 import TestDataGrid from "@/pages/app/tests/components/test-data-grid";
@@ -14,6 +15,7 @@ import { isMachineInterlocked, usePlcData } from "@/context/plc-context";
 export default function Page() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { openTab } = useTabs();
   const { getTests, getDataFields } = useDb();
   const { showError } = useAppNotifications();
   const { connectionStatus, interlockStatus } = usePlcData();
@@ -68,7 +70,13 @@ export default function Page() {
     };
   }, [getDataFields, getTests, showError, t]);
 
-  const handleAddItem = useCallback(() => navigate("/tests/add"), [navigate]);
+  const handleAddItem = useCallback(
+    (openInBackground = false) => {
+      if (openInBackground) openTab("/tests/add", false);
+      else navigate("/tests/add");
+    },
+    [navigate, openTab],
+  );
 
   return (
     <>

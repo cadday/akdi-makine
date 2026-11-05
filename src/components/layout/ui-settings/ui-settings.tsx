@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Box, Button, ButtonGroup, Tooltip } from "@mui/material";
 import { FoldHorizontal, Moon, Settings, Sun, UnfoldHorizontal } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -26,8 +27,10 @@ export default function UISettings() {
     i18n: { language: locale },
   } = useTranslation();
   const { mode, setMode, content, setContent } = useThemeContext();
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const handleOnChangeLocale = (value: LocaleOption) => {
     setClientLocale(value);
+    setSettingsOpen(false);
   };
 
   console.log(locale);
@@ -35,7 +38,7 @@ export default function UISettings() {
   return (
     <>
       <Menubar render={<ButtonGroup size='medium' variant='pastel' color='grey' />}>
-        <MenuRoot>
+        <MenuRoot open={settingsOpen} onOpenChange={setSettingsOpen}>
           <MenuTrigger render={<Box />} nativeButton={false}>
             <Tooltip title={t("ui-settings")} placement='bottom'>
               <Button
@@ -59,7 +62,13 @@ export default function UISettings() {
                   <MenuPortal>
                     <MenuPositioner sideOffset={4} alignOffset={-2}>
                       <MenuPopup>
-                        <MenuRadioGroup value={mode} onValueChange={setMode}>
+                        <MenuRadioGroup
+                          value={mode}
+                          onValueChange={(value) => {
+                            setMode(value);
+                            setSettingsOpen(false);
+                          }}
+                        >
                           <MenuRadioItem
                             value='light'
                             className='[&_.MuiListItemText-root_span.MuiTypography-root]:flex [&_.MuiListItemText-root_span.MuiTypography-root]:flex-row [&_.MuiListItemText-root_span.MuiTypography-root]:gap-2'
@@ -88,7 +97,13 @@ export default function UISettings() {
                   <MenuPortal>
                     <MenuPositioner sideOffset={4} alignOffset={-2}>
                       <MenuPopup>
-                        <MenuRadioGroup value={content} onValueChange={setContent}>
+                        <MenuRadioGroup
+                          value={content}
+                          onValueChange={(value) => {
+                            setContent(value);
+                            setSettingsOpen(false);
+                          }}
+                        >
                           <MenuRadioItem
                             value='boxed'
                             className='[&_.MuiListItemText-root_span.MuiTypography-root]:flex [&_.MuiListItemText-root_span.MuiTypography-root]:flex-row [&_.MuiListItemText-root_span.MuiTypography-root]:gap-2'

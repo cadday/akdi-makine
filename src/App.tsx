@@ -8,6 +8,7 @@ import SnackbarWrapper from "@/components/layout/containers/snackbar-wrapper";
 import LayoutContextProvider from "@/components/layout/layout-context";
 import { DbProvider } from "@/context/db-context";
 import { TestRunProvider } from "@/context/test-run-context";
+import { TabsProvider } from "@/components/layout/tabs/tab-context";
 import Loading from "@/pages/loading";
 import AppRoutes from "@/routes";
 import ThemeProvider from "@/theme/theme-provider";
@@ -42,7 +43,9 @@ const App = () => {
                     <SnackbarWrapper>
                       <TestRunProvider>
                         <Suspense fallback={<Loading />}>
-                          <AppRoutes />
+                          <TabsProvider>
+                            <AppRoutes />
+                          </TabsProvider>
                         </Suspense>
                       </TestRunProvider>
                     </SnackbarWrapper>

@@ -39,7 +39,7 @@ interface TestDataGridProps {
   tests: TestRecord[];
   dataFields: DataFieldDefinition[];
   onTestsChange: Dispatch<SetStateAction<TestRecord[]>>;
-  onAddItem?: () => void;
+  onAddItem?: (openInBackground?: boolean) => void;
   addDisabled?: boolean;
 }
 

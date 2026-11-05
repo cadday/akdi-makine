@@ -67,7 +67,7 @@ export default function Header({ minimal = false }: { minimal?: boolean }) {
         {!minimal && <Tabs />}
 
         {!minimal && (
-          <Box className='flex flex-row gap-1 no-drag ms-4'>
+          <Box className='flex flex-row gap-1 no-drag ms-4 shrink-0'>
             <Machines />
           </Box>
         )}

@@ -36,12 +36,14 @@ import { DataFieldDefinition, SpecimenRecord, useDb, UploadedImage } from "@/con
 import useAppNotifications from "@/hooks/use-app-notifications";
 import useDeleteConfirmation from "@/hooks/use-delete-confirmation";
 import { NoSpecimensFound } from "../components/no-entity-found";
+import { useTabs } from "@/components/layout/tabs/tab-context";
 
 type SpecimenGridRow = SpecimenRecord;
 
 export default function Page() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const { openTab } = useTabs();
 
   const { getSpecimens, getDataFields, deleteSpecimen, deleteSpecimens } = useDb();
   const { showError } = useAppNotifications();
@@ -156,9 +158,13 @@ export default function Page() {
     [deleteRow, navigate, specimens, t],
   );
 
-  const handleAddItem = useCallback(() => {
-    navigate("/specimens/add");
-  }, [navigate]);
+  const handleAddItem = useCallback(
+    (openInBackground = false) => {
+      if (openInBackground) openTab("/specimens/add", false);
+      else navigate("/specimens/add");
+    },
+    [navigate, openTab],
+  );
 
   const [rowSelectionModel, setRowSelectionModel] = useState<GridRowSelectionModel>({
     type: "include",

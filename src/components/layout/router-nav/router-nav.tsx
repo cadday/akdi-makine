@@ -1,34 +1,13 @@
 import { Box, Button, Tooltip } from "@mui/material";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useEffect, useState } from "react";
-import { useLocation, useNavigate, useNavigationType } from "react-router";
 import { useTranslation } from "react-i18next";
 
 import { cn } from "@/lib/utils";
-
-const getHistoryIndex = () => {
-  const index = window.history.state?.idx;
-  return typeof index === "number" ? index : 0;
-};
+import { useTabs } from "@/components/layout/tabs/tab-context";
 
 export default function RouterNav() {
   const { t } = useTranslation();
-  const navigate = useNavigate();
-  const location = useLocation();
-  const navigationType = useNavigationType();
-  const currentHistoryIndex = getHistoryIndex();
-  const [furthestHistoryIndex, setFurthestHistoryIndex] = useState(currentHistoryIndex);
-
-  useEffect(() => {
-    if (navigationType === "PUSH") {
-      setFurthestHistoryIndex(currentHistoryIndex);
-    } else if (navigationType === "POP") {
-      setFurthestHistoryIndex((furthestIndex) => Math.max(furthestIndex, currentHistoryIndex));
-    }
-  }, [currentHistoryIndex, location.key, navigationType]);
-
-  const canGoBack = currentHistoryIndex > 0;
-  const canGoForward = navigationType !== "PUSH" && currentHistoryIndex < furthestHistoryIndex;
+  const { canGoBack, canGoForward, goBack, goForward, hasActiveTest } = useTabs();
 
   return (
     <Box className='flex flex-row gap-1'>
@@ -39,9 +18,9 @@ export default function RouterNav() {
             size='large'
             color='text-primary'
             aria-label={t("back")}
-            disabled={!canGoBack}
+            disabled={!canGoBack || hasActiveTest}
             className={cn("icon-only [&.active]:text-primary hover:bg-grey-75")}
-            onClick={() => navigate(-1)}
+            onClick={goBack}
             startIcon={
               <Box className='w-6 h-6 flex items-center justify-center '>
                 <ChevronLeft size={16} />
@@ -57,9 +36,9 @@ export default function RouterNav() {
             size='large'
             color='text-primary'
             aria-label={t("forward")}
-            disabled={!canGoForward}
+            disabled={!canGoForward || hasActiveTest}
             className={cn("icon-only [&.active]:text-primary hover:bg-grey-75")}
-            onClick={() => navigate(1)}
+            onClick={goForward}
             startIcon={
               <Box className='w-6 h-6 flex items-center justify-center '>
                 <ChevronRight size={16} />

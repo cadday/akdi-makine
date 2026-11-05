@@ -35,12 +35,14 @@ import DataGridDateTimeFilter from "@/components/data-grid/data-grid-date-time-f
 import useAppNotifications from "@/hooks/use-app-notifications";
 import useDeleteConfirmation from "@/hooks/use-delete-confirmation";
 import { NoPresetsFound } from "../components/no-entity-found";
+import { useTabs } from "@/components/layout/tabs/tab-context";
 
 type PresetGridRow = PresetRecord;
 
 export default function Page() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const { openTab } = useTabs();
   const { getPresets, deletePreset, deletePresets } = useDb();
   const { showError } = useAppNotifications();
   const { requestDelete, dialog } = useDeleteConfirmation();
@@ -138,9 +140,13 @@ export default function Page() {
     [deleteRow, navigate, presets, t],
   );
 
-  const handleAddItem = useCallback(() => {
-    navigate("/presets/add");
-  }, [navigate]);
+  const handleAddItem = useCallback(
+    (openInBackground = false) => {
+      if (openInBackground) openTab("/presets/add", false);
+      else navigate("/presets/add");
+    },
+    [navigate, openTab],
+  );
 
   const [rowSelectionModel, setRowSelectionModel] = useState<GridRowSelectionModel>({
     type: "include",
