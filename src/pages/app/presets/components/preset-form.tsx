@@ -24,6 +24,7 @@ import useAppNotifications from "@/hooks/use-app-notifications";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { DecimalMaskInput } from "@/components/base-ui/masked-decimal-input";
+import PresetTypeTag from "./preset-type-tag";
 
 type PresetSaveInput = Omit<PresetRecord, "id" | "createdAt" | "updatedAt">;
 type PresetFormValues = Omit<PresetSaveInput, "type" | "method" | "velocity" | "preload" | "targets"> & {
@@ -162,14 +163,13 @@ export default function PresetForm({ onSave, preset, initialPreset, saveLabel }:
                   <Select<PresetType | "">
                     value={formik.values.type}
                     onChange={(event) => void formik.setFieldValue("type", event.target.value)}
+                    renderValue={(value) => (value ? <PresetTypeTag type={value} /> : null)}
                     IconComponent={ChevronDown}
                     MenuProps={{ className: "outlined" }}
                   >
                     {PRESET_TYPES.map((presetType) => (
                       <MenuItem key={presetType} value={presetType}>
-                        <Box component='span' sx={{ color: presetType === "Tensile" ? "primary.main" : "accent-5.main" }}>
-                          {presetType === "Tensile" ? t("listing-tensile") : t("listing-compression")}
-                        </Box>
+                        <PresetTypeTag type={presetType} />
                       </MenuItem>
                     ))}
                   </Select>

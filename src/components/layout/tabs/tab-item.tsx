@@ -61,7 +61,7 @@ export default function TabItem({ active, disabled = false, closeDisabled = fals
           active && "active",
           disabled && "opacity-60",
           "outline-transparent! -outline-offset-2 outline-2 hover:outline-primary-light/50! hover:text-text-primary",
-          "[&.active]:outline-primary-light/50! [&.active]:bg-background [&.active]:text-text-primary",
+          "[&.active]:outline-primary-light/50! [&.active]:bg-background-paper [&.active]:text-text-primary",
           "before:content-[''] before:no-drag before:block before:absolute before:h-12 before:w-full before:left-0",
         )}
       >

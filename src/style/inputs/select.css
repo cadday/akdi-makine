@@ -16,4 +16,8 @@
   .MuiSelect-root.Mui-readOnly .MuiSelect-select {
     @apply cursor-default!;
   }
+
+  .MuiSelect-select.MuiSelect-standard.MuiInputBase-input.MuiInput-input:has(.MuiButtonBase-root.MuiButton-sizeTiny) {
+    @apply py-0!;
+  }
 }

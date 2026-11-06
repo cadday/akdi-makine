@@ -36,6 +36,7 @@ import useAppNotifications from "@/hooks/use-app-notifications";
 import useDeleteConfirmation from "@/hooks/use-delete-confirmation";
 import { NoPresetsFound } from "../components/no-entity-found";
 import { useTabs } from "@/components/layout/tabs/tab-context";
+import PresetTypeTag from "./components/preset-type-tag";
 
 type PresetGridRow = PresetRecord;
 
@@ -178,25 +179,8 @@ export default function Page() {
       minWidth: 150,
       renderCell: (params: GridRenderCellParams<any, string>) => {
         const value = params.value;
-        if (value === "Tensile") {
-          return (
-            <Button className='pointer-events-none self-center py-1 rounded-2xs' size='tiny' color='primary' variant='outlined'>
-              {value === "Tensile" ? t("listing-tensile") : t("listing-compression")}
-            </Button>
-          );
-        } else if (value === "Compression") {
-          return (
-            <Button className='pointer-events-none self-center py-1 rounded-2xs' size='tiny' color='accent-5' variant='outlined'>
-              {t("listing-compression")}
-            </Button>
-          );
-        } else {
-          return (
-            <Button className='pointer-events-none self-center py-1 rounded-2xs' size='tiny' color='accent-1' variant='outlined'>
-              {value}
-            </Button>
-          );
-        }
+        if (value === "Tensile" || value === "Compression") return <PresetTypeTag type={value} />;
+        return value;
       },
     },
     { field: "velocity", headerName: t("listing-velocity"), minWidth: 150, type: "number", align: "left", headerAlign: "left" },

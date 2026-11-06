@@ -19,6 +19,7 @@ import {
 } from "@mui/material";
 import { Bookmark, ChevronDown, DraftingCompass, Play, SlidersVertical, X, XSquare } from "lucide-react";
 import { useDb, type PresetRecord, type SpecimenRecord } from "@/context/db-context";
+import PresetTypeTag from "@/pages/app/presets/components/preset-type-tag";
 import { useTestRun } from "@/context/test-run-context";
 import { isMachineInterlocked, usePlcData } from "@/context/plc-context";
 import useAppNotifications from "@/hooks/use-app-notifications";
@@ -204,6 +205,7 @@ export default function QuickTestForm({ onTestCreated }: { onTestCreated?: () =>
           </FormLabel>
           <Autocomplete<SpecimenRecord, false, false, false>
             size='small'
+            blurOnSelect
             options={specimens}
             value={selectedSpecimen}
             onChange={(_, specimen) => void formik.setFieldValue("specimenId", specimen?.id ?? "")}
@@ -239,25 +241,24 @@ export default function QuickTestForm({ onTestCreated }: { onTestCreated?: () =>
           </FormLabel>
           <Autocomplete<PresetRecord, false, false, false>
             size='small'
+            blurOnSelect
             options={presets}
             value={selectedPreset}
             onChange={(_, preset) => void formik.setFieldValue("presetId", preset?.id ?? "")}
             filterOptions={createFilterOptions<PresetRecord>({ stringify: (preset) => `${preset.name} ${preset.type}` })}
             getOptionLabel={(preset) => preset.name}
             isOptionEqualToValue={(option, value) => option.id === value.id}
-            renderOption={(props, preset) => (
-              <li {...props}>
+            renderValue={(preset) => (
+              <Box className='flex min-w-0 items-center gap-2'>
+                <Typography className='min-w-0 truncate'>{preset.name}</Typography>
+                <PresetTypeTag type={preset.type} />
+              </Box>
+            )}
+            renderOption={({ key, ...props }, preset) => (
+              <li key={key} {...props}>
                 <Box className='flex w-full items-center justify-between gap-3'>
                   <Typography>{preset.name}</Typography>
-                  <Button
-                    component='span'
-                    className='pointer-events-none self-center py-1 rounded-2xs'
-                    size='tiny'
-                    color={preset.type === "Tensile" ? "primary" : "accent-5"}
-                    variant='outlined'
-                  >
-                    {preset.type === "Tensile" ? t("listing-tensile") : t("listing-compression")}
-                  </Button>
+                  <PresetTypeTag type={preset.type} />
                 </Box>
               </li>
             )}
@@ -271,7 +272,7 @@ export default function QuickTestForm({ onTestCreated }: { onTestCreated?: () =>
                 {...params}
                 variant='standard'
                 className='outlined'
-                placeholder={t("quick-test-search-presets")}
+                placeholder={selectedPreset ? undefined : t("quick-test-search-presets")}
                 slotProps={{
                   htmlInput: { ...params.slotProps.htmlInput, autoComplete: "new-password" },
                   input: params.slotProps.input,

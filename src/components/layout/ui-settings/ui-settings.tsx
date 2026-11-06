@@ -33,8 +33,6 @@ export default function UISettings() {
     setSettingsOpen(false);
   };
 
-  console.log(locale);
-
   return (
     <>
       <Menubar render={<ButtonGroup size='medium' variant='pastel' color='grey' />}>

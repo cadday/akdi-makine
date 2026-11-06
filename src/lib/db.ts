@@ -1,5 +1,6 @@
 import Dexie, { type Table } from "dexie";
 import type { IconName } from "lucide-react/dynamic";
+import { getClientLocale } from "@/i18n/locale-preference";
 
 export const DATA_FIELD_TYPES = ["Text", "Textarea", "Number", "Select", "Image", "Boolean"] as const;
 export type DataFieldType = (typeof DATA_FIELD_TYPES)[number];
@@ -213,6 +214,31 @@ class AkdiMakineDatabase extends Dexie {
         });
       });
 
+    this.on("populate", async (transaction) => {
+      const now = Date.now();
+      const locale = getClientLocale();
+      const isTurkish = locale === "tr";
+
+      await transaction.table("specimens").add({
+        id: createId(),
+        name: isTurkish ? "Numune 0" : "Specimen 0",
+        geometry: "Not Specified",
+        customData: {},
+        createdAt: now,
+        updatedAt: now,
+      } satisfies SpecimenRecord);
+
+      await transaction.table("presets").add({
+        id: createId(),
+        name: isTurkish ? "Ön Tanım 0" : "Preset 0",
+        type: "Tensile",
+        velocity: 5,
+        method: "Distance",
+        targets: [5],
+        createdAt: now,
+        updatedAt: now,
+      } satisfies PresetRecord);
+    });
   }
 }
 
