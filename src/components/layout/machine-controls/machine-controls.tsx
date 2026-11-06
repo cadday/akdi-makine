@@ -387,7 +387,7 @@ export default function MachineControls() {
                 </Tooltip>
               ))}
           </Box>
-          <Box className='flex bg-grey-50 flex-row items-center  rounded-lg px-4 ms-2'>
+          <Box className='flex bg-grey-25 flex-row items-center  rounded-lg px-4 ms-2'>
             <Box className='w-28 flex flex-row items-center gap-2 px-1'>
               <Weight />
               {loadFormatter.format(displayedPlcValues ? displayedPlcValues.load / PLC_LOAD_SCALE_DIVISOR : 0)} N
