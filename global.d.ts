@@ -123,5 +123,8 @@ declare global {
     plcAPI: PlcAPI;
     electronAPI: ElectronAPI;
     createSampleTest?: (options?: { specimenId?: string; presetId?: string }) => Promise<string>;
+    createSampleSpecimen?: () => Promise<string>;
+    createSamplePreset?: () => Promise<string>;
+    createSampleDataField?: () => Promise<string>;
   }
 }

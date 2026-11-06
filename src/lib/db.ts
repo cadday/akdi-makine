@@ -474,6 +474,65 @@ function pickRandom<T>(items: T[]) {
   return items[Math.floor(Math.random() * items.length)];
 }
 
+function getNextSampleName(prefix: string, existingNames: string[]) {
+  const existing = new Set(existingNames);
+  let index = existing.size + 1;
+  while (existing.has(`${prefix} ${index}`)) index += 1;
+  return `${prefix} ${index}`;
+}
+
+export async function createSampleSpecimen() {
+  const specimens = await db.specimens.toArray();
+  const geometry = pickRandom([...SPECIMEN_GEOMETRIES]);
+  const dimensions =
+    geometry === "Cylindrical"
+      ? { diameter: roundTo(randomBetween(5, 50), 2), height: roundTo(randomBetween(10, 100), 2) }
+      : geometry === "Rectangular"
+        ? { side1: roundTo(randomBetween(5, 50), 2), side2: roundTo(randomBetween(5, 50), 2), height: roundTo(randomBetween(10, 100), 2) }
+        : {};
+
+  return createSpecimen({
+    name: getNextSampleName("Sample Specimen", specimens.map((specimen) => specimen.name)),
+    geometry,
+    ...dimensions,
+    customData: {},
+  });
+}
+
+export async function createSamplePreset() {
+  const presets = await db.presets.toArray();
+  const type = pickRandom([...PRESET_TYPES]);
+  const method = pickRandom([...PRESET_METHODS]);
+  const targetSign = type === "Compression" ? -1 : 1;
+  const targets = Array.from({ length: Math.floor(randomBetween(1, 4)) }, () => roundTo(randomBetween(1, 20), method === "Load" ? 1 : 4) * targetSign);
+
+  return createPreset({
+    name: getNextSampleName("Sample Preset", presets.map((preset) => preset.name)),
+    type,
+    velocity: roundTo(randomBetween(1, 20), 1),
+    method,
+    preload: method === "Load" ? roundTo(randomBetween(0, 10), 1) * targetSign : undefined,
+    targets,
+  });
+}
+
+export async function createSampleDataField() {
+  const fields = await db.dataFields.toArray();
+  const type = pickRandom([...DATA_FIELD_TYPES]);
+  const container = pickRandom([...DATA_FIELD_CONTAINERS]);
+
+  return createDataField({
+    type,
+    container,
+    name: getNextSampleName("Sample Data Field", fields.map((field) => field.name)),
+    description: "Development sample data field",
+    mandatory: false,
+    ...(type === "Number" && { unit: "mm" }),
+    ...(type === "Select" && { options: ["Option A", "Option B", "Option C"], multipleSelection: Math.random() < 0.5 }),
+    ...(type === "Image" && { accept: "image/jpeg,image/png", multiple: Math.random() < 0.5 }),
+  });
+}
+
 export async function createSampleTest({ specimenId, presetId }: CreateSampleTestOptions = {}) {
   const [specimens, presets, tests] = await Promise.all([db.specimens.toArray(), db.presets.toArray(), db.tests.toArray()]);
   if (specimens.length === 0) throw new Error("Cannot create a sample test because no specimens exist.");
@@ -553,7 +612,7 @@ export async function createSampleTest({ specimenId, presetId }: CreateSampleTes
 }
 
 if (import.meta.env.DEV && typeof window !== "undefined") {
-  Object.assign(window, { createSampleTest });
+  Object.assign(window, { createSampleTest, createSampleSpecimen, createSamplePreset, createSampleDataField });
 }
 
 export async function getTests() {

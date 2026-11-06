@@ -13,6 +13,7 @@
 ## Development Sample Tests
 - For development testing without a connected machine, use `window.createSampleTest()` from the renderer DevTools console to create a completed sample test with generated result data.
 - Optionally pass `{ specimenId, presetId }` to select specific existing records; omitted IDs are selected randomly from the existing specimens and presets.
+- Use `window.createSampleSpecimen()`, `window.createSamplePreset()`, and `window.createSampleDataField()` from the renderer DevTools console to create random sample records with unique sample names.
 - This helper is development-only and must be invoked explicitly. Do not call it during app startup or database initialization.
 
 ## Internationalization
