@@ -91,7 +91,7 @@ export default function Tabs() {
   };
 
   return (
-    <Box className='no-drag flex min-w-0 flex-1 items-center h-full vertical-scrollbar-hidden overflow-y-hidden'>
+    <Box className='flex min-w-0 flex-1 items-center h-full vertical-scrollbar-hidden overflow-y-hidden'>
       <Box component='ul' ref={tabListRef} role='tablist' aria-label={t("tab-list")} className='flex min-w-0 flex-1 flex-row gap-1 px-2 h-full items-center overflow-x-auto overflow-y-hidden'>
         {tabs.map((tab) => {
           const pathname = tab.path.split(/[?#]/, 1)[0];

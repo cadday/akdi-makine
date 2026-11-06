@@ -57,7 +57,7 @@ export default function TabItem({ active, disabled = false, closeDisabled = fals
           }
         }}
         className={cn(
-          "group flex grow shrink basis-50 min-w-10 max-w-50 flex-row items-center gap-2 ps-3 pe-2 bg-grey-25 py-1 h-10 select-none rounded-lg relative transition-all text-text-secondary cursor-default",
+          "group no-drag flex grow shrink basis-50 min-w-10 max-w-50 flex-row items-center gap-2 ps-3 pe-2 bg-grey-25 py-1 h-10 select-none rounded-lg relative transition-all text-text-secondary cursor-default",
           active && "active",
           disabled && "opacity-60",
           "outline-transparent! -outline-offset-2 outline-2 hover:outline-primary-light/50! hover:text-text-primary",
@@ -67,7 +67,7 @@ export default function TabItem({ active, disabled = false, closeDisabled = fals
       >
         {icon && <Box className={cn("w-5 h-5 flex items-center justify-center pointer-events-none shrink-0", isCompact && "group-hover:hidden")}>{icon}</Box>}
 
-        <Typography variant='subtitle2' className={cn("pointer-events-none hidden min-w-0 truncate lg:flex", isCompact && "group-hover:hidden")}>
+        <Typography variant='subtitle2' className={cn("pointer-events-none flex-1 min-w-0 truncate", isCompact && "group-hover:hidden")}>
           {title}
         </Typography>
         <Button
