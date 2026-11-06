@@ -245,6 +245,7 @@ export default function TestResultsMachine({ test }: TestResultsMachineProps) {
     <>
       <Grid container size={12} spacing={5} className='relative'>
         {isTestRunning && <TestProgress />}
+        {/* <TestProgress /> */}
         <Grid container size={12} spacing={5} className={cn(isTestRunning && "relative z-5001")}>
           <Grid size={12}>
             <Typography variant='h6' component='h6' className='mb-3'>

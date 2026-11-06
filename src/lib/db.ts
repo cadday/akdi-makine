@@ -218,9 +218,11 @@ class AkdiMakineDatabase extends Dexie {
       const now = Date.now();
       const locale = getClientLocale();
       const isTurkish = locale === "tr";
+      const specimenId = createId();
+      const presetId = createId();
 
       await transaction.table("specimens").add({
-        id: createId(),
+        id: specimenId,
         name: isTurkish ? "Numune 0" : "Specimen 0",
         geometry: "Not Specified",
         customData: {},
@@ -229,7 +231,7 @@ class AkdiMakineDatabase extends Dexie {
       } satisfies SpecimenRecord);
 
       await transaction.table("presets").add({
-        id: createId(),
+        id: presetId,
         name: isTurkish ? "Ön Tanım 0" : "Preset 0",
         type: "Tensile",
         velocity: 5,
@@ -452,6 +454,106 @@ export async function createTest(input: Omit<TestRecord, "id" | "createdAt" | "u
     createdAt: now,
     updatedAt: now,
   });
+}
+
+export interface CreateSampleTestOptions {
+  specimenId?: string;
+  presetId?: string;
+}
+
+function randomBetween(min: number, max: number) {
+  return min + Math.random() * (max - min);
+}
+
+function roundTo(value: number, decimalPlaces: number) {
+  const scale = 10 ** decimalPlaces;
+  return Math.round(value * scale) / scale;
+}
+
+function pickRandom<T>(items: T[]) {
+  return items[Math.floor(Math.random() * items.length)];
+}
+
+export async function createSampleTest({ specimenId, presetId }: CreateSampleTestOptions = {}) {
+  const [specimens, presets, tests] = await Promise.all([db.specimens.toArray(), db.presets.toArray(), db.tests.toArray()]);
+  if (specimens.length === 0) throw new Error("Cannot create a sample test because no specimens exist.");
+  if (presets.length === 0) throw new Error("Cannot create a sample test because no presets exist.");
+
+  const specimen = specimenId ? specimens.find((item) => item.id === specimenId) : pickRandom(specimens);
+  const preset = presetId ? presets.find((item) => item.id === presetId) : pickRandom(presets);
+  if (!specimen) throw new Error(`Specimen not found: ${specimenId}`);
+  if (!preset) throw new Error(`Preset not found: ${presetId}`);
+
+  const specimenSnapshot = {
+    name: specimen.name,
+    customData: { ...specimen.customData },
+    geometry: specimen.geometry,
+    diameter: specimen.diameter,
+    side1: specimen.side1,
+    side2: specimen.side2,
+    height: specimen.height,
+  } satisfies TestSpecimenSnapshot;
+  const presetSnapshot = {
+    name: preset.name,
+    type: preset.type,
+    velocity: preset.velocity,
+    method: preset.method,
+    preload: preset.method === "Load" ? (preset.preload ?? 0) : undefined,
+    targets: [...(preset.targets ?? [])],
+  } satisfies TestPresetSnapshot;
+
+  const maxTarget = Math.max(...(preset.targets ?? []).map((target) => Math.abs(target)), 1);
+  const maxDistance = preset.method === "Distance" ? maxTarget * randomBetween(1.02, 1.15) : randomBetween(4, 12);
+  const maxLoad = preset.method === "Load" ? maxTarget * randomBetween(1.02, 1.15) : randomBetween(250, 900);
+  const peakProgress = randomBetween(0.72, 0.9);
+  const sampleCount = 25;
+  const loadDisplacementData: LoadDisplacementPoint[] = Array.from({ length: sampleCount }, (_, index) => {
+    const progress = index / (sampleCount - 1);
+    const curve = progress <= peakProgress ? progress / peakProgress : 1 - ((progress - peakProgress) / (1 - peakProgress)) * 0.18;
+    const noise = index === 0 ? 0 : randomBetween(0.97, 1.03);
+    return {
+      displacement: roundTo(maxDistance * progress, 4),
+      load: roundTo(Math.max(0, maxLoad * curve * noise), 1),
+    };
+  });
+
+  const stressStrainData = getTestGraphType(specimen.geometry) === "stress-strain"
+    ? loadDisplacementData.map((point, index) => {
+        const calculated = getStressStrainPoint(point, specimenSnapshot);
+        if (calculated) return calculated;
+        const progress = index / (sampleCount - 1);
+        return { strain: roundTo(progress * 12, 3), stress: roundTo((point.load / maxLoad) * randomBetween(280, 520), 2) };
+      })
+    : [];
+
+  let nameIndex = tests.length + 1;
+  const existingNames = new Set(tests.map((test) => test.name));
+  while (existingNames.has(`Sample Test ${nameIndex}`)) nameIndex += 1;
+
+  return createTest({
+    name: `Sample Test ${nameIndex}`,
+    machineIP: null,
+    specimenId: specimen.id,
+    presetId: preset.id,
+    specimenSnapshot,
+    presetSnapshot,
+    customData: {},
+    results: {
+      finalized: true,
+      maxLoad: Math.max(...loadDisplacementData.map((point) => point.load)),
+      maxDistance,
+      testDuration: roundTo(randomBetween(8, 24), 1),
+      tensileStrength: stressStrainData.length ? Math.max(...stressStrainData.map((point) => point.stress)) : undefined,
+      elongation: stressStrainData.length ? Math.max(...stressStrainData.map((point) => point.strain)) : undefined,
+      loadDisplacementData,
+      stressStrainData,
+    },
+    runStatus: "completed",
+  });
+}
+
+if (import.meta.env.DEV && typeof window !== "undefined") {
+  Object.assign(window, { createSampleTest });
 }
 
 export async function getTests() {

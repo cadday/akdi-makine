@@ -122,5 +122,6 @@ declare global {
   interface Window {
     plcAPI: PlcAPI;
     electronAPI: ElectronAPI;
+    createSampleTest?: (options?: { specimenId?: string; presetId?: string }) => Promise<string>;
   }
 }

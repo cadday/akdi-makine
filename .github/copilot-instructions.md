@@ -10,6 +10,11 @@
 - Display Distance with four fixed decimal places and Load with one, including their units. Keep form values as strings when needed to preserve trailing zeros.
 - Apply the scaling consistently across settings, live values, and test samples without double-scaling. Preserve field-specific sign behavior; do not make all Distance or Load values positive, since some targets may be negative.
 
+## Development Sample Tests
+- For development testing without a connected machine, use `window.createSampleTest()` from the renderer DevTools console to create a completed sample test with generated result data.
+- Optionally pass `{ specimenId, presetId }` to select specific existing records; omitted IDs are selected randomly from the existing specimens and presets.
+- This helper is development-only and must be invoked explicitly. Do not call it during app startup or database initialization.
+
 ## Internationalization
 - Use `react-i18next` and the existing `src/i18n/messages/en.json` and `tr.json` dictionaries for app-owned, user-visible static text. Keep both dictionaries in sync.
 - Use Title Case for app-owned UI titles and button labels: capitalize principal words and keep short articles, conjunctions, and prepositions such as `and`, `to`, and `from` lowercase. Apply equivalent language-appropriate capitalization in other locales.
