@@ -72,16 +72,16 @@ export default function Tabs() {
                 ? t("menu-settings")
                 : t("menu-overview");
 
-        if (pathname === "/tests/compare") return t("compare-title");
-        if (pathname === "/tests/add") return t("add-test");
-        if (pathname === "/specimens/add") return t("add-specimen");
-        if (pathname === "/presets/add") return t("add-preset");
-        if (pathname === "/data-fields/add") return t("add-data-field-title");
+    if (pathname === "/tests/compare") return t("compare-title");
+    if (pathname === "/tests/add") return t("add-test");
+    if (pathname === "/specimens/add") return t("add-specimen");
+    if (pathname === "/presets/add") return t("add-preset");
+    if (pathname === "/data-fields/add") return t("add-data-field-title");
 
-        const editMatch = pathname.match(/^\/(tests|specimens|presets)\/[^/]+\/edit$/);
-        if (editMatch?.[1] === "tests") return t("edit-test-title");
-        if (editMatch?.[1] === "specimens") return t("edit-specimen-title");
-        if (editMatch?.[1] === "presets") return t("edit-preset-title");
+    const editMatch = pathname.match(/^\/(tests|specimens|presets)\/[^/]+\/edit$/);
+    if (editMatch?.[1] === "tests") return t("edit-test-title");
+    if (editMatch?.[1] === "specimens") return t("edit-specimen-title");
+    if (editMatch?.[1] === "presets") return t("edit-preset-title");
 
     const recordId = pathname.match(/^\/(?:tests|specimens|presets|data-fields)\/([^/]+)(?:\/|$)/)?.[1];
     if (recordId && (basePath === "specimens" || basePath === "presets") && recordId !== "add") {
@@ -92,7 +92,13 @@ export default function Tabs() {
 
   return (
     <Box className='flex min-w-0 flex-1 items-center h-full vertical-scrollbar-hidden overflow-y-hidden'>
-      <Box component='ul' ref={tabListRef} role='tablist' aria-label={t("tab-list")} className='flex min-w-0 flex-1 flex-row gap-1 px-2 h-full items-center overflow-x-auto overflow-y-hidden'>
+      <Box
+        component='ul'
+        ref={tabListRef}
+        role='tablist'
+        aria-label={t("tab-list")}
+        className='flex min-w-0 flex-1 flex-row gap-1 px-2 h-full items-center overflow-x-auto overflow-y-hidden '
+      >
         {tabs.map((tab) => {
           const pathname = tab.path.split(/[?#]/, 1)[0];
           const icon = pathname.startsWith("/tests") ? (
