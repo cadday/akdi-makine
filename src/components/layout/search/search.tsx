@@ -27,7 +27,7 @@ import { useDb, type DataFieldDefinition, type PresetRecord, type SpecimenRecord
 import { cn } from "@/lib/utils";
 import { ChevronLeft, ChevronRight, DraftingCompass, FlaskConical, GalleryVerticalEnd, Network, SearchIcon, SlidersVertical, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { NothingToDisplay } from "@/pages/app/components/no-entity-found";
 
 type SearchKind = "tests" | "specimens" | "presets" | "data-fields";
@@ -100,7 +100,7 @@ export default function Search() {
   const navigate = useNavigate();
   const { getTests, getSpecimens, getPresets, getDataFields } = useDb();
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const resultButtonRefs = useRef(new Map<string, HTMLButtonElement>());
+  const resultButtonRefs = useRef(new Map<string, HTMLAnchorElement>());
   const [tooltipShow, setTooltipShow] = useState(false);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -250,9 +250,10 @@ export default function Search() {
           return (
             <ListItem key={resultKey} className='p-0'>
               <ListItemButton
-                component='button'
+                component={Link}
+                to={result.to}
                 id={`search-result-${groupIndex}-${result.id}`}
-                ref={(element: HTMLButtonElement | null) => {
+                ref={(element: HTMLAnchorElement | null) => {
                   if (element) resultButtonRefs.current.set(resultKey, element);
                   else resultButtonRefs.current.delete(resultKey);
                 }}
@@ -261,7 +262,7 @@ export default function Search() {
                 role='option'
                 aria-selected={isSelected}
                 onMouseMove={() => setSelectedIndex(resultIndex)}
-                onClick={() => handleNavigate(result)}
+                onClick={handleCloseDialog}
               >
                 <ListItemAvatar>
                   <Avatar className={cn("medium me-3 rounded-sm", getAvatarClass(result.kind))}>{getResultIcon(result.kind)}</Avatar>

@@ -1,6 +1,6 @@
 import { memo, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useLocation } from "react-router";
+import { Link, useLocation } from "react-router";
 import { DynamicIcon } from "lucide-react/dynamic";
 import { Box, Button, Tooltip, Typography } from "@mui/material";
 
@@ -28,16 +28,45 @@ export const PrimaryItem = memo(function PrimaryItem({ item, onSelect, isActive,
   }, [item, pathname]);
 
   const [tooltipOpen, setTooltipOpen] = useState(false);
+  const isDirectRoute = Boolean(item.href && !item.isExternalLink && !item.content && !item.children?.some((child) => !child.hideInMenu));
+  const handleDirectRouteClick = () => {
+    if (pathname === item.href) onSelect(item);
+    setTooltipOpen(false);
+  };
+  const comfortClassName = cn(
+    "hover:bg-grey-20/75 flex h-18 w-24 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-lg no-underline transition-all select-none",
+    selected && "bg-grey-20/75",
+    className,
+  );
+  const comfortContent = (
+    <>
+      {item.icon && <DynamicIcon name={item.icon} className={cn((selected || isActive) && "text-primary")} />}
+
+      <Typography
+        variant='body2'
+        component='span'
+        className={cn(
+          "text-text-primary line-clamp-2 w-full text-center font-semibold transition-all",
+          (selected || isActive) && "text-primary mt-0 mb-0",
+          selected && "text-primary",
+        )}
+      >
+        {t(item.label)}
+      </Typography>
+    </>
+  );
 
   return (
     <>
-      {menuType === MenuType.Comfort && (
+      {menuType === MenuType.Comfort && isDirectRoute && (
+        <Box component={Link} to={item.href!} className={comfortClassName} onClick={handleDirectRouteClick}>
+          {comfortContent}
+        </Box>
+      )}
+
+      {menuType === MenuType.Comfort && !isDirectRoute && (
         <Box
-          className={cn(
-            "hover:bg-grey-20/75 flex h-18 w-24 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-lg no-underline transition-all select-none",
-            selected && "bg-grey-20/75",
-            className,
-          )}
+          className={comfortClassName}
           component={item.isExternalLink ? "a" : "div"}
           href={item.isExternalLink ? item.href : undefined}
           target={item.isExternalLink ? "_blank" : undefined}
@@ -51,19 +80,7 @@ export const PrimaryItem = memo(function PrimaryItem({ item, onSelect, isActive,
               : undefined
           }
         >
-          {item.icon && <DynamicIcon  name={item.icon} className={cn((selected || isActive) && "text-primary")} />}
-
-          <Typography
-            variant='body2'
-            component='span'
-            className={cn(
-              "text-text-primary line-clamp-2 w-full text-center font-semibold transition-all",
-              (selected || isActive) && "text-primary mt-0 mb-0",
-              selected && "text-primary",
-            )}
-          >
-            {t(item.label)}
-          </Typography>
+            {comfortContent}
         </Box>
       )}
 
@@ -79,32 +96,51 @@ export const PrimaryItem = memo(function PrimaryItem({ item, onSelect, isActive,
             arrow
             slotProps={{ tooltip: { className: cn("large", selected && "text-primary") } }}
           >
-            <Button
-              id={item.id}
-              variant='text'
-              size='large'
-              color={item.color || "text-primary"}
-              className={cn(
-                "icon-only hover:bg-grey-20 text-text-primary h-10 w-10",
-                selected && `bg-grey-20 active ${item.color ? `text-${item.color.replace("text-", "")}!` : "text-primary!"}`,
-                isActive && "active",
-              )}
-              startIcon={item.icon && <DynamicIcon name={item.icon} className={cn((selected || isActive) && "text-primary")} />}
-              aria-label={t(item.label)}
-              {...(item.isExternalLink
-                ? {
-                    component: "a",
-                    href: item.href,
-                    target: "_blank",
-                    rel: "noreferrer",
-                  }
-                : {
-                    onClick: () => {
-                      onSelect(item);
-                      setTooltipOpen(false);
-                    },
-                  })}
-            ></Button>
+            {isDirectRoute ? (
+              <Button
+                id={item.id}
+                variant='text'
+                size='large'
+                color={item.color || "text-primary"}
+                className={cn(
+                  "icon-only hover:bg-grey-20 text-text-primary h-10 w-10",
+                  selected && `bg-grey-20 active ${item.color ? `text-${item.color.replace("text-", "") }!` : "text-primary!"}`,
+                  isActive && "active",
+                )}
+                startIcon={item.icon && <DynamicIcon name={item.icon} className={cn((selected || isActive) && "text-primary")} />}
+                aria-label={t(item.label)}
+                component={Link}
+                to={item.href!}
+                onClick={handleDirectRouteClick}
+              />
+            ) : (
+              <Button
+                id={item.id}
+                variant='text'
+                size='large'
+                color={item.color || "text-primary"}
+                className={cn(
+                  "icon-only hover:bg-grey-20 text-text-primary h-10 w-10",
+                  selected && `bg-grey-20 active ${item.color ? `text-${item.color.replace("text-", "") }!` : "text-primary!"}`,
+                  isActive && "active",
+                )}
+                startIcon={item.icon && <DynamicIcon name={item.icon} className={cn((selected || isActive) && "text-primary")} />}
+                aria-label={t(item.label)}
+                {...(item.isExternalLink
+                  ? {
+                      component: "a",
+                      href: item.href,
+                      target: "_blank",
+                      rel: "noreferrer",
+                    }
+                  : {
+                      onClick: () => {
+                        onSelect(item);
+                        setTooltipOpen(false);
+                      },
+                    })}
+              />
+            )}
           </Tooltip>
         </Box>
       )}
