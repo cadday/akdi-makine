@@ -202,8 +202,8 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
               <ContentWrapper>
                 <TabPanel value='Overview'>
                   {!loadError && preset && (
-                    <Grid size={12} container spacing={5} className='w-full'>
-                      <Grid container spacing={5} size={{ lg: 8, xs: 12 }}>
+                    <Grid size={12} container rowSpacing={5} columnSpacing={7} className='w-full'>
+                      <Grid container rowSpacing={5} columnSpacing={7} size={{ lg: 8, xs: 12 }}>
                         <Grid size={12}>
                           <Typography variant='h6' component='h6' className='mb-3'>
                             {t("view-definition")}
@@ -271,7 +271,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                           </Card>
                         </Grid>
                       </Grid>
-                      <Grid container spacing={5} size={{ lg: 4, xs: 12 }}>
+                      <Grid container rowSpacing={5} columnSpacing={7} size={{ lg: 4, xs: 12 }}>
                         <Grid size={12}>
                           <Typography variant='h6' component='h6' className='mb-3'>
                             {t("view-latest-tests")}
@@ -304,7 +304,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                   )}
                 </TabPanel>
                 <TabPanel value='Tests'>
-                  <Grid size={12} container spacing={5} className='w-full'>
+                  <Grid size={12} container rowSpacing={5} columnSpacing={7} className='w-full'>
                     <Grid size={12}>
                       <TestDataGrid tests={tests} dataFields={testFields} onTestsChange={setTests} />
                     </Grid>

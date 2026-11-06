@@ -50,6 +50,7 @@ import SaveRecordPdfMenuItem from "@/components/pdf/save-record-pdf-menu-item";
 import usePrintReadiness from "@/hooks/use-print-readiness";
 import { cn } from "@/lib/utils";
 import { getTestGraphType } from "@/lib/db";
+import TestProgress from "../components/test-progress";
 
 interface RawGraphDataRow {
   id: number;
@@ -58,9 +59,10 @@ interface RawGraphDataRow {
 }
 
 function getRawGraphDataColumns(graphType: "load-displacement" | "stress-strain", t: (key: string) => string): GridColDef<RawGraphDataRow>[] {
-  const [xLabel, yLabel] = graphType === "stress-strain"
-    ? [`${t("view-axis-strain")} %`, `${t("view-axis-stress")} MPa`]
-    : [`${t("view-axis-displacement")} mm`, `${t("view-axis-load")} N`];
+  const [xLabel, yLabel] =
+    graphType === "stress-strain"
+      ? [`${t("view-axis-strain")} %`, `${t("view-axis-stress")} MPa`]
+      : [`${t("view-axis-displacement")} mm`, `${t("view-axis-load")} N`];
   return [
     {
       field: "x",
@@ -172,10 +174,9 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
   const graphType = getTestGraphType(specimen?.geometry);
   const graphPoints = graphType === "stress-strain" ? (test?.results?.stressStrainData ?? []) : (test?.results?.loadDisplacementData ?? []);
   const rawGraphDataRows = graphPoints.map((point, index) =>
-    graphType === "stress-strain"
-      ? { id: index, x: point.strain, y: point.stress }
-      : { id: index, x: point.displacement, y: point.load },
+    graphType === "stress-strain" ? { id: index, x: point.strain, y: point.stress } : { id: index, x: point.displacement, y: point.load },
   );
+  const isTestRunning = test?.runStatus === "starting" || test?.runStatus === "running" || test?.runStatus === "stopping";
 
   return (
     <>
@@ -223,9 +224,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                               if (!id) return;
                               requestDelete({
                                 title: t("view-delete-test-title"),
-                                message: test?.name
-                                  ? t("view-delete-confirm-named", { name: test.name })
-                                  : t("view-delete-test-confirm"),
+                                message: test?.name ? t("view-delete-confirm-named", { name: test.name }) : t("view-delete-test-confirm"),
                                 errorMessage: (error) => t("view-delete-test-error") + ` ${String(error)}`,
                                 onConfirm: async () => {
                                   await deleteTest(id);
@@ -266,11 +265,9 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
             <ContentWrapper>
               <TabPanel value='Result'>
                 {!loadError && test && (
-                  <Grid size={12} container spacing={5} className='w-full'>
-                    <Grid container spacing={5} size={{ lg: 8, xs: 12 }}>
-                      <TestResultsMachine
-                        test={test}
-                      />
+                  <Grid size={12} container rowSpacing={5} columnSpacing={7} className={cn("w-full")}>
+                    <Grid container rowSpacing={5} columnSpacing={7} size={{ lg: 8, xs: 12 }} className={cn(isTestRunning && "relative z-5001")}>
+                      <TestResultsMachine test={test} />
 
                       <Grid size={12}>
                         <Typography variant='h6' component='h6' className='mb-3'>
@@ -305,7 +302,9 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                                   <Split className='flex-none' />
                                   <Box className='flex flex-col gap-1'>
                                     <Typography variant='subtitle1'>{t("listing-method")}</Typography>
-                                    <Typography>{preset.method === "Load" ? t("listing-load") : preset.method === "Distance" ? t("listing-distance") : "-"}</Typography>
+                                    <Typography>
+                                      {preset.method === "Load" ? t("listing-load") : preset.method === "Distance" ? t("listing-distance") : "-"}
+                                    </Typography>
                                   </Box>
                                 </Box>
                                 {preset.method === "Load" && (
@@ -340,7 +339,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
 
                       <TestDefinition test={test} fields={fields} onTestUpdated={setTest} />
                     </Grid>
-                    <Grid container spacing={5} size={{ lg: 4, xs: 12 }}>
+                    <Grid container rowSpacing={5} columnSpacing={7} size={{ lg: 4, xs: 12 }} className={cn(isTestRunning && "relative z-5001")}>
                       <Grid size={12}>
                         <Typography variant='h6' component='h6' className='mb-3'>
                           {t("add-specimen-section")}
@@ -360,7 +359,13 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                                   <Shapes className='flex-none' />
                                   <Box className='flex flex-col gap-1'>
                                     <Typography variant='subtitle1'>{t("listing-geometry")}</Typography>
-                                    <Typography>{specimen.geometry === "Cylindrical" ? t("listing-cylindrical") : specimen.geometry === "Rectangular" ? t("listing-rectangular") : t("listing-geometry-not-specified")}</Typography>
+                                    <Typography>
+                                      {specimen.geometry === "Cylindrical"
+                                        ? t("listing-cylindrical")
+                                        : specimen.geometry === "Rectangular"
+                                          ? t("listing-rectangular")
+                                          : t("listing-geometry-not-specified")}
+                                    </Typography>
                                   </Box>
                                 </Box>
                                 {specimen.geometry === "Cylindrical" && (
@@ -423,6 +428,8 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                         </Card>
                       </Grid>
                     </Grid>
+
+                    {isTestRunning && <TestProgress />}
                   </Grid>
                 )}
               </TabPanel>

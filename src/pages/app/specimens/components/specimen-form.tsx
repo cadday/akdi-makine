@@ -46,6 +46,9 @@ interface SpecimenFormProps {
   specimen?: SpecimenRecord;
   initialSpecimen?: SpecimenRecord;
   saveLabel?: string;
+  fullWidth?: boolean;
+  inline?: boolean;
+  onCancel?: () => void;
   onSave: (input: SpecimenSaveInput) => Promise<void>;
 }
 
@@ -194,7 +197,7 @@ function getInitialValues(specimen: SpecimenRecord | undefined, fields: DataFiel
   };
 }
 
-export default function SpecimenForm({ fields, isLoadingFields = false, loadError, specimen, initialSpecimen, saveLabel, onSave }: SpecimenFormProps) {
+export default function SpecimenForm({ fields, isLoadingFields = false, loadError, specimen, initialSpecimen, saveLabel, fullWidth = false, inline = false, onCancel, onSave }: SpecimenFormProps) {
   const [submitted, setSubmitted] = useState(false);
   const { showError } = useAppNotifications();
   const { t } = useTranslation();
@@ -261,37 +264,48 @@ export default function SpecimenForm({ fields, isLoadingFields = false, loadErro
   const fieldError = (field: keyof SpecimenFormValues) => submitted && formik.errors[field];
   const setDimensionValue = (field: "diameter" | "side1" | "side2" | "height", value: string) =>
     void formik.setFieldValue(field, value === "" ? "" : Number(value));
+  const nameField = (
+    <Box className='flex flex-row gap-2'>
+      <Bookmark className={cn("flex-none", formik.touched.name && formik.errors.name && submitted && "text-error!")} />
+      <FormControl className='outlined' variant='standard' size='small' fullWidth required>
+        <FormLabel component='label' className={cn(formik.touched.name && formik.errors.name && submitted && "text-error!")}>
+          {inline ? t("add-new-specimen-name") : t("add-name")}
+        </FormLabel>
+        <Input name='name' value={formik.values.name} onChange={formik.handleChange} onBlur={formik.handleBlur} />
+      </FormControl>
+    </Box>
+  );
+  const Section = inline ? Box : Card;
+  const SectionContent = inline ? Box : CardContent;
 
   return (
-    <Grid container size={12} spacing={5} className='w-full'>
+    <Grid container size={12} spacing={inline ? 0 : 5} className='w-full'>
       <Grid
         container
-        size={{ lg: 8, xs: 12 }}
-        spacing={5}
-        component='form'
+        size={fullWidth || inline ? 12 : { lg: 8, xs: 12 }}
+        spacing={inline ? 0 : 5}
+        component={inline ? "div" : "form"}
         noValidate
+        onKeyDown={inline ? (event) => {
+          if (event.key === "Enter" && event.target instanceof HTMLInputElement) event.preventDefault();
+        } : undefined}
         onSubmit={(event) => {
+          if (inline) return;
           event.preventDefault();
           setSubmitted(true);
           void formik.submitForm();
         }}
       >
-      <Grid size={{ xs: 12 }} container spacing={5}>
+      <Grid size={{ xs: 12 }} container spacing={inline ? 0 : 5}>
         <Grid size={12}>
-          <Typography variant='h6' component='h6' className='mb-3'>
-            {t("add-definition")}
-          </Typography>
-          <Card>
-            <CardContent className='-mb-4'>
-              <Box className='flex flex-row gap-2'>
-                <Bookmark className={cn("flex-none", formik.touched.name && formik.errors.name && submitted && "text-error!")} />
-                <FormControl className='outlined' variant='standard' size='small' fullWidth required>
-                  <FormLabel component='label' className={cn(formik.touched.name && formik.errors.name && submitted && "text-error!")}>
-                    {t("add-name")}
-                  </FormLabel>
-                  <Input name='name' value={formik.values.name} onChange={formik.handleChange} onBlur={formik.handleBlur} />
-                </FormControl>
-              </Box>
+          {!inline && (
+            <Typography variant='h6' component='h6' className='mb-3'>
+              {t("add-definition")}
+            </Typography>
+          )}
+          <Section>
+            <SectionContent className={inline ? "flex flex-col" : "-mb-4"}>
+              {!inline && nameField}
               <Box className='flex flex-row gap-2'>
                 <Shapes className={cn("flex-none", fieldError("geometry") && "text-error!")} />
                 <FormControl fullWidth size='small' variant='standard' className='outlined'>
@@ -387,17 +401,19 @@ export default function SpecimenForm({ fields, isLoadingFields = false, loadErro
                   </FormControl>
                 </Box>
               )}
-            </CardContent>
-          </Card>
+            </SectionContent>
+          </Section>
         </Grid>
 
         {fields.length !== 0 && (
           <Grid size={12}>
-            <Typography variant='h6' component='h6' className='mb-3'>
-              {t("add-data-fields-section")}
-            </Typography>
-            <Card>
-              <CardContent className='flex flex-col gap-5 -mb-4'>
+            {!inline && (
+              <Typography variant='h6' component='h6' className='mb-3'>
+                {t("add-data-fields-section")}
+              </Typography>
+            )}
+            <Section>
+              <SectionContent className={inline ? "flex flex-col" : "flex flex-col gap-5 -mb-4"}>
                 {fields.map((field) => {
                   const error = formik.errors.customData?.[field.id] ?? formik.errors.pendingImages?.[field.id];
                   return (
@@ -413,10 +429,12 @@ export default function SpecimenForm({ fields, isLoadingFields = false, loadErro
                     />
                   );
                 })}
-              </CardContent>
-            </Card>
+              </SectionContent>
+            </Section>
           </Grid>
         )}
+
+        {inline && <Grid size={12}>{nameField}</Grid>}
 
         <Grid size={12}>
           {submitted && !formik.isValid && (
@@ -455,19 +473,30 @@ export default function SpecimenForm({ fields, isLoadingFields = false, loadErro
               })}
             </Alert>
           )}
-          <Button
-            disabled={isLoadingFields || Boolean(loadError)}
-            loading={formik.isSubmitting}
-            loadingPosition='start'
-            type='submit'
-            size='large'
-            variant='surface'
-            color='text-primary'
-            className='surface-standard'
-            startIcon={<Save />}
-          >
-            {saveLabel ?? t("save")}
-          </Button>
+          <Box className={cn("flex items-center gap-1", inline && "ms-7 pb-4")}>
+            <Button
+              disabled={isLoadingFields || Boolean(loadError)}
+              loading={formik.isSubmitting}
+              loadingPosition='start'
+              type={inline ? "button" : "submit"}
+              onClick={inline ? () => {
+                setSubmitted(true);
+                void formik.submitForm();
+              } : undefined}
+              size={inline ? "medium" : "large"}
+              variant={inline ? "pastel" : "surface"}
+              color={inline ? "grey" : "text-primary"}
+              className={inline ? undefined : "surface-standard"}
+              startIcon={<Save />}
+            >
+              {saveLabel ?? t("save")}
+            </Button>
+            {inline && (
+              <Button type='button' color='grey' variant='text' onClick={onCancel}>
+                {t("cancel")}
+              </Button>
+            )}
+          </Box>
         </Grid>
       </Grid>
       </Grid>

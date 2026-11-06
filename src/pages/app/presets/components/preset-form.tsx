@@ -40,6 +40,9 @@ interface PresetFormProps {
   preset?: PresetRecord;
   initialPreset?: PresetRecord;
   saveLabel?: string;
+  fullWidth?: boolean;
+  inline?: boolean;
+  onCancel?: () => void;
 }
 
 function getInitialValues(preset?: PresetRecord): PresetFormValues {
@@ -93,7 +96,7 @@ function buildValidationSchema(t: ReturnType<typeof useTranslation>["t"]) {
   });
 }
 
-export default function PresetForm({ onSave, preset, initialPreset, saveLabel }: PresetFormProps) {
+export default function PresetForm({ onSave, preset, initialPreset, saveLabel, fullWidth = false, inline = false, onCancel }: PresetFormProps) {
   const [submitted, setSubmitted] = useState(false);
   const { showError } = useAppNotifications();
   const { t } = useTranslation();
@@ -124,35 +127,46 @@ export default function PresetForm({ onSave, preset, initialPreset, saveLabel }:
   });
 
   const fieldError = (field: keyof PresetFormValues) => submitted && formik.errors[field];
+  const nameField = (
+    <Box className='flex flex-row gap-2'>
+      <Bookmark className={cn("flex-none", fieldError("name") && "text-error!")} />
+      <FormControl className='outlined' variant='standard' size='small' fullWidth required>
+        <FormLabel component='label' className={fieldError("name") ? "text-error!" : undefined}>
+          {inline ? t("add-new-preset-name") : t("add-name")}
+        </FormLabel>
+        <Input name='name' value={formik.values.name} onChange={formik.handleChange} />
+      </FormControl>
+    </Box>
+  );
+  const Section = inline ? Box : Card;
+  const SectionContent = inline ? Box : CardContent;
 
   return (
-    <Grid container size={12} className='items-start w-full' spacing={5}>
+    <Grid container size={12} className='items-start w-full' spacing={inline ? 0 : 5}>
       <Grid
         container
-        size={{ lg: 8, xs: 12 }}
-        spacing={5}
-        component='form'
+        size={fullWidth || inline ? 12 : { lg: 8, xs: 12 }}
+        spacing={inline ? 0 : 5}
+        component={inline ? "div" : "form"}
         noValidate
+        onKeyDown={inline ? (event) => {
+          if (event.key === "Enter" && event.target instanceof HTMLInputElement) event.preventDefault();
+        } : undefined}
         onSubmit={(event) => {
+          if (inline) return;
           setSubmitted(true);
           formik.handleSubmit(event);
         }}
       >
         <Grid size={12}>
-          <Typography variant='h6' component='h6' className='mb-3'>
-            {t("add-definition")}
-          </Typography>
-          <Card>
-            <CardContent className='-mb-4'>
-              <Box className='flex flex-row gap-2'>
-                <Bookmark className={cn("flex-none", fieldError("name") && "text-error!")} />
-                <FormControl className='outlined' variant='standard' size='small' fullWidth required>
-                  <FormLabel component='label' className={fieldError("name") ? "text-error!" : undefined}>
-                    {t("add-name")}
-                  </FormLabel>
-                  <Input name='name' value={formik.values.name} onChange={formik.handleChange} />
-                </FormControl>
-              </Box>
+          {!inline && (
+            <Typography variant='h6' component='h6' className='mb-3'>
+              {t("add-definition")}
+            </Typography>
+          )}
+          <Section>
+            <SectionContent className={inline ? "flex flex-col" : "-mb-4"}>
+              {!inline && nameField}
 
               <Box className='flex flex-row gap-2'>
                 <PencilRuler className={cn("flex-none", fieldError("type") && "text-error!")} />
@@ -203,16 +217,18 @@ export default function PresetForm({ onSave, preset, initialPreset, saveLabel }:
                   />
                 </FormControl>
               </Box>
-            </CardContent>
-          </Card>
+            </SectionContent>
+          </Section>
         </Grid>
 
         <Grid size={12}>
-          <Typography variant='h6' component='h6' className='mb-3'>
-            {t("add-test-method-parameters")}
-          </Typography>
-          <Card>
-            <CardContent className='-mb-4'>
+          {!inline && (
+            <Typography variant='h6' component='h6' className='mb-3'>
+              {t("add-test-method-parameters")}
+            </Typography>
+          )}
+          <Section>
+            <SectionContent className={inline ? "flex flex-col" : "-mb-4"}>
               <Box className='flex flex-row gap-2'>
                 <Split className={cn("flex-none", fieldError("method") && "text-error!")} />
                 <FormControl fullWidth size='small' variant='standard' className='outlined' required>
@@ -318,9 +334,11 @@ export default function PresetForm({ onSave, preset, initialPreset, saveLabel }:
                   {t("add-add-target")}
                 </Button>
               )}
-            </CardContent>
-          </Card>
+            </SectionContent>
+          </Section>
         </Grid>
+
+        {inline && <Grid size={12}>{nameField}</Grid>}
 
         <Grid size={12}>
           {submitted && !formik.isValid && (
@@ -361,18 +379,29 @@ export default function PresetForm({ onSave, preset, initialPreset, saveLabel }:
               })}
             </Alert>
           )}
-          <Button
-            loading={formik.isSubmitting}
-            loadingPosition='start'
-            size='large'
-            className='surface-standard'
-            color='text-primary'
-            variant='surface'
-            type='submit'
-            startIcon={<Save />}
-          >
-            {saveLabel ?? t("save")}
-          </Button>
+          <Box className={cn("flex items-center gap-1", inline && "ms-7 pb-4")}>
+            <Button
+              loading={formik.isSubmitting}
+              loadingPosition='start'
+              size={inline ? "medium" : "large"}
+              className={inline ? undefined : "surface-standard"}
+              color={inline ? "grey" : "text-primary"}
+              variant={inline ? "pastel" : "surface"}
+              type={inline ? "button" : "submit"}
+              onClick={inline ? () => {
+                setSubmitted(true);
+                void formik.submitForm();
+              } : undefined}
+              startIcon={<Save />}
+            >
+              {saveLabel ?? t("save")}
+            </Button>
+            {inline && (
+              <Button type='button' color='grey' variant='text' onClick={onCancel}>
+                {t("cancel")}
+              </Button>
+            )}
+          </Box>
         </Grid>
       </Grid>
     </Grid>

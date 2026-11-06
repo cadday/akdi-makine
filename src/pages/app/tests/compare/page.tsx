@@ -244,8 +244,8 @@ function ComparisonDetails({
   const targetCount = Math.max(1, ...tests.map((test) => test.presetSnapshot.targets?.length ?? 0));
 
   return (
-    <Grid container size={12} spacing={5}>
-      <Grid container size={{ lg: 8, xs: 12 }} spacing={5}>
+    <Grid container size={12} rowSpacing={5} columnSpacing={7}>
+      <Grid container size={{ lg: 8, xs: 12 }} rowSpacing={5} columnSpacing={7}>
         <Grid size={12}>
           <Typography variant='h6' component='h6' className='mb-3'>
             {graphType === "stress-strain" ? t("compare-graph-stress-strain") : t("compare-graph-load-displacement")}
@@ -492,7 +492,7 @@ function ComparisonDetails({
           <ComparisonField icon={<CalendarCog className='flex-none' />} label={t("listing-updated")} tests={tests} colors={colors} valueForTest={(test) => formatDate(test.updatedAt, i18n.resolvedLanguage ?? "en")} />
         </ComparisonCard>
       </Grid>
-      <Grid container size={{ lg: 4, xs: 12 }} spacing={5}>
+      <Grid container size={{ lg: 4, xs: 12 }} rowSpacing={5} columnSpacing={7}>
         <ComparisonCard title={t("specimen")}>
           <ComparisonField icon={<Hexagon className='flex-none' />} label={t("listing-name")} tests={tests} colors={colors} valueForTest={(test) => test.specimenSnapshot.name} />
           <ComparisonField

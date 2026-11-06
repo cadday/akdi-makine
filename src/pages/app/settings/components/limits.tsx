@@ -138,7 +138,7 @@ export default function Limits() {
             size={12}
             component='form'
             noValidate
-            spacing={2.5}
+            spacing={0}
             onSubmit={(event) => {
               setSubmitted(true);
               formik.handleSubmit(event);
@@ -207,6 +207,7 @@ export default function Limits() {
                 </Alert>
               )}
               <Button
+                className='ms-7'
                 loading={formik.isSubmitting}
                 loadingPosition='start'
                 size='large'

@@ -84,7 +84,7 @@ export const DataGridListingToolbar = ({
                     {...controlProps}
                     inputRef={ref}
                     variant='standard'
-                    className='surface-standard w-full'
+                    className='surface-standard w-full mb-0'
                     placeholder={t("search")}
                     size='medium'
                     slotProps={{

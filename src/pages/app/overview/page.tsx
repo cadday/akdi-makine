@@ -73,8 +73,8 @@ export default function Page() {
       </TitleWrapper>
 
       <ContentWrapper>
-        <Grid size={12} container spacing={5} className="w-full items-start">
-          <Grid container spacing={5} size={{ lg: 8, xs: 12 }}>
+        <Grid size={12} container rowSpacing={5} columnSpacing={7} className="w-full items-start">
+          <Grid container rowSpacing={5} columnSpacing={7} size={{ lg: 8, xs: 12 }}>
             <Summary counts={counts} />
             <LatestStressStrainGraphs
               tests={latestTests}
@@ -83,7 +83,7 @@ export default function Page() {
             />
             <LatestTests tests={latestTests} />
           </Grid>
-          <Grid container spacing={5} size={{ lg: 4, xs: 12 }}>
+          <Grid container rowSpacing={5} columnSpacing={7} size={{ lg: 4, xs: 12 }}>
             <QuickTest specimenCount={counts.specimens} presetCount={counts.presets} />
           </Grid>
         </Grid>

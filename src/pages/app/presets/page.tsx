@@ -244,7 +244,7 @@ export default function Page() {
       </TitleWrapper>
 
       <ContentWrapper>
-        <Grid size={12} container spacing={5} className='w-full'>
+        <Grid size={12} container rowSpacing={5} columnSpacing={7} className='w-full'>
           <Grid size={12}>
             {error ? (
               <Box className='flex flex-col items-center gap-4'>

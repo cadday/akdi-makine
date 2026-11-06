@@ -205,7 +205,7 @@ export default function Adjustments() {
             size={12}
             component='form'
             noValidate
-            spacing={2.5}
+            spacing={0}
             onSubmit={(event) => {
               setSubmitted(true);
               formik.handleSubmit(event);
@@ -345,6 +345,7 @@ export default function Adjustments() {
                 </Alert>
               )}
               <Button
+                className='ms-7'
                 loading={formik.isSubmitting}
                 loadingPosition='start'
                 size='large'

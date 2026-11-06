@@ -20,7 +20,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { Bookmark, ChevronDown, DraftingCompass, Play, SlidersVertical, X, XSquare } from "lucide-react";
+import { Bookmark, ChevronDown, DraftingCompass, Play, Settings2, SlidersVertical, X, XSquare } from "lucide-react";
 import DataFieldInput from "@/components/data-fields/data-field-input";
 import ContentWrapper from "@/components/layout/containers/content-wrapper";
 import TitleWrapper from "@/components/layout/containers/title-wrapper";
@@ -30,6 +30,8 @@ import { useDb, type DataFieldDefinition, type DynamicDataValue, type PresetReco
 import useAppNotifications from "@/hooks/use-app-notifications";
 import { useTestRun } from "@/context/test-run-context";
 import PresetTypeTag from "@/pages/app/presets/components/preset-type-tag";
+import PresetForm from "@/pages/app/presets/components/preset-form";
+import SpecimenForm from "@/pages/app/specimens/components/specimen-form";
 import { isMachineInterlocked, usePlcData } from "@/context/plc-context";
 import { cn } from "@/lib/utils";
 
@@ -121,13 +123,16 @@ function collectErrorMessages(errors: unknown, prefix = ""): Array<[string, stri
 export default function Page() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { getSpecimens, getPresets, getDataFields, getConnectedMachine, createTest } = useDb();
+  const { getSpecimens, getPresets, getDataFields, getConnectedMachine, createTest, createSpecimen, getSpecimen, createPreset, getPreset } = useDb();
   const { showError } = useAppNotifications();
   const { hasActiveTest, startTestRun } = useTestRun();
   const { connectionStatus, interlockStatus } = usePlcData();
   const [specimens, setSpecimens] = useState<SpecimenRecord[]>([]);
   const [presets, setPresets] = useState<PresetRecord[]>([]);
   const [fields, setFields] = useState<DataFieldDefinition[]>([]);
+  const [specimenFields, setSpecimenFields] = useState<DataFieldDefinition[]>([]);
+  const [specimenToConfigure, setSpecimenToConfigure] = useState<SpecimenRecord | null>(null);
+  const [presetToConfigure, setPresetToConfigure] = useState<PresetRecord | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
@@ -147,11 +152,17 @@ export default function Page() {
       setIsLoading(true);
       setLoadError(null);
       try {
-        const [specimenRecords, presetRecords, testFields] = await Promise.all([getSpecimens(), getPresets(), getDataFields("Test")]);
+        const [specimenRecords, presetRecords, testFields, specimenDataFields] = await Promise.all([
+          getSpecimens(),
+          getPresets(),
+          getDataFields("Test"),
+          getDataFields("Specimen"),
+        ]);
         if (!cancelled) {
           setSpecimens(specimenRecords);
           setPresets(presetRecords);
           setFields(testFields);
+          setSpecimenFields(specimenDataFields);
         }
       } catch (error) {
         if (!cancelled) {
@@ -305,11 +316,12 @@ export default function Page() {
       </TitleWrapper>
 
       <ContentWrapper>
-        <Grid container size={12} spacing={5} className='w-full'>
+        <Grid container size={12} rowSpacing={5} columnSpacing={7} className='w-full'>
           <Grid
             container
             size={{ lg: 8, xs: 12 }}
-            spacing={5}
+            rowSpacing={5}
+            columnSpacing={7}
             component='form'
             noValidate
             onSubmit={(event) => {
@@ -334,7 +346,7 @@ export default function Page() {
                 .finally(() => setIsCheckingMachine(false));
             }}
           >
-          <Grid size={{ xs: 12 }} container spacing={5}>
+          <Grid size={{ xs: 12 }} container rowSpacing={5} columnSpacing={7}>
             <Grid size={12}>
               <Typography variant='h6' component='h6' className='mb-3'>
                   {t("add-definition")}
@@ -354,20 +366,23 @@ export default function Page() {
               </Card>
             </Grid>
 
-            <Grid size={12} className='group/grid'>
+            <Grid size={12}>
               <Box className='flex flex-row items-center justify-between'>
                 <Typography variant='h6' component='h6' className='mb-3'>
                   {t("add-specimen-section")}
                 </Typography>
-                {/* <Button
-                  size='tiny'
-                  color='grey'
-                  variant='text'
-                  className={cn(!specimenError && selectedSpecimen && "group-hover/grid:opacity-100", " transition-all opacity-0")}
-                  startIcon={<Settings2 size={16} />}
-                >
-                  Configure
-                </Button> */}
+                {selectedSpecimen && (
+                  <Button
+                    disabled={Boolean(specimenToConfigure || presetToConfigure)}
+                    size='tiny'
+                    color='grey'
+                    variant='text'
+                    onClick={() => setSpecimenToConfigure({ ...selectedSpecimen, name: `${selectedSpecimen.name} (Copy)` })}
+                    startIcon={<Settings2 size={16} />}
+                  >
+                    {t("add-configure")}
+                  </Button>
+                )}
               </Box>
               <Card>
                 <CardContent className='-mb-4'>
@@ -406,24 +421,45 @@ export default function Page() {
                       />
                     </FormControl>
                   </Box>
+                  {specimenToConfigure && (
+                    <SpecimenForm
+                      key={specimenToConfigure.id}
+                      inline
+                      fields={specimenFields}
+                      isLoadingFields={isLoading}
+                      initialSpecimen={specimenToConfigure}
+                      onCancel={() => setSpecimenToConfigure(null)}
+                      onSave={async (input) => {
+                        const createdId = await createSpecimen(input);
+                        const createdSpecimen = await getSpecimen(String(createdId));
+                        if (!createdSpecimen) throw new Error(t("add-form-created-specimen-missing"));
+                        setSpecimens((current) => [createdSpecimen, ...current]);
+                        void formik.setFieldValue("specimenId", createdSpecimen.id);
+                        setSpecimenToConfigure(null);
+                      }}
+                    />
+                  )}
                 </CardContent>
               </Card>
             </Grid>
 
-            <Grid size={12} className='group/grid'>
+            <Grid size={12}>
               <Box className='flex flex-row items-center justify-between'>
                 <Typography variant='h6' component='h6' className='mb-3'>
                   {t("add-preset-section")}
                 </Typography>
-                {/* <Button
-                  size='tiny'
-                  color='grey'
-                  variant='text'
-                  className={cn(!presetError && selectedPreset && "group-hover/grid:opacity-100", " transition-all opacity-0")}
-                  startIcon={<Settings2 size={16} />}
-                >
-                  Configure
-                </Button> */}
+                {selectedPreset && (
+                  <Button
+                    disabled={Boolean(specimenToConfigure || presetToConfigure)}
+                    size='tiny'
+                    color='grey'
+                    variant='text'
+                    onClick={() => setPresetToConfigure({ ...selectedPreset, name: `${selectedPreset.name} (Copy)` })}
+                    startIcon={<Settings2 size={16} />}
+                  >
+                    {t("add-configure")}
+                  </Button>
+                )}
               </Box>
               <Card>
                 <CardContent className='-mb-4'>
@@ -476,6 +512,22 @@ export default function Page() {
                       />
                     </FormControl>
                   </Box>
+                  {presetToConfigure && (
+                    <PresetForm
+                      key={presetToConfigure.id}
+                      inline
+                      initialPreset={presetToConfigure}
+                      onCancel={() => setPresetToConfigure(null)}
+                      onSave={async (input) => {
+                        const createdId = await createPreset(input);
+                        const createdPreset = await getPreset(String(createdId));
+                        if (!createdPreset) throw new Error(t("add-form-created-preset-missing"));
+                        setPresets((current) => [createdPreset, ...current]);
+                        void formik.setFieldValue("presetId", createdPreset.id);
+                        setPresetToConfigure(null);
+                      }}
+                    />
+                  )}
                 </CardContent>
               </Card>
             </Grid>

@@ -4,7 +4,7 @@ import * as yup from "yup";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import { Alert, AlertTitle, Box, Button, capitalize, Card, CardContent, FormControl, FormLabel, Grid, Input, Typography } from "@mui/material";
-import { Bookmark, CalendarCog, CalendarPlus, Hexagon, Pen, Save, X, XSquare } from "lucide-react";
+import { Bookmark, CalendarCog, CalendarPlus, Hexagon, Pen, Save, XSquare } from "lucide-react";
 import { DynamicIcon } from "lucide-react/dynamic";
 import DataFieldInput from "@/components/data-fields/data-field-input";
 import ImageLightboxGallery from "@/components/data-fields/image-lightbox-gallery";
@@ -39,7 +39,10 @@ function buildValidationSchema(fields: DataFieldDefinition[], t: TFunction) {
         break;
       }
       case "Number": {
-        let schema = yup.number().nullable().typeError(t("view-field-number", { name: field.name }));
+        let schema = yup
+          .number()
+          .nullable()
+          .typeError(t("view-field-number", { name: field.name }));
         if (field.mandatory) schema = schema.required(t("view-field-required", { name: field.name }));
         customDataShape[field.id] = schema;
         break;
@@ -185,41 +188,27 @@ export default function TestDefinition({ test, fields, onTestUpdated }: TestDefi
     setIsEditing(false);
   };
 
+  const isTestRunning = test.runStatus === "starting" || test.runStatus === "running" || test.runStatus === "stopping";
+
   return (
-    <Grid size={12} className='group/grid'>
+    <Grid size={12} className="group/grid">
       <Box className='flex flex-row items-center justify-between'>
         <Typography variant='h6' component='h6' className='mb-3'>
           {t("view-definition")}
         </Typography>
-        {isEditing ? (
-          <Box className='flex items-center gap-1'>
-            <Button size='tiny' color='grey' variant='text' onClick={handleCancel} startIcon={<X size={16} />}>
-              {t("cancel")}
-            </Button>
+        {!isTestRunning && (
             <Button
               size='tiny'
-              color='text-primary'
+              color='grey'
               variant='text'
-              type='submit'
-              form='test-definition-form'
-              loading={formik.isSubmitting}
-              startIcon={<Save size={16} />}
+              className={cn("transition-all", !isEditing && "group-hover/grid:opacity-100 opacity-0")}
+              disabled={isEditing}
+              onClick={() => setIsEditing(true)}
+              startIcon={<Pen size={16} />}
             >
-              {t("view-update")}
+              {t("view-edit")}
             </Button>
-          </Box>
-        ) : (
-          <Button
-            size='tiny'
-            color='grey'
-            variant='text'
-            className={cn("group-hover/grid:opacity-100", "transition-all opacity-0")}
-            onClick={() => setIsEditing(true)}
-            startIcon={<Pen size={16} />}
-          >
-            {t("view-edit")}
-          </Button>
-        )}
+          )}
       </Box>
       <Card>
         <CardContent className='flex flex-col gap-5'>
@@ -278,11 +267,11 @@ export default function TestDefinition({ test, fields, onTestUpdated }: TestDefi
                   })}
                 </Alert>
               )}
-              <Box className='flex gap-1'>
+              <Box className='ms-7 flex gap-1'>
                 <Button type='submit' color='grey' variant='pastel' loading={formik.isSubmitting} startIcon={<Save size={16} />}>
                   {t("view-update")}
                 </Button>
-                <Button color='grey' variant='text' onClick={handleCancel} startIcon={<X size={16} />}>
+                <Button color='grey' variant='text' onClick={handleCancel}>
                   {t("cancel")}
                 </Button>
               </Box>

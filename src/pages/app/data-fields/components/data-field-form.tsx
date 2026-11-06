@@ -168,11 +168,12 @@ export default function DataFieldForm({ dataField, initialDataField, onSave, sav
   const hasFieldError = (field: keyof DataFieldFormValues) => Boolean(formik.errors[field]);
 
   return (
-    <Grid container size={12} className='items-start w-full' spacing={5}>
+    <Grid container size={12} className='items-start w-full' rowSpacing={5} columnSpacing={7}>
       <Grid
         container
         size={{ lg: 8, xs: 12 }}
-        spacing={5}
+        rowSpacing={5}
+        columnSpacing={7}
         component='form'
         noValidate
         onSubmit={(event) => {

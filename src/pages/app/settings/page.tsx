@@ -37,8 +37,8 @@ export default function Page() {
           </AlertTitle>
           {t("settings-warning-message")}
         </Alert>
-        <Grid size={12} container spacing={5} className='items-start w-full'>
-          <Grid size={{ lg: 8, xs: 12 }} container spacing={5}>
+        <Grid size={12} container rowSpacing={5} columnSpacing={7} className='items-start w-full'>
+          <Grid size={{ lg: 8, xs: 12 }} container rowSpacing={5} columnSpacing={7}>
             <Adjustments />
             <Limits />
           </Grid>
