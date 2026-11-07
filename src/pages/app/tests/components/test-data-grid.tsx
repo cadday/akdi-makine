@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState, type Dispatch, type SetStateAction } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControl, InputLabel, Select, Typography } from "@mui/material";
 import {
@@ -19,14 +19,24 @@ import {
   X,
   XSquare,
 } from "lucide-react";
-import { getGridDateOperators, type GridColDef, type GridRenderCellParams, type GridRowSelectionModel, type GridRowSpacingParams } from "@mui/x-data-grid";
+import {
+  getGridDateOperators,
+  GridLogicOperator,
+  type GridColDef,
+  type GridFilterModel,
+  type GridPaginationModel,
+  type GridRenderCellParams,
+  type GridRowSelectionModel,
+  type GridRowSpacingParams,
+  type GridSortModel,
+} from "@mui/x-data-grid";
 import DataGridWithRowActions, { type DataGridRowAction } from "@/components/data-grid/data-grid-with-row-actions";
 import { StoredImagePreviews } from "@/components/data-fields/image-data-field-input";
 import { DataGridListingToolbar } from "@/components/data-grid/data-grid-listing-toolbar";
 import { DataGridPaginationFullPage } from "@/components/data-grid/data-grid-pagination";
 import Search from "@/components/layout/search/search";
 import DataGridDateTimeFilter from "@/components/data-grid/data-grid-date-time-filter";
-import { useDb, type DataFieldDefinition, type TestRecord, type UploadedImage } from "@/context/db-context";
+import { useDb, type DataFieldDefinition, type TestListingQuery, type TestRecord, type UploadedImage } from "@/context/db-context";
 import useAppNotifications from "@/hooks/use-app-notifications";
 import useDeleteConfirmation from "@/hooks/use-delete-confirmation";
 import { NoTestsFound } from "@/pages/app/components/no-entity-found";
@@ -36,21 +46,74 @@ import { useTranslation } from "react-i18next";
 type TestGridRow = TestRecord & { specimenName: string; presetName: string };
 
 interface TestDataGridProps {
-  tests: TestRecord[];
+  tests?: TestRecord[];
   dataFields: DataFieldDefinition[];
-  onTestsChange: Dispatch<SetStateAction<TestRecord[]>>;
+  onTestsChange?: (update: (current: TestRecord[]) => TestRecord[]) => void;
+  scope?: TestListingQuery["scope"];
   onAddItem?: (openInBackground?: boolean) => void;
   addDisabled?: boolean;
 }
 
-export default function TestDataGrid({ tests, dataFields, onTestsChange, onAddItem, addDisabled }: TestDataGridProps) {
+export default function TestDataGrid({ tests: providedTests, dataFields, onTestsChange, scope, onAddItem, addDisabled }: TestDataGridProps) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const { deleteTest, deleteTests, duplicateTest, duplicateTests } = useDb();
+  const { deleteTest, deleteTests, duplicateTest, duplicateTests, getTest, getTestListingPage, getTestListingExportRows } = useDb();
   const { showError } = useAppNotifications();
   const { requestDelete, dialog } = useDeleteConfirmation();
+  const [internalTests, setTests] = useState<TestRecord[]>(providedTests ?? []);
+  const tests = providedTests ?? internalTests;
+  const isServerMode = providedTests === undefined;
+  const [rowCount, setRowCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({ page: 0, pageSize: 10 });
+  const [sortModel, setSortModel] = useState<GridSortModel>([{ field: "createdAt", sort: "desc" }]);
+  const [filterModel, setFilterModel] = useState<GridFilterModel>({ items: [], quickFilterValues: [] });
+  const [refreshKey, setRefreshKey] = useState(0);
   const [rowSelectionModel, setRowSelectionModel] = useState<GridRowSelectionModel>({ type: "include", ids: new Set() });
   const [incompatibleTests, setIncompatibleTests] = useState<TestRecord[] | null>(null);
+  const requestId = useRef(0);
+  const query = useMemo<TestListingQuery>(
+    () => ({
+      ...paginationModel,
+      ...(scope ? { scope } : {}),
+      fieldAliases: Object.fromEntries(dataFields.map(({ id, name }) => [id, name])),
+      quickFilterValues: filterModel.quickFilterValues?.map(String),
+      filterModel: {
+        items: filterModel.items.map(({ field, operator, value }) => ({ field, operator, value })),
+        logicOperator: filterModel.logicOperator === GridLogicOperator.Or ? "or" : "and",
+      },
+      sortModel: sortModel.map(({ field, sort }) => ({ field, sort })),
+    }),
+    [dataFields, filterModel, paginationModel, scope, sortModel],
+  );
+
+  useEffect(() => {
+    if (!isServerMode) {
+      setRowCount(providedTests?.length ?? 0);
+      setIsLoading(false);
+      return;
+    }
+    const activeRequestId = ++requestId.current;
+    setIsLoading(true);
+    void getTestListingPage(query)
+      .then(({ rows: pageRows, totalCount }) => {
+        if (requestId.current !== activeRequestId) return;
+        setTests(pageRows);
+        setRowCount(totalCount);
+        const lastPage = Math.max(0, Math.ceil(totalCount / paginationModel.pageSize) - 1);
+        if (paginationModel.page > lastPage) setPaginationModel((current) => ({ ...current, page: lastPage }));
+      })
+      .catch((error: unknown) => {
+        if (requestId.current === activeRequestId) showError(t("listing-load-tests-error", { error: String(error) }));
+      })
+      .finally(() => {
+        if (requestId.current === activeRequestId) setIsLoading(false);
+      });
+
+    return () => {
+      requestId.current += 1;
+    };
+  }, [getTestListingPage, isServerMode, paginationModel.pageSize, paginationModel.page, providedTests, query, refreshKey, showError, t]);
 
   const duplicateRows = useCallback(
     async (ids: string[]) => {
@@ -58,13 +121,20 @@ export default function TestDataGrid({ tests, dataFields, onTestsChange, onAddIt
       try {
         const duplicated = ids.length === 1 ? [await duplicateTest(ids[0])] : await duplicateTests(ids);
         const newTests = duplicated.filter((test): test is TestRecord => Boolean(test));
-        onTestsChange((current) => [...newTests, ...current].sort((first, second) => second.createdAt - first.createdAt || second.id.localeCompare(first.id)));
+        if (newTests.length > 0) {
+          if (!isServerMode) {
+            const updateTests = onTestsChange ?? setTests;
+            updateTests((current) => [...newTests, ...current].sort((first, second) => second.createdAt - first.createdAt || second.id.localeCompare(first.id)));
+          } else {
+            setRefreshKey((current) => current + 1);
+          }
+        }
         setRowSelectionModel({ type: "include", ids: new Set() });
       } catch (error) {
         showError(t("listing-duplicate-test-error", { error: String(error) }));
       }
     },
-    [duplicateTest, duplicateTests, onTestsChange, showError, t],
+    [duplicateTest, duplicateTests, isServerMode, onTestsChange, showError, t],
   );
   const duplicateRow = useCallback((testId: string) => async () => duplicateRows([testId]), [duplicateRows]);
   const deleteRows = useCallback(
@@ -77,17 +147,18 @@ export default function TestDataGrid({ tests, dataFields, onTestsChange, onAddIt
         onConfirm: async () => {
           if (ids.length === 1) await deleteTest(ids[0]);
           else await deleteTests(ids);
-          onTestsChange((current) => current.filter((test) => !ids.includes(test.id)));
+          if (isServerMode) setRefreshKey((current) => current + 1);
+          else (onTestsChange ?? setTests)((current) => current.filter((test) => !ids.includes(test.id)));
           setRowSelectionModel({ type: "include", ids: new Set() });
         },
       });
     },
-    [deleteTest, deleteTests, onTestsChange, requestDelete, t],
+    [deleteTest, deleteTests, isServerMode, onTestsChange, requestDelete, t],
   );
   const deleteRow = useCallback((testId: string) => async () => deleteRows([testId]), [deleteRows]);
   const handleCompare = useCallback(
-    (ids: string[]) => {
-      const selectedTests = ids.map((id) => tests.find((test) => test.id === id)).filter((test): test is TestRecord => Boolean(test));
+    async (ids: string[]) => {
+      const selectedTests = (await Promise.all(ids.map((id) => getTest(id)))).filter((test): test is TestRecord => Boolean(test));
       if (selectedTests.length === ids.length && new Set(selectedTests.map((test) => getTestGraphType(test.specimenSnapshot.geometry))).size > 1) {
         setIncompatibleTests(selectedTests);
         return;
@@ -97,7 +168,7 @@ export default function TestDataGrid({ tests, dataFields, onTestsChange, onAddIt
       ids.forEach((testId) => params.append("testId", testId));
       navigate(`/tests/compare?${params.toString()}`);
     },
-    [navigate, tests],
+    [getTest, navigate],
   );
   const getRowSpacing = useCallback((params: GridRowSpacingParams) => ({ top: params.isFirstVisible ? 0 : 5, bottom: 5 }), []);
   const getRowActions = useCallback(
@@ -209,6 +280,44 @@ export default function TestDataGrid({ tests, dataFields, onTestsChange, onAddIt
     [dataFields, i18n.language, t],
   );
 
+  const exportCsv = useCallback(async () => {
+    try {
+      const matchingTests = await getTestListingExportRows(query);
+      const headers = [t("listing-id"), t("listing-name"), t("specimen"), t("preset"), t("listing-machine-ip"), ...dataFields.map((field) => field.name), t("listing-created"), t("listing-updated")];
+      const csvValue = (value: unknown) => {
+        let text = Array.isArray(value)
+          ? value.map((item) => (item && typeof item === "object" && "name" in item ? String(item.name) : String(item))).join(", ")
+          : value && typeof value === "object"
+            ? JSON.stringify(value)
+            : String(value ?? "");
+        if (/^[=+\-@\t\r]/.test(text)) text = `'${text}`;
+        return `"${text.replace(/"/g, '""')}"`;
+      };
+      const lines = [headers, ...matchingTests.map((test) => [
+        test.id,
+        test.name,
+        test.specimenSnapshot.name,
+        test.presetSnapshot.name,
+        test.machineIP,
+        ...dataFields.map((field) => {
+          const value = test.customData?.[field.id] ?? test.customData?.[field.name];
+          return typeof value === "boolean" ? (value ? t("listing-true") : t("listing-false")) : value;
+        }),
+        new Date(test.createdAt).toLocaleString(i18n.language),
+        new Date(test.updatedAt).toLocaleString(i18n.language),
+      ])].map((line) => line.map(csvValue).join(","));
+      const blob = new Blob([`\uFEFF${lines.join("\r\n")}`], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "tests.csv";
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      showError(t("listing-load-tests-error", { error: String(error) }));
+    }
+  }, [dataFields, getTestListingExportRows, i18n.language, query, showError, t]);
+
   return (
     <>
       {dialog}
@@ -240,17 +349,31 @@ export default function TestDataGrid({ tests, dataFields, onTestsChange, onAddIt
           </Button>
         </DialogActions>
       </Dialog>
-      {tests.length === 0 ? (
+      {(isServerMode ? rowCount : tests.length) === 0 && !isLoading ? (
         <NoTestsFound />
       ) : (
         <DataGridWithRowActions
           autoHeight
           rows={rows}
           columns={columns}
-          initialState={{
-            columns: { columnVisibilityModel: { id: false, createdAt: false } },
-            pagination: { paginationModel: { pageSize: 10 } },
+          loading={isLoading}
+          rowCount={isServerMode ? rowCount : undefined}
+          paginationModel={paginationModel}
+          onPaginationModelChange={setPaginationModel}
+          paginationMode={isServerMode ? "server" : "client"}
+          sortModel={sortModel}
+          onSortModelChange={(model) => {
+            setSortModel(model);
+            setPaginationModel((current) => ({ ...current, page: 0 }));
           }}
+          sortingMode={isServerMode ? "server" : "client"}
+          filterModel={filterModel}
+          onFilterModelChange={(model) => {
+            setFilterModel(model);
+            setPaginationModel((current) => ({ ...current, page: 0 }));
+          }}
+          filterMode={isServerMode ? "server" : "client"}
+          initialState={{ columns: { columnVisibilityModel: { id: false, createdAt: false } } }}
           getRowSpacing={getRowSpacing}
           columnHeaderHeight={40}
           checkboxSelection
@@ -270,6 +393,7 @@ export default function TestDataGrid({ tests, dataFields, onTestsChange, onAddIt
               deleteRows,
               duplicateRows,
               onCompare: handleCompare,
+              ...(isServerMode ? { onExportCsv: exportCsv } : {}),
               ...(onAddItem ? { onAddItem, addDisabled, addLabel: t("add-test"), addIcon: <Play /> } : {}),
             },
           }}

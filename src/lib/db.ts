@@ -130,6 +130,29 @@ export interface TestRecord {
   updatedAt: number;
 }
 
+export interface TestListingQuery {
+  page: number;
+  pageSize: number;
+  scope?: { field: "specimenId" | "presetId"; id: string };
+  fieldAliases?: Record<string, string>;
+  quickFilterValues?: string[];
+  filterModel?: {
+    items: Array<{ field: string; operator: string; value?: unknown }>;
+    logicOperator?: "and" | "or";
+  };
+  sortModel?: Array<{ field: string; sort: "asc" | "desc" | null }>;
+}
+
+export interface TestListingPage {
+  rows: TestRecord[];
+  totalCount: number;
+}
+
+export type TestListingExportRow = Pick<
+  TestRecord,
+  "id" | "name" | "machineIP" | "specimenSnapshot" | "presetSnapshot" | "customData" | "createdAt" | "updatedAt"
+>;
+
 export interface PresetRecord {
   id: string;
   name: string;
@@ -619,6 +642,228 @@ export async function getTests() {
   return db.tests.orderBy("createdAt").reverse().toArray();
 }
 
+function getTestListingValue(test: TestRecord, field: string, fieldAliases?: Record<string, string>): unknown {
+  if (field === "specimenName") return test.specimenSnapshot.name;
+  if (field === "presetName") return test.presetSnapshot.name;
+  if (field === "id" || field === "name" || field === "machineIP" || field === "createdAt" || field === "updatedAt") return test[field];
+  return test.customData?.[field] ?? test.customData?.[fieldAliases?.[field] ?? field.replace(/^field:/, "")];
+}
+
+function stringifyTestListingValue(value: unknown): string {
+  if (value == null) return "";
+  if (Array.isArray(value)) return value.map(stringifyTestListingValue).join(" ");
+  if (typeof value === "object") {
+    if ("name" in value && typeof value.name === "string") return value.name;
+    return "";
+  }
+  return String(value);
+}
+
+function normalizeFilterValue(value: unknown): string | number | null {
+  if (value == null || value === "") return null;
+  if (typeof value === "boolean") return String(value);
+  if (typeof value === "number") return value;
+  if (typeof value === "object" && value !== null && "valueOf" in value && typeof value.valueOf === "function") {
+    const primitive = value.valueOf();
+    if (typeof primitive === "number") return primitive;
+  }
+  const numeric = Number(value);
+  return Number.isNaN(numeric) ? String(value).toLocaleLowerCase() : numeric;
+}
+
+function matchesTestFilter(value: unknown, operator: string, filterValue: unknown, isDateField = false): boolean {
+  const text = stringifyTestListingValue(value).toLocaleLowerCase();
+  const filterText = stringifyTestListingValue(filterValue).toLocaleLowerCase();
+  const actual = normalizeFilterValue(value);
+  const expected = normalizeFilterValue(filterValue);
+
+  if (isDateField && typeof actual === "number" && typeof expected === "number") {
+    const filterDate = new Date(expected);
+    filterDate.setMinutes(filterDate.getMinutes() + filterDate.getTimezoneOffset());
+    filterDate.setHours(0, 0, 0, 0);
+    const filterDay = filterDate.getTime();
+    const actualDate = new Date(actual);
+    const actualDay = new Date(actualDate);
+    actualDay.setHours(0, 0, 0, 0);
+    const day = actualDay.getTime();
+    switch (operator) {
+      case "is":
+        return day === filterDay;
+      case "not":
+        return day !== filterDay;
+      case "after":
+        return day > filterDay;
+      case "onOrAfter":
+        return day >= filterDay;
+      case "before":
+        return actual < filterDay;
+      case "onOrBefore":
+        return day <= filterDay;
+    }
+  }
+
+  switch (operator) {
+    case "contains":
+      return text.includes(filterText);
+    case "doesNotContain":
+      return !text.includes(filterText);
+    case "equals":
+    case "is":
+      return actual === expected;
+    case "doesNotEqual":
+    case "not":
+    case "!=":
+      return actual !== expected;
+    case "startsWith":
+      return text.startsWith(filterText);
+    case "endsWith":
+      return text.endsWith(filterText);
+    case "isEmpty":
+      return value == null || text === "";
+    case "isNotEmpty":
+      return value != null && text !== "";
+    case "isAnyOf":
+      return Array.isArray(filterValue) && filterValue.some((item) => matchesTestFilter(value, "equals", item));
+    case ">":
+    case "after":
+      return typeof actual === "number" && typeof expected === "number" && actual > expected;
+    case ">=":
+    case "onOrAfter":
+      return typeof actual === "number" && typeof expected === "number" && actual >= expected;
+    case "<":
+    case "before":
+      return typeof actual === "number" && typeof expected === "number" && actual < expected;
+    case "<=":
+    case "onOrBefore":
+      return typeof actual === "number" && typeof expected === "number" && actual <= expected;
+    default:
+      return true;
+  }
+}
+
+function compareTestListingValues(first: unknown, second: unknown) {
+  const firstValue = normalizeFilterValue(first);
+  const secondValue = normalizeFilterValue(second);
+  if (firstValue == null) return secondValue == null ? 0 : -1;
+  if (secondValue == null) return 1;
+  if (typeof firstValue === "number" && typeof secondValue === "number") return firstValue - secondValue;
+  return String(firstValue).localeCompare(String(secondValue), undefined, { numeric: true, sensitivity: "base" });
+}
+
+function getComparableTestListingValue(value: unknown): string | number | null {
+  if (value == null) return null;
+  if (typeof value === "object") return stringifyTestListingValue(value).toLocaleLowerCase();
+  return normalizeFilterValue(value);
+}
+
+function matchesTestListingQuery(test: TestRecord, query: TestListingQuery) {
+  const quickTerms = (query.quickFilterValues ?? []).map((value) => value.trim().toLocaleLowerCase()).filter(Boolean);
+  const searchableValues = [
+    test.name,
+    test.machineIP,
+    test.specimenSnapshot.name,
+    test.presetSnapshot.name,
+    ...Object.values(test.customData ?? {}),
+  ];
+  if (quickTerms.some((term) => !searchableValues.some((value) => stringifyTestListingValue(value).toLocaleLowerCase().includes(term)))) return false;
+
+  const filterItems = (query.filterModel?.items ?? []).filter(
+    (item) => (item.value != null && item.value !== "") || item.operator === "isEmpty" || item.operator === "isNotEmpty",
+  );
+  if (filterItems.length === 0) return true;
+  const results = filterItems.map((item) =>
+    matchesTestFilter(
+      getTestListingValue(test, item.field, query.fieldAliases),
+      item.operator,
+      item.value,
+      item.field === "createdAt" || item.field === "updatedAt",
+    ),
+  );
+  return query.filterModel?.logicOperator === "or" ? results.some(Boolean) : results.every(Boolean);
+}
+
+export async function getTestListingPage(query: TestListingQuery): Promise<TestListingPage> {
+  const page = Math.max(0, Math.floor(query.page));
+  const pageSize = Math.max(1, Math.floor(query.pageSize));
+  const sortModel = (query.sortModel ?? []).filter((item): item is { field: string; sort: "asc" | "desc" } => item.sort === "asc" || item.sort === "desc");
+  const hasSearch = (query.quickFilterValues ?? []).some((value) => value.trim() !== "");
+  const hasFilters = (query.filterModel?.items ?? []).some(
+    (item) => (item.value != null && item.value !== "") || item.operator === "isEmpty" || item.operator === "isNotEmpty",
+  );
+  const defaultSort = sortModel.length === 0 || (sortModel.length === 1 && sortModel[0].field === "createdAt" && sortModel[0].sort === "desc");
+
+  if (!query.scope && !hasSearch && !hasFilters && defaultSort) {
+    const [totalCount, rows] = await Promise.all([
+      db.tests.count(),
+      db.tests.orderBy("createdAt").reverse().offset(page * pageSize).limit(pageSize).toArray(),
+    ]);
+    return { rows, totalCount };
+  }
+
+  const matched: Array<{ id: string; createdAt: number; sortValues: unknown[] }> = [];
+  const collectMatch = (test: TestRecord) => {
+    if (!matchesTestListingQuery(test, query)) return;
+    matched.push({
+      id: test.id,
+      createdAt: test.createdAt,
+      sortValues: sortModel.map(({ field }) => getComparableTestListingValue(getTestListingValue(test, field, query.fieldAliases))),
+    });
+  };
+  if (query.scope) await db.tests.where(query.scope.field).equals(query.scope.id).each(collectMatch);
+  else await db.tests.orderBy("createdAt").reverse().each(collectMatch);
+
+  matched.sort((first, second) => {
+    for (let index = 0; index < sortModel.length; index += 1) {
+      const direction = sortModel[index].sort === "asc" ? 1 : -1;
+      const compared = compareTestListingValues(first.sortValues[index], second.sortValues[index]);
+      if (compared !== 0) return compared * direction;
+    }
+    return second.createdAt - first.createdAt || second.id.localeCompare(first.id);
+  });
+
+  const totalCount = matched.length;
+  const pageMatches = matched.slice(page * pageSize, (page + 1) * pageSize);
+  const records = await db.tests.bulkGet(pageMatches.map((item) => item.id));
+  const recordById = new Map(records.filter((test): test is TestRecord => Boolean(test)).map((test) => [test.id, test]));
+  return { rows: pageMatches.map((item) => recordById.get(item.id)).filter((test): test is TestRecord => Boolean(test)), totalCount };
+}
+
+export async function getTestListingExportRows(query: TestListingQuery): Promise<TestListingExportRow[]> {
+  const sortModel = (query.sortModel ?? []).filter((item): item is { field: string; sort: "asc" | "desc" } => item.sort === "asc" || item.sort === "desc");
+  const matched: Array<{ row: TestListingExportRow; createdAt: number; sortValues: Array<string | number | null> }> = [];
+
+  const collectMatch = (test: TestRecord) => {
+    if (!matchesTestListingQuery(test, query)) return;
+    matched.push({
+      row: {
+        id: test.id,
+        name: test.name,
+        machineIP: test.machineIP,
+        specimenSnapshot: test.specimenSnapshot,
+        presetSnapshot: test.presetSnapshot,
+        customData: test.customData,
+        createdAt: test.createdAt,
+        updatedAt: test.updatedAt,
+      },
+      createdAt: test.createdAt,
+      sortValues: sortModel.map(({ field }) => getComparableTestListingValue(getTestListingValue(test, field, query.fieldAliases))),
+    });
+  };
+  if (query.scope) await db.tests.where(query.scope.field).equals(query.scope.id).each(collectMatch);
+  else await db.tests.orderBy("createdAt").reverse().each(collectMatch);
+
+  matched.sort((first, second) => {
+    for (let index = 0; index < sortModel.length; index += 1) {
+      const direction = sortModel[index].sort === "asc" ? 1 : -1;
+      const compared = compareTestListingValues(first.sortValues[index], second.sortValues[index]);
+      if (compared !== 0) return compared * direction;
+    }
+    return second.createdAt - first.createdAt || second.row.id.localeCompare(first.row.id);
+  });
+
+  return matched.map(({ row }) => row);
+}
+
 export async function getLatestTests(limit = 5) {
   return db.tests.orderBy("createdAt").reverse().limit(limit).toArray();
 }
@@ -634,7 +879,21 @@ export async function getTestsForPreset(presetId: string) {
 }
 
 export async function getLatestTestsForSpecimen(specimenId: string) {
-  return (await getTestsForSpecimen(specimenId)).slice(0, 10);
+  return getLatestTestsForRelation("specimenId", specimenId);
+}
+
+export async function getLatestTestsForPreset(presetId: string) {
+  return getLatestTestsForRelation("presetId", presetId);
+}
+
+async function getLatestTestsForRelation(field: "specimenId" | "presetId", id: string, limit = 10) {
+  const latest: TestRecord[] = [];
+  await db.tests.where(field).equals(id).each((test) => {
+    latest.push(test);
+    latest.sort((first, second) => second.createdAt - first.createdAt || second.id.localeCompare(first.id));
+    if (latest.length > limit) latest.pop();
+  });
+  return latest;
 }
 
 export async function getTest(id: string) {

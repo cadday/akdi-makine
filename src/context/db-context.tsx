@@ -32,6 +32,7 @@ import {
   getMachines,
   getRecordCounts,
   getLatestTestsForSpecimen,
+  getLatestTestsForPreset,
   getLatestTests,
   getPreset,
   getPresets,
@@ -39,6 +40,8 @@ import {
   getSpecimens,
   getTest,
   getTests,
+  getTestListingPage,
+  getTestListingExportRows,
   getTestsForPreset,
   getTestsForSpecimen,
   updateDataField,
@@ -60,6 +63,9 @@ import {
     type SpecimenGeometry,
   type SpecimenRecord,
   type TestRecord,
+  type TestListingPage,
+  type TestListingQuery,
+  type TestListingExportRow,
   type TestGraphPoint,
   type TestResults,
   type TestSpecimenSnapshot,
@@ -88,9 +94,12 @@ interface DbContextType {
   getLatestTests: typeof getLatestTests;
   getTestsForPreset: typeof getTestsForPreset;
   getLatestTestsForSpecimen: typeof getLatestTestsForSpecimen;
+  getLatestTestsForPreset: typeof getLatestTestsForPreset;
   getTestsForSpecimen: typeof getTestsForSpecimen;
   getTest: typeof getTest;
   updateTest: typeof updateTest;
+  getTestListingPage: typeof getTestListingPage;
+  getTestListingExportRows: typeof getTestListingExportRows;
   updateTestResults: typeof updateTestResults;
   appendTestSample: typeof appendTestSample;
   updateTestRunStatus: typeof updateTestRunStatus;
@@ -142,8 +151,11 @@ export function DbProvider({ children }: PropsWithChildren) {
       getLatestTests,
       getTestsForPreset,
       getLatestTestsForSpecimen,
+      getLatestTestsForPreset,
       getTestsForSpecimen,
       getTest,
+      getTestListingPage,
+      getTestListingExportRows,
       updateTest,
       updateTestResults,
       appendTestSample,
@@ -200,6 +212,9 @@ export type {
   SpecimenRecord,
   TestGraphPoint,
   TestRecord,
+  TestListingPage,
+  TestListingQuery,
+  TestListingExportRow,
   TestResults,
   TestSpecimenSnapshot,
   StressStrainPoint,

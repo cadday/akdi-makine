@@ -17,6 +17,7 @@ interface TabsContextValue {
   activateTab: (id: string) => void;
   openTab: (path: string, activate?: boolean) => void;
   closeTab: (id: string) => void;
+  closeBackgroundTab: (id: string) => void;
   canGoBack: boolean;
   canGoForward: boolean;
   goBack: () => void;
@@ -116,6 +117,14 @@ export function TabsProvider({ children }: PropsWithChildren) {
     [activeTabId, currentPath, hasActiveTest, navigate, tabs],
   );
 
+  const closeBackgroundTab = useCallback(
+    (id: string) => {
+      if (id === activeTabId) return;
+      setTabs((currentTabs) => (currentTabs.length > 1 ? currentTabs.filter((tab) => tab.id !== id) : currentTabs));
+    },
+    [activeTabId],
+  );
+
   const navigateInHistory = useCallback(
     (offset: -1 | 1) => {
       if (hasActiveTest) return;
@@ -160,6 +169,7 @@ export function TabsProvider({ children }: PropsWithChildren) {
       activateTab,
       openTab,
       closeTab,
+      closeBackgroundTab,
       canGoBack: (tabs.find((tab) => tab.id === activeTabId)?.historyIndex ?? 0) > 0,
       canGoForward: (() => {
         const activeTab = tabs.find((tab) => tab.id === activeTabId);
@@ -168,7 +178,7 @@ export function TabsProvider({ children }: PropsWithChildren) {
       goBack,
       goForward,
     }),
-    [activateTab, activeTabId, closeTab, goBack, goForward, hasActiveTest, openTab, tabs],
+    [activateTab, activeTabId, closeBackgroundTab, closeTab, goBack, goForward, hasActiveTest, openTab, tabs],
   );
 
   return <TabsContext.Provider value={value}>{children}</TabsContext.Provider>;

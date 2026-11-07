@@ -8,7 +8,7 @@ import TestDataGrid from "@/pages/app/tests/components/test-data-grid";
 import ContentWrapper from "@/components/layout/containers/content-wrapper";
 import TitleWrapper from "@/components/layout/containers/title-wrapper";
 import { LINKS } from "@/constants";
-import { useDb, type DataFieldDefinition, type TestRecord } from "@/context/db-context";
+import { useDb, type DataFieldDefinition } from "@/context/db-context";
 import useAppNotifications from "@/hooks/use-app-notifications";
 import { isMachineInterlocked, usePlcData } from "@/context/plc-context";
 
@@ -16,10 +16,9 @@ export default function Page() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { openTab } = useTabs();
-  const { getTests, getDataFields } = useDb();
+  const { getDataFields } = useDb();
   const { showError } = useAppNotifications();
   const { connectionStatus, interlockStatus } = usePlcData();
-  const [tests, setTests] = useState<TestRecord[]>([]);
   const [dataFields, setDataFields] = useState<DataFieldDefinition[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -30,9 +29,7 @@ export default function Page() {
     setIsLoading(true);
     setError(null);
     try {
-      const [testData, fieldData] = await Promise.all([getTests(), getDataFields("Test")]);
-      setTests(testData);
-      setDataFields(fieldData);
+      setDataFields(await getDataFields("Test"));
     } catch (loadError) {
       const message = t("listing-load-tests-error", { error: String(loadError) });
       setError(message);
@@ -40,7 +37,7 @@ export default function Page() {
     } finally {
       setIsLoading(false);
     }
-  }, [getDataFields, getTests, showError, t]);
+  }, [getDataFields, showError, t]);
 
   useEffect(() => {
     let cancelled = false;
@@ -48,9 +45,8 @@ export default function Page() {
       setIsLoading(true);
       setError(null);
       try {
-        const [testData, fieldData] = await Promise.all([getTests(), getDataFields("Test")]);
+        const fieldData = await getDataFields("Test");
         if (!cancelled) {
-          setTests(testData);
           setDataFields(fieldData);
         }
       } catch (loadError) {
@@ -68,7 +64,7 @@ export default function Page() {
     return () => {
       cancelled = true;
     };
-  }, [getDataFields, getTests, showError, t]);
+  }, [getDataFields, showError, t]);
 
   const handleAddItem = useCallback(
     (openInBackground = false) => {
@@ -113,9 +109,7 @@ export default function Page() {
             ) : (
               !isLoading && (
                 <TestDataGrid
-                  tests={tests}
                   dataFields={dataFields}
-                  onTestsChange={setTests}
                   onAddItem={handleAddItem}
                   addDisabled={addTestDisabled}
                 />

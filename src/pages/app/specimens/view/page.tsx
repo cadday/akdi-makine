@@ -28,9 +28,9 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
   const { t, i18n } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { getSpecimen, getDataFields, getTestsForSpecimen, deleteSpecimen } = useDb();
+  const { getSpecimen, getDataFields, getLatestTestsForSpecimen, deleteSpecimen } = useDb();
   const [specimen, setSpecimen] = useState<SpecimenRecord | null>(null);
-  const [specimenTests, setSpecimenTests] = useState<TestRecord[]>([]);
+  const [latestTests, setLatestTests] = useState<TestRecord[]>([]);
   const [fields, setFields] = useState<DataFieldDefinition[]>([]);
   const [testFields, setTestFields] = useState<DataFieldDefinition[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -58,14 +58,14 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
         const [record, dataFields, tests, testDataFields] = await Promise.all([
           getSpecimen(id),
           getDataFields("Specimen"),
-          getTestsForSpecimen(id),
+          getLatestTestsForSpecimen(id),
           getDataFields("Test"),
         ]);
         if (cancelled) return;
 
         setSpecimen(record ?? null);
         setFields(dataFields);
-        setSpecimenTests(tests);
+        setLatestTests(tests);
         setTestFields(testDataFields);
         if (!record) setLoadError(t("view-specimen-not-found"));
       } catch (error) {
@@ -79,7 +79,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
     return () => {
       cancelled = true;
     };
-  }, [getDataFields, getSpecimen, getTestsForSpecimen, id, t]);
+  }, [getDataFields, getLatestTestsForSpecimen, getSpecimen, id, t]);
 
   useEffect(() => {
     if (loadError) showError(loadError);
@@ -95,7 +95,6 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
     return field.unit ? `${displayValue} ${field.unit}` : displayValue;
   };
 
-  const latestTests = specimenTests.slice(0, 10);
   const latestTestColumns: GridColDef<TestRecord>[] = [
     {
       field: "name",
@@ -340,7 +339,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                 <TabPanel value='Tests'>
                   <Grid size={12} container rowSpacing={5} columnSpacing={7} className='w-full'>
                     <Grid size={12}>
-                      <TestDataGrid tests={specimenTests} dataFields={testFields} onTestsChange={setSpecimenTests} />
+                      <TestDataGrid dataFields={testFields} scope={{ field: "specimenId", id: id ?? "" }} />
                     </Grid>
                   </Grid>
                 </TabPanel>

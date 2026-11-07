@@ -16,7 +16,7 @@ import Summary, { type OverviewCounts } from '@/pages/app/overview/components/su
 
 export default function Page() {
   const { t } = useTranslation();
-  const { getRecordCounts, getTests } = useDb();
+  const { getRecordCounts, getLatestTests } = useDb();
   const { showError } = useAppNotifications();
   const [counts, setCounts] = useState<OverviewCounts>({ tests: 0, specimens: 0, presets: 0, dataFields: 0 });
   const [latestTests, setLatestTests] = useState<TestRecord[]>([]);
@@ -27,7 +27,7 @@ export default function Page() {
     let cancelled = false;
     setIsLoading(true);
     const loadOverview = async () => {
-      const [countsResult, testsResult] = await Promise.allSettled([getRecordCounts(), getTests()]);
+      const [countsResult, testsResult] = await Promise.allSettled([getRecordCounts(), getLatestTests(10)]);
       if (cancelled) return;
 
       if (countsResult.status === 'fulfilled') setCounts(countsResult.value);
@@ -50,7 +50,7 @@ export default function Page() {
     return () => {
       cancelled = true;
     };
-  }, [getRecordCounts, getTests, showError, t]);
+  }, [getLatestTests, getRecordCounts, showError, t]);
 
   return isLoading ? (
     <LoadingFullScreen />

@@ -25,11 +25,11 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
   const { t, i18n } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { getPreset, getTestsForPreset, getDataFields, deletePreset } = useDb();
+  const { getPreset, getLatestTestsForPreset, getDataFields, deletePreset } = useDb();
   const { showError } = useAppNotifications();
   const { requestDelete, dialog } = useDeleteConfirmation();
   const [preset, setPreset] = useState<PresetRecord | null>(null);
-  const [tests, setTests] = useState<TestRecord[]>([]);
+  const [latestTests, setLatestTests] = useState<TestRecord[]>([]);
   const [testFields, setTestFields] = useState<DataFieldDefinition[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -55,11 +55,11 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
       }
 
       try {
-        const [record, presetTests, fields] = await Promise.all([getPreset(id), getTestsForPreset(id), getDataFields("Test")]);
+        const [record, recentTests, fields] = await Promise.all([getPreset(id), getLatestTestsForPreset(id), getDataFields("Test")]);
         if (cancelled) return;
 
         setPreset(record ?? null);
-        setTests(presetTests);
+        setLatestTests(recentTests);
         setTestFields(fields);
         if (!record) setLoadError(t("view-preset-not-found"));
       } catch (error) {
@@ -73,13 +73,12 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
     return () => {
       cancelled = true;
     };
-  }, [getDataFields, getPreset, getTestsForPreset, id, t]);
+  }, [getDataFields, getLatestTestsForPreset, getPreset, id, t]);
 
   useEffect(() => {
     if (loadError) showError(loadError);
   }, [loadError, showError]);
 
-  const latestTests = tests.slice(0, 10);
   const latestTestColumns: GridColDef<TestRecord>[] = [
     {
       field: "name",
@@ -306,7 +305,7 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                 <TabPanel value='Tests'>
                   <Grid size={12} container rowSpacing={5} columnSpacing={7} className='w-full'>
                     <Grid size={12}>
-                      <TestDataGrid tests={tests} dataFields={testFields} onTestsChange={setTests} />
+                      <TestDataGrid dataFields={testFields} scope={{ field: "presetId", id: id ?? "" }} />
                     </Grid>
                   </Grid>
                 </TabPanel>

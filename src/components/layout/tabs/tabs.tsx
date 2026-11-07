@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { liveQuery } from "dexie";
 import { Box } from "@mui/material";
 import { DraftingCompass, FlaskConical, SlidersVertical, Network, Presentation, Cog } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -8,9 +9,10 @@ import TabItem from "./tab-item";
 
 export default function Tabs() {
   const { t } = useTranslation();
-  const { tabs, activeTabId, hasActiveTest, activateTab, closeTab } = useTabs();
-  const { getPreset, getSpecimen } = useDb();
+  const { tabs, activeTabId, hasActiveTest, activateTab, closeTab, closeBackgroundTab } = useTabs();
+  const { db } = useDb();
   const [recordNames, setRecordNames] = useState<Record<string, string>>({});
+  const observedRecords = useRef<Record<string, { path: string; exists: boolean }>>({});
   const tabListRef = useRef<HTMLUListElement>(null);
 
   useEffect(() => {
@@ -28,33 +30,52 @@ export default function Tabs() {
   }, []);
 
   useEffect(() => {
-    let cancelled = false;
-    const loadRecordNames = async () => {
-      const entries = await Promise.all(
-        tabs.map(async (tab): Promise<[string, string] | null> => {
-          const pathname = tab.path.split(/[?#]/, 1)[0];
-          const match = pathname.match(/^\/(specimens|presets)\/([^/]+)(?:\/|$)/);
-          if (!match || match[2] === "add") return null;
+    const recordTabs = tabs.flatMap((tab) => {
+      const pathname = tab.path.split(/[?#]/, 1)[0];
+      const match = pathname.match(/^\/(tests|specimens|presets|data-fields)\/([^/]+)(?:\/|$)/);
+      if (!match || match[2] === "add" || match[2] === "compare" || pathname.endsWith("/edit")) return [];
+      return [{ tabId: tab.id, path: pathname, type: match[1], recordId: match[2] }];
+    });
+    const activeRecordTabIds = new Set(recordTabs.map(({ tabId }) => tabId));
+    observedRecords.current = Object.fromEntries(Object.entries(observedRecords.current).filter(([tabId]) => activeRecordTabIds.has(tabId)));
 
-          try {
-            const record = match[1] === "specimens" ? await getSpecimen(match[2]) : await getPreset(match[2]);
-            return record ? [tab.id, record.name] : null;
-          } catch {
-            return null;
-          }
+    if (recordTabs.length === 0) {
+      setRecordNames({});
+      return;
+    }
+
+    const subscription = liveQuery(() =>
+      Promise.all(
+        recordTabs.map(async ({ tabId, path, type, recordId }) => {
+          const record =
+            type === "tests"
+              ? await db.tests.get(recordId)
+              : type === "specimens"
+                ? await db.specimens.get(recordId)
+                : type === "presets"
+                  ? await db.presets.get(recordId)
+                  : await db.dataFields.get(recordId);
+          return { tabId, path, record };
         }),
-      );
+      ),
+    ).subscribe({
+      next: (results) => {
+        const nextRecordNames: Record<string, string> = {};
+        results.forEach(({ tabId, path, record }) => {
+          const exists = Boolean(record);
+          const previous = observedRecords.current[tabId];
+          if (previous?.path === path && previous.exists && !exists && tabId !== activeTabId) {
+            closeBackgroundTab(tabId);
+          }
+          observedRecords.current[tabId] = { path, exists };
+          if (record) nextRecordNames[tabId] = record.name;
+        });
+        setRecordNames(nextRecordNames);
+      },
+    });
 
-      if (!cancelled) {
-        setRecordNames(Object.fromEntries(entries.filter((entry): entry is [string, string] => entry !== null)));
-      }
-    };
-
-    void loadRecordNames();
-    return () => {
-      cancelled = true;
-    };
-  }, [getPreset, getSpecimen, tabs]);
+    return () => subscription.unsubscribe();
+  }, [activeTabId, closeBackgroundTab, db, tabs]);
 
   const getTabTitle = (tabId: string, path: string) => {
     const pathname = path.split(/[?#]/, 1)[0];
@@ -84,10 +105,10 @@ export default function Tabs() {
     if (editMatch?.[1] === "presets") return t("edit-preset-title");
 
     const recordId = pathname.match(/^\/(?:tests|specimens|presets|data-fields)\/([^/]+)(?:\/|$)/)?.[1];
-    if (recordId && (basePath === "specimens" || basePath === "presets") && recordId !== "add") {
-      return recordNames[tabId] ?? "";
+    if (recordId && (basePath === "tests" || basePath === "specimens" || basePath === "presets" || basePath === "data-fields")) {
+      return recordNames[tabId] ?? title;
     }
-    return recordId && recordId !== "add" && recordId !== "compare" ? `${title} · ${recordId.slice(0, 8)}` : title;
+    return title;
   };
 
   return (

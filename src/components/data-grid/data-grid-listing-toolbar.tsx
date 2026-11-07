@@ -39,7 +39,12 @@ export type ListingToolbarProps = {
   addDisabled?: boolean;
   addLabel?: string;
   addIcon?: ReactNode;
+  onExportCsv?: () => void;
 };
+
+declare module "@mui/x-data-grid" {
+  interface ToolbarPropsOverrides extends ListingToolbarProps {}
+}
 
 export const DataGridListingToolbar = ({
   rowSelectionModel,
@@ -50,6 +55,7 @@ export const DataGridListingToolbar = ({
   addDisabled = false,
   addLabel,
   addIcon = <Plus />,
+  onExportCsv,
 }: ListingToolbarProps) => {
   const { t } = useTranslation();
   const [anchorElExport, setAnchorElExport] = useState<EventTarget | Element | PopoverVirtualElement | null>(null);
@@ -216,17 +222,31 @@ export const DataGridListingToolbar = ({
             onClose={handleCloseExport}
             className='mt-1'
           >
-            <ExportCsv
-              render={
-                <MenuItem>
-                  <ListItemIcon>
-                    <FileText size={16} />
-                  </ListItemIcon>
-                  <ListItemText>{t("save-csv")}</ListItemText>
-                </MenuItem>
-              }
-              onClick={handleCloseExport}
-            />
+            {onExportCsv ? (
+              <MenuItem
+                onClick={() => {
+                  handleCloseExport();
+                  onExportCsv();
+                }}
+              >
+                <ListItemIcon>
+                  <FileText size={16} />
+                </ListItemIcon>
+                <ListItemText>{t("save-csv")}</ListItemText>
+              </MenuItem>
+            ) : (
+              <ExportCsv
+                render={
+                  <MenuItem>
+                    <ListItemIcon>
+                      <FileText size={16} />
+                    </ListItemIcon>
+                    <ListItemText>{t("save-csv")}</ListItemText>
+                  </MenuItem>
+                }
+                onClick={handleCloseExport}
+              />
+            )}
           </Menu>
 
           {onAddItem && (
