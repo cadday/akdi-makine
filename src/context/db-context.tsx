@@ -45,6 +45,7 @@ import {
   getTests,
   getTestListingPage,
   getTestListingExportRows,
+  searchRecords,
   getTestsForPreset,
   getTestsForSpecimen,
   updateDataField,
@@ -69,6 +70,9 @@ import {
   type TestListingPage,
   type TestListingQuery,
   type TestListingExportRow,
+  type GlobalSearchKind,
+  type GlobalSearchPage,
+  type GlobalSearchRecord,
   type RecordListingPage,
   type RecordListingQuery,
   type TestGraphPoint,
@@ -106,6 +110,7 @@ interface DbContextType {
   updateTest: typeof updateTest;
   getTestListingPage: typeof getTestListingPage;
   getTestListingExportRows: typeof getTestListingExportRows;
+  searchRecords: typeof searchRecords;
   updateTestResults: typeof updateTestResults;
   appendTestSample: typeof appendTestSample;
   updateTestRunStatus: typeof updateTestRunStatus;
@@ -165,6 +170,7 @@ export function DbProvider({ children }: PropsWithChildren) {
       getTest,
       getTestListingPage,
       getTestListingExportRows,
+      searchRecords,
       updateTest,
       updateTestResults,
       appendTestSample,
@@ -226,6 +232,9 @@ export type {
   TestListingPage,
   TestListingQuery,
   TestListingExportRow,
+  GlobalSearchKind,
+  GlobalSearchPage,
+  GlobalSearchRecord,
   RecordListingPage,
   RecordListingQuery,
   TestResults,

@@ -165,6 +165,20 @@ export interface RecordListingPage<T> {
   totalCount: number;
 }
 
+export type GlobalSearchKind = "tests" | "specimens" | "presets" | "data-fields";
+
+export interface GlobalSearchRecord {
+  id: string;
+  kind: GlobalSearchKind;
+  name: string;
+  updatedAt: number;
+}
+
+export interface GlobalSearchPage {
+  rows: GlobalSearchRecord[];
+  nextCursor: number | null;
+}
+
 export type TestListingExportRow = Pick<
   TestRecord,
   "id" | "name" | "machineIP" | "specimenSnapshot" | "presetSnapshot" | "customData" | "createdAt" | "updatedAt"
@@ -657,6 +671,53 @@ if (import.meta.env.DEV && typeof window !== "undefined") {
 
 export async function getTests() {
   return db.tests.orderBy("createdAt").reverse().toArray();
+}
+
+async function searchRecordPage<T extends { id: string; name: string; updatedAt: number; createdAt: number }>(
+  table: Table<T, string>,
+  kind: GlobalSearchKind,
+  query: string,
+  cursor: number,
+  limit: number,
+): Promise<GlobalSearchPage> {
+  const normalizedQuery = query.trim().toLocaleLowerCase();
+  if (!normalizedQuery) return { rows: [], nextCursor: null };
+
+  const rows: GlobalSearchRecord[] = [];
+  let scannedCount = cursor;
+  let hasMore = false;
+  await table
+    .orderBy("createdAt")
+    .reverse()
+    .offset(cursor)
+    .until((record) => record.name.toLocaleLowerCase().includes(normalizedQuery) && rows.length === limit, true)
+    .each((record) => {
+      scannedCount += 1;
+      if (!record.name.toLocaleLowerCase().includes(normalizedQuery)) return;
+      if (rows.length >= limit) {
+        hasMore = true;
+        return;
+      }
+      rows.push({ id: record.id, kind, name: record.name, updatedAt: record.updatedAt });
+    });
+
+  return {
+    rows,
+    nextCursor: hasMore ? scannedCount - 1 : null,
+  };
+}
+
+export function searchRecords(kind: GlobalSearchKind, query: string, cursor = 0, limit = 10): Promise<GlobalSearchPage> {
+  switch (kind) {
+    case "tests":
+      return searchRecordPage(db.tests, kind, query, cursor, limit);
+    case "specimens":
+      return searchRecordPage(db.specimens, kind, query, cursor, limit);
+    case "presets":
+      return searchRecordPage(db.presets, kind, query, cursor, limit);
+    case "data-fields":
+      return searchRecordPage(db.dataFields, kind, query, cursor, limit);
+  }
 }
 
 function getTestListingValue(test: TestRecord, field: string, fieldAliases?: Record<string, string>): unknown {

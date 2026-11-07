@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type SyntheticEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type SyntheticEvent } from "react";
 
 import TabContext from "@mui/lab/TabContext";
 import TabPanel from "@mui/lab/TabPanel";
@@ -7,6 +7,7 @@ import {
   Avatar,
   Box,
   Button,
+  CircularProgress,
   Dialog,
   DialogContent,
   DialogTitle,
@@ -23,14 +24,14 @@ import {
   Typography,
 } from "@mui/material";
 
-import { useDb, type DataFieldDefinition, type PresetRecord, type SpecimenRecord, type TestRecord } from "@/context/db-context";
+import { useDb, type GlobalSearchKind } from "@/context/db-context";
 import { cn } from "@/lib/utils";
 import { ChevronLeft, ChevronRight, DraftingCompass, FlaskConical, GalleryVerticalEnd, Network, SearchIcon, SlidersVertical, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router";
 import { NothingToDisplay } from "@/pages/app/components/no-entity-found";
 
-type SearchKind = "tests" | "specimens" | "presets" | "data-fields";
+type SearchKind = GlobalSearchKind;
 type SearchTab = "all" | SearchKind;
 
 interface SearchResult {
@@ -48,6 +49,19 @@ interface SearchGroup {
 }
 
 const RESULT_LIMIT = 10;
+const SEARCH_KINDS: SearchKind[] = ["tests", "specimens", "presets", "data-fields"];
+
+function emptyResults(): Record<SearchKind, SearchResult[]> {
+  return { tests: [], specimens: [], presets: [], "data-fields": [] };
+}
+
+function emptyCursors(): Record<SearchKind, number | null> {
+  return { tests: 0, specimens: 0, presets: 0, "data-fields": 0 };
+}
+
+function emptyHasMore(): Record<SearchKind, boolean> {
+  return { tests: false, specimens: false, presets: false, "data-fields": false };
+}
 
 function formatDate(timestamp: number, locale: string) {
   return new Date(timestamp).toLocaleString(locale, { dateStyle: "short", timeStyle: "short" });
@@ -79,54 +93,62 @@ function getAvatarClass(kind: SearchKind) {
   }
 }
 
-function makeResults<T extends { id: string; name: string }>(records: T[], kind: SearchKind, query: string, getSecondary: (record: T) => string): SearchResult[] {
-  const normalizedQuery = query.trim().toLocaleLowerCase();
-  if (!normalizedQuery) return [];
-
-  return records
-    .filter((record) => record.name.toLocaleLowerCase().includes(normalizedQuery))
-    .slice(0, RESULT_LIMIT)
-    .map((record) => ({
-      id: record.id,
-      kind,
-      name: record.name,
-      secondary: getSecondary(record),
-      to: `/${kind}/${record.id}`,
-    }));
+function toSearchResults(records: Array<{ id: string; kind: SearchKind; name: string; updatedAt: number }>, locale: string): SearchResult[] {
+  return records.map((record) => ({
+    ...record,
+    secondary: formatDate(record.updatedAt, locale),
+    to: `/${record.kind}/${record.id}`,
+  }));
 }
 
 export default function Search() {
   const isMac = navigator.userAgent.includes("Mac");
   const navigate = useNavigate();
-  const { getTests, getSpecimens, getPresets, getDataFields } = useDb();
+  const { searchRecords } = useDb();
   const searchInputRef = useRef<HTMLInputElement>(null);
   const resultButtonRefs = useRef(new Map<string, HTMLAnchorElement>());
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const loadMoreSentinelRef = useRef<HTMLDivElement>(null);
+  const requestId = useRef(0);
+  const loadingMoreRef = useRef(false);
   const [tooltipShow, setTooltipShow] = useState(false);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [tabValue, setTabValue] = useState<SearchTab>("all");
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [tests, setTests] = useState<TestRecord[]>([]);
-  const [specimens, setSpecimens] = useState<SpecimenRecord[]>([]);
-  const [presets, setPresets] = useState<PresetRecord[]>([]);
-  const [dataFields, setDataFields] = useState<DataFieldDefinition[]>([]);
+  const [resultsByKind, setResultsByKind] = useState<Record<SearchKind, SearchResult[]>>(emptyResults);
+  const [cursors, setCursors] = useState<Record<SearchKind, number | null>>(emptyCursors);
+  const [hasMoreByKind, setHasMoreByKind] = useState<Record<SearchKind, boolean>>(emptyHasMore);
   const { t, i18n } = useTranslation();
 
   const handleClickOpenDialog = () => {
     setQuery("");
+    setDebouncedQuery("");
     setTabValue("all");
     setSelectedIndex(-1);
+    setLoadError(null);
     setOpen(true);
   };
 
   const handleCloseDialog = () => {
     setOpen(false);
     setQuery("");
+    setDebouncedQuery("");
     setTabValue("all");
     setSelectedIndex(-1);
+    requestId.current += 1;
+    setResultsByKind(emptyResults());
+    setCursors(emptyCursors());
+    setHasMoreByKind(emptyHasMore());
+    setIsLoading(false);
+    setIsLoadingMore(false);
+    loadingMoreRef.current = false;
+    setLoadError(null);
   };
 
   useEffect(() => {
@@ -156,55 +178,125 @@ export default function Search() {
 
   useEffect(() => {
     if (!open) return;
+    const timeout = window.setTimeout(() => setDebouncedQuery(query.trim()), 250);
+    return () => window.clearTimeout(timeout);
+  }, [open, query]);
 
-    let cancelled = false;
+  useEffect(() => {
+    if (!open || !debouncedQuery) {
+      setIsLoading(false);
+      return;
+    }
+
+    const activeRequestId = ++requestId.current;
+    const kinds = tabValue === "all" ? SEARCH_KINDS : [tabValue];
     setIsLoading(true);
+    setIsLoadingMore(false);
+    loadingMoreRef.current = false;
     setLoadError(null);
+    setResultsByKind(emptyResults());
+    setCursors(emptyCursors());
+    setHasMoreByKind(emptyHasMore());
 
-    const loadRecords = async () => {
-      try {
-        const [testRecords, specimenRecords, presetRecords, dataFieldRecords] = await Promise.all([
-          getTests(),
-          getSpecimens(),
-          getPresets(),
-          getDataFields(),
-        ]);
-        if (cancelled) return;
-        setTests(testRecords);
-        setSpecimens(specimenRecords);
-        setPresets(presetRecords);
-        setDataFields(dataFieldRecords);
-      } catch (error) {
-        if (!cancelled) setLoadError(String(error));
-      } finally {
-        if (!cancelled) setIsLoading(false);
-      }
-    };
+    void Promise.all(kinds.map(async (kind) => [kind, await searchRecords(kind, debouncedQuery, 0, RESULT_LIMIT)] as const))
+      .then((pages) => {
+        if (requestId.current !== activeRequestId) return;
+        setResultsByKind((current) => {
+          const next = { ...current };
+          for (const [kind, page] of pages) next[kind] = toSearchResults(page.rows, i18n.language);
+          return next;
+        });
+        setCursors((current) => {
+          const next = { ...current };
+          for (const [kind, page] of pages) next[kind] = page.nextCursor;
+          return next;
+        });
+        setHasMoreByKind((current) => {
+          const next = { ...current };
+          for (const [kind, page] of pages) next[kind] = page.nextCursor !== null;
+          return next;
+        });
+      })
+      .catch((error: unknown) => {
+        if (requestId.current === activeRequestId) setLoadError(String(error));
+      })
+      .finally(() => {
+        if (requestId.current === activeRequestId) setIsLoading(false);
+      });
 
-    void loadRecords();
     return () => {
-      cancelled = true;
+      requestId.current += 1;
     };
-  }, [open, loadAttempt, getDataFields, getPresets, getSpecimens, getTests]);
+  }, [debouncedQuery, i18n.language, loadAttempt, open, searchRecords, tabValue]);
 
   const groups = useMemo<SearchGroup[]>(() => {
-    const searchGroups: SearchGroup[] = [
-      { kind: "tests", label: t("tests"), results: makeResults(tests, "tests", query, (test) => formatDate(test.updatedAt, i18n.language)) },
-      { kind: "specimens", label: t("specimens"), results: makeResults(specimens, "specimens", query, (specimen) => formatDate(specimen.updatedAt, i18n.language)) },
-      { kind: "presets", label: t("presets"), results: makeResults(presets, "presets", query, (preset) => formatDate(preset.updatedAt, i18n.language)) },
-      {
-        kind: "data-fields",
-        label: t("data-fields"),
-        results: makeResults(dataFields, "data-fields", query, (dataField) => formatDate(dataField.updatedAt, i18n.language)),
-      },
-    ];
-
+    const searchGroups: SearchGroup[] = SEARCH_KINDS.map((kind) => ({
+      kind,
+      label: t(kind === "data-fields" ? "data-fields" : kind),
+      results: resultsByKind[kind],
+    }));
     return searchGroups.filter((group) => tabValue === "all" || group.kind === tabValue);
-  }, [dataFields, i18n.language, presets, query, specimens, tabValue, t, tests]);
+  }, [resultsByKind, tabValue, t]);
 
   const visibleResults = groups.flatMap((group) => group.results);
   const hasQuery = query.trim().length > 0;
   const hasResults = visibleResults.length > 0;
+  const isDebouncing = query.trim() !== debouncedQuery;
+  const visibleKinds = tabValue === "all" ? SEARCH_KINDS : [tabValue];
+  const canLoadMore = visibleKinds.some((kind) => hasMoreByKind[kind] && cursors[kind] !== null);
+
+  const loadMore = useCallback(async () => {
+    if (!open || !debouncedQuery || !canLoadMore || loadingMoreRef.current) return;
+    const activeRequestId = requestId.current;
+    const kinds = (tabValue === "all" ? SEARCH_KINDS : [tabValue]).filter((kind) => hasMoreByKind[kind] && cursors[kind] !== null);
+    if (kinds.length === 0) return;
+
+    loadingMoreRef.current = true;
+    setIsLoadingMore(true);
+    try {
+      const pages = await Promise.all(
+        kinds.map(async (kind) => [kind, await searchRecords(kind, debouncedQuery, cursors[kind] ?? 0, RESULT_LIMIT)] as const),
+      );
+      if (requestId.current !== activeRequestId) return;
+      setResultsByKind((current) => {
+        const next = { ...current };
+        for (const [kind, page] of pages) next[kind] = [...current[kind], ...toSearchResults(page.rows, i18n.language)];
+        return next;
+      });
+      setCursors((current) => {
+        const next = { ...current };
+        for (const [kind, page] of pages) next[kind] = page.nextCursor;
+        return next;
+      });
+      setHasMoreByKind((current) => {
+        const next = { ...current };
+        for (const [kind, page] of pages) next[kind] = page.nextCursor !== null;
+        return next;
+      });
+    } catch (error) {
+      if (requestId.current === activeRequestId) setLoadError(String(error));
+    } finally {
+      if (requestId.current === activeRequestId) {
+        loadingMoreRef.current = false;
+        setIsLoadingMore(false);
+      }
+    }
+  }, [canLoadMore, cursors, debouncedQuery, hasMoreByKind, i18n.language, open, searchRecords, tabValue]);
+
+  useEffect(() => {
+    const root = scrollContainerRef.current;
+    const sentinel = loadMoreSentinelRef.current;
+    if (!open || !hasQuery || !canLoadMore || !root || !sentinel) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) void loadMore();
+      },
+      { root, rootMargin: "120px" },
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [canLoadMore, hasQuery, loadMore, open, visibleResults.length]);
 
   useEffect(() => {
     if (selectedIndex < 0) return;
@@ -217,8 +309,16 @@ export default function Search() {
   }, [selectedIndex, visibleResults]);
 
   const handleTabChange = (_event: SyntheticEvent, newValue: SearchTab) => {
+    requestId.current += 1;
     setTabValue(newValue);
     setSelectedIndex(-1);
+    setResultsByKind(emptyResults());
+    setCursors(emptyCursors());
+    setHasMoreByKind(emptyHasMore());
+    setIsLoading(false);
+    setIsLoadingMore(false);
+    loadingMoreRef.current = false;
+    setLoadError(null);
   };
 
   const handleNavigate = (result: SearchResult) => {
@@ -269,7 +369,11 @@ export default function Search() {
                 </ListItemAvatar>
                 <ListItemText
                   primary={
-                    <Typography component='span' className='leading-4' variant='subtitle2'>
+                    <Typography
+                      component='span'
+                      className='leading-4 text-text-primary link-primary hover:text-primary group-hover:text-primary group-hover:no-underline transition-colors'
+                      variant='subtitle2'
+                    >
                       {result.name}
                     </Typography>
                   }
@@ -316,8 +420,17 @@ export default function Search() {
             inputRef={searchInputRef}
             value={query}
             onChange={(event) => {
-              setQuery(event.target.value);
+              const nextQuery = event.target.value;
+              requestId.current += 1;
+              setQuery(nextQuery);
               setSelectedIndex(-1);
+              setResultsByKind(emptyResults());
+              setCursors(emptyCursors());
+              setHasMoreByKind(emptyHasMore());
+              setIsLoading(nextQuery.trim().length > 0);
+              setIsLoadingMore(false);
+              loadingMoreRef.current = false;
+              setLoadError(null);
             }}
             classes={{ input: "ps-0!" }}
             className='w-full py-6.5!'
@@ -338,8 +451,17 @@ export default function Search() {
                     size='tiny'
                     onMouseDown={(event) => event.preventDefault()}
                     onClick={() => {
+                      requestId.current += 1;
                       setQuery("");
+                      setDebouncedQuery("");
                       setSelectedIndex(-1);
+                      setResultsByKind(emptyResults());
+                      setCursors(emptyCursors());
+                      setHasMoreByKind(emptyHasMore());
+                      setIsLoading(false);
+                      setIsLoadingMore(false);
+                      loadingMoreRef.current = false;
+                      setLoadError(null);
                       searchInputRef.current?.focus();
                     }}
                   >
@@ -384,7 +506,7 @@ export default function Search() {
                 value='data-fields'
               />
             </Tabs>
-            {isLoading ? (
+            {isLoading || isDebouncing ? (
               <Box className='flex min-h-100 items-center justify-center'>
                 <Typography color='textSecondary'>{t("search-loading")}</Typography>
               </Box>
@@ -397,8 +519,11 @@ export default function Search() {
               </Box>
             ) : hasResults ? (
               <TabPanel value={tabValue} className='flex min-h-100 flex-1 flex-col p-0'>
-                <Box className='h-100 overflow-y-auto overflow-x-hidden -mx-2' role='listbox' aria-label={t("search-results-label")}>
+                <Box ref={scrollContainerRef} className='h-100 overflow-y-auto overflow-x-hidden -mx-2' role='listbox' aria-label={t("search-results-label")}>
                   {groups.map(renderGroup)}
+                  <Box ref={loadMoreSentinelRef} className='flex min-h-8 items-center justify-center py-2'>
+                    {isLoadingMore && <CircularProgress size={18} aria-label={t("search-loading")} />}
+                  </Box>
                 </Box>
               </TabPanel>
             ) : (
