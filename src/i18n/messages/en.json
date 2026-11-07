@@ -349,6 +349,7 @@
   "view-live-chart": "Live {{graph}} line chart",
   "view-stress-strain-graph": "Stress-Strain Graph",
   "view-load-displacement-graph": "Load-Displacement Graph",
+  "view-expand-graph": "Expand",
   "view-results": "Results",
   "view-yield-strength": "Yield Strength",
   "view-tensile-strength": "Tensile Strength",

@@ -27,6 +27,7 @@ import {
   duplicateTests,
   getDataField,
   getDataFields,
+  getDataFieldListingPage,
   getConnectedMachine,
   getMachineByIp,
   getMachines,
@@ -36,8 +37,10 @@ import {
   getLatestTests,
   getPreset,
   getPresets,
+  getPresetListingPage,
   getSpecimen,
   getSpecimens,
+  getSpecimenListingPage,
   getTest,
   getTests,
   getTestListingPage,
@@ -66,6 +69,8 @@ import {
   type TestListingPage,
   type TestListingQuery,
   type TestListingExportRow,
+  type RecordListingPage,
+  type RecordListingQuery,
   type TestGraphPoint,
   type TestResults,
   type TestSpecimenSnapshot,
@@ -84,6 +89,7 @@ interface DbContextType {
   createSpecimen: typeof createSpecimen;
   getSpecimens: typeof getSpecimens;
   getSpecimen: typeof getSpecimen;
+  getSpecimenListingPage: typeof getSpecimenListingPage;
   updateSpecimen: typeof updateSpecimen;
   deleteSpecimen: typeof deleteSpecimen;
   deleteSpecimens: typeof deleteSpecimens;
@@ -109,6 +115,7 @@ interface DbContextType {
   duplicateTests: typeof duplicateTests;
   createPreset: typeof createPreset;
   getPresets: typeof getPresets;
+  getPresetListingPage: typeof getPresetListingPage;
   getPreset: typeof getPreset;
   updatePreset: typeof updatePreset;
   deletePreset: typeof deletePreset;
@@ -117,6 +124,7 @@ interface DbContextType {
   duplicatePresets: typeof duplicatePresets;
   createDataField: typeof createDataField;
   getDataFields: typeof getDataFields;
+  getDataFieldListingPage: typeof getDataFieldListingPage;
   getRecordCounts: typeof getRecordCounts;
   getDataField: typeof getDataField;
   updateDataField: typeof updateDataField;
@@ -140,6 +148,7 @@ export function DbProvider({ children }: PropsWithChildren) {
       deleteMachine,
       createSpecimen,
       getSpecimens,
+      getSpecimenListingPage,
       getSpecimen,
       updateSpecimen,
       deleteSpecimen,
@@ -166,6 +175,7 @@ export function DbProvider({ children }: PropsWithChildren) {
       duplicateTests,
       createPreset,
       getPresets,
+      getPresetListingPage,
       getPreset,
       updatePreset,
       deletePreset,
@@ -174,6 +184,7 @@ export function DbProvider({ children }: PropsWithChildren) {
       duplicatePresets,
       createDataField,
       getDataFields,
+      getDataFieldListingPage,
       getRecordCounts,
       getDataField,
       updateDataField,
@@ -215,6 +226,8 @@ export type {
   TestListingPage,
   TestListingQuery,
   TestListingExportRow,
+  RecordListingPage,
+  RecordListingQuery,
   TestResults,
   TestSpecimenSnapshot,
   StressStrainPoint,

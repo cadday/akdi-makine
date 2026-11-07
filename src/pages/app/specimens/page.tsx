@@ -24,15 +24,25 @@ import {
   X,
   XSquare,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Box, Breadcrumbs, Button, FormControl, Grid, InputLabel, Select, Typography } from "@mui/material";
-import { getGridDateOperators, GridColDef, GridRenderCellParams, GridRowSelectionModel, GridRowSpacingParams } from "@mui/x-data-grid";
+import {
+  getGridDateOperators,
+  GridColDef,
+  GridFilterModel,
+  GridLogicOperator,
+  GridPaginationModel,
+  GridRenderCellParams,
+  GridRowSelectionModel,
+  GridRowSpacingParams,
+  GridSortModel,
+} from "@mui/x-data-grid";
 import { Filter } from "lucide-react";
 import Search from "@/components/layout/search/search";
 import DataGridDateTimeFilter from "@/components/data-grid/data-grid-date-time-filter";
 import { StoredImagePreviews } from "@/components/data-fields/image-data-field-input";
-import { DataFieldDefinition, SpecimenRecord, useDb, UploadedImage } from "@/context/db-context";
+import { DataFieldDefinition, SpecimenRecord, type RecordListingQuery, useDb, UploadedImage } from "@/context/db-context";
 import useAppNotifications from "@/hooks/use-app-notifications";
 import useDeleteConfirmation from "@/hooks/use-delete-confirmation";
 import { NoSpecimensFound } from "../components/no-entity-found";
@@ -45,63 +55,64 @@ export default function Page() {
   const navigate = useNavigate();
   const { openTab } = useTabs();
 
-  const { getSpecimens, getDataFields, deleteSpecimen, deleteSpecimens } = useDb();
+  const { getSpecimenListingPage, getDataFields, deleteSpecimen, deleteSpecimens } = useDb();
   const { showError } = useAppNotifications();
   const { requestDelete, dialog } = useDeleteConfirmation();
   const [specimens, setSpecimens] = useState<SpecimenRecord[]>([]);
+  const [rowCount, setRowCount] = useState(0);
   const [dataFields, setDataFields] = useState<DataFieldDefinition[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({ page: 0, pageSize: 10 });
+  const [sortModel, setSortModel] = useState<GridSortModel>([{ field: "createdAt", sort: "desc" }]);
+  const [filterModel, setFilterModel] = useState<GridFilterModel>({ items: [], quickFilterValues: [] });
+  const [refreshKey, setRefreshKey] = useState(0);
+  const requestId = useRef(0);
+  const query = useMemo<RecordListingQuery>(
+    () => ({
+      ...paginationModel,
+      fieldAliases: Object.fromEntries(dataFields.map(({ id, name }) => [id, name])),
+      quickFilterValues: filterModel.quickFilterValues?.map(String),
+      filterModel: {
+        items: filterModel.items.map(({ field, operator, value }) => ({ field, operator, value })),
+        logicOperator: filterModel.logicOperator === GridLogicOperator.Or ? "or" : "and",
+      },
+      sortModel: sortModel.map(({ field, sort }) => ({ field, sort })),
+    }),
+    [dataFields, filterModel, paginationModel, sortModel],
+  );
 
-  const loadSpecimens = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const [specimenData, fieldData] = await Promise.all([getSpecimens(), getDataFields("Specimen")]);
-      setSpecimens(specimenData);
-      setDataFields(fieldData);
-    } catch (_err) {
-      const message = t("listing-load-specimens-error", { error: String(_err) });
-      setError(message);
-      showError(message);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [getSpecimens, getDataFields, showError, t]);
+  const loadSpecimens = useCallback(() => setRefreshKey((current) => current + 1), []);
 
   useEffect(() => {
-    let cancelled = false;
-
-    const load = async () => {
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        const [specimenData, fieldData] = await Promise.all([getSpecimens(), getDataFields("Specimen")]);
-        if (!cancelled) {
-          setSpecimens(specimenData);
-          setDataFields(fieldData);
-        }
-      } catch (_err) {
-        if (!cancelled) {
-          const message = t("listing-load-specimens-error", { error: String(_err) });
-          setError(message);
-          showError(message);
-        }
-      } finally {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    void load();
+    const activeRequestId = ++requestId.current;
+    setIsLoading(true);
+    setError(null);
+    void Promise.all([getSpecimenListingPage(query), getDataFields("Specimen")])
+      .then(([page, fields]) => {
+        if (requestId.current !== activeRequestId) return;
+        setSpecimens(page.rows);
+        setRowCount(page.totalCount);
+        setDataFields((current) =>
+          current.length === fields.length && current.every((field, index) => field.id === fields[index].id && field.name === fields[index].name) ? current : fields,
+        );
+        const lastPage = Math.max(0, Math.ceil(page.totalCount / paginationModel.pageSize) - 1);
+        if (paginationModel.page > lastPage) setPaginationModel((current) => ({ ...current, page: lastPage }));
+      })
+      .catch((loadError: unknown) => {
+        if (requestId.current !== activeRequestId) return;
+        const message = t("listing-load-specimens-error", { error: String(loadError) });
+        setError(message);
+        showError(message);
+      })
+      .finally(() => {
+        if (requestId.current === activeRequestId) setIsLoading(false);
+      });
 
     return () => {
-      cancelled = true;
+      requestId.current += 1;
     };
-  }, [getSpecimens, getDataFields, showError, t]);
+  }, [getDataFields, getSpecimenListingPage, paginationModel.page, paginationModel.pageSize, query, refreshKey, showError, t]);
 
   const deleteRows = useCallback(
     (ids: string[]) => {
@@ -118,7 +129,7 @@ export default function Page() {
             await deleteSpecimens(ids);
           }
 
-          setSpecimens((current) => current.filter((item) => !ids.includes(item.id)));
+          setRefreshKey((current) => current + 1);
           setRowSelectionModel({ type: "include", ids: new Set() });
         },
       });
@@ -318,9 +329,7 @@ export default function Page() {
                   {t("retry")}
                 </Button>
               </Box>
-            ) : isLoading ? (
-              <Box></Box>
-            ) : rows.length === 0 ? (
+            ) : rowCount === 0 && !isLoading ? (
               <NoSpecimensFound />
             ) : (
               <DataGridWithRowActions
@@ -328,14 +337,28 @@ export default function Page() {
                 rows={rows}
                 columns={columns}
                 loading={isLoading}
-                initialState={{
-                  columns: { columnVisibilityModel: { id: false, createdAt: false } },
-                  pagination: {
-                    paginationModel: {
-                      pageSize: 10,
-                    },
-                  },
+                initialState={{ columns: { columnVisibilityModel: { id: false, createdAt: false } } }}
+                rowCount={rowCount}
+                paginationModel={paginationModel}
+                onPaginationModelChange={(model) => {
+                  setRowSelectionModel({ type: "include", ids: new Set() });
+                  setPaginationModel(model);
                 }}
+                paginationMode="server"
+                sortModel={sortModel}
+                onSortModelChange={(model) => {
+                  setRowSelectionModel({ type: "include", ids: new Set() });
+                  setSortModel(model);
+                  setPaginationModel((current) => ({ ...current, page: 0 }));
+                }}
+                sortingMode="server"
+                filterModel={filterModel}
+                onFilterModelChange={(model) => {
+                  setRowSelectionModel({ type: "include", ids: new Set() });
+                  setFilterModel(model);
+                  setPaginationModel((current) => ({ ...current, page: 0 }));
+                }}
+                filterMode="server"
                 getRowSpacing={getRowSpacing}
                 columnHeaderHeight={40}
                 checkboxSelection
@@ -345,9 +368,7 @@ export default function Page() {
                 rowSelectionModel={rowSelectionModel}
                 pageSizeOptions={[10, 20, 50, 100]}
                 disableRowSelectionExcludeModel
-                onRowSelectionModelChange={(rowSelectionModel: GridRowSelectionModel) => {
-                  setRowSelectionModel(rowSelectionModel);
-                }}
+                onRowSelectionModelChange={setRowSelectionModel}
                 hideFooterSelectedRowCount
                 showToolbar
                 slotProps={{

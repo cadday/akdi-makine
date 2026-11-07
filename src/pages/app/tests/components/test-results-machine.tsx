@@ -1,11 +1,11 @@
-import { Box, Card, CardContent, Grid, hslToRgb, Typography } from "@mui/material";
+import { Box, Button, Card, CardContent, Dialog, DialogContent, DialogTitle, Grid, hslToRgb, IconButton, Typography } from "@mui/material";
 import * as echarts from "echarts";
 import type { EChartsOption } from "echarts";
 import { renderToStaticMarkup } from "react-dom/server";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
-import { ArrowUpWideNarrow, RulerDimensionLine, TicketPercent, Timer, WeightTilde } from "lucide-react";
+import { ArrowUpWideNarrow, Expand, RulerDimensionLine, TicketPercent, Timer, WeightTilde, X } from "lucide-react";
 import type { TestRecord } from "@/context/db-context";
 import { getStressStrainMaximums, getTestGraphType, getYieldStrengthCalculation } from "@/lib/db";
 import { useThemeContext } from "@/theme/theme-provider";
@@ -68,23 +68,21 @@ function TestGraphTooltip({ x, y, graphType, t }: { x: number; y: number; graphT
   );
 }
 
-export default function TestResultsMachine({ test }: TestResultsMachineProps) {
+function TestResultsChart({
+  graphType,
+  chartData,
+  yieldCalculation,
+  chartClassName,
+}: {
+  graphType: "load-displacement" | "stress-strain";
+  chartData: number[][];
+  yieldCalculation: ReturnType<typeof getYieldStrengthCalculation>;
+  chartClassName: string;
+}) {
   const { t } = useTranslation();
-  const graphType = getTestGraphType(test.specimenSnapshot.geometry);
-  const loadDisplacementData = test.results?.loadDisplacementData ?? [];
-  const stressStrainData = test.results?.stressStrainData ?? [];
-  const results = test.results;
   const { isDarkMode } = useThemeContext();
   const chartElementRef = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<echarts.ECharts | null>(null);
-  const chartData =
-    graphType === "stress-strain"
-      ? stressStrainData.map(({ strain, stress }) => [strain, stress])
-      : loadDisplacementData.map(({ displacement, load }) => [displacement, load]);
-  const yieldCalculation = graphType === "stress-strain" && results?.finalized ? getYieldStrengthCalculation(stressStrainData) : null;
-  const stressStrainMaximums = graphType === "stress-strain" && results?.finalized ? getStressStrainMaximums(stressStrainData) : null;
-  const tensileStrength = typeof results?.tensileStrength === "number" ? results.tensileStrength : stressStrainMaximums?.maxStress;
-  const elongation = typeof results?.elongation === "number" ? results.elongation : stressStrainMaximums?.maxStrain;
   const xAxisLabel = graphType === "stress-strain" ? `${t("view-axis-strain")} %` : `${t("view-axis-displacement")} mm`;
   const yAxisLabel = graphType === "stress-strain" ? `${t("view-axis-stress")} MPa` : `${t("view-axis-load")} N`;
 
@@ -231,23 +229,58 @@ export default function TestResultsMachine({ test }: TestResultsMachineProps) {
   }, [chartData, yieldCalculation]);
 
   return (
+    <Box
+      ref={chartElementRef}
+      role='img'
+      aria-label={t("view-live-chart", {
+        graph: graphType === "stress-strain" ? t("listing-graph-stress-strain") : t("listing-graph-load-displacement"),
+      })}
+      className={chartClassName}
+    />
+  );
+}
+
+export default function TestResultsMachine({ test }: TestResultsMachineProps) {
+  const { t } = useTranslation();
+  const [isGraphExpanded, setIsGraphExpanded] = useState(false);
+  const graphType = getTestGraphType(test.specimenSnapshot.geometry);
+  const loadDisplacementData = test.results?.loadDisplacementData ?? [];
+  const stressStrainData = test.results?.stressStrainData ?? [];
+  const results = test.results;
+  const chartData =
+    graphType === "stress-strain"
+      ? stressStrainData.map(({ strain, stress }) => [strain, stress])
+      : loadDisplacementData.map(({ displacement, load }) => [displacement, load]);
+  const yieldCalculation = graphType === "stress-strain" && results?.finalized ? getYieldStrengthCalculation(stressStrainData) : null;
+  const stressStrainMaximums = graphType === "stress-strain" && results?.finalized ? getStressStrainMaximums(stressStrainData) : null;
+  const tensileStrength = typeof results?.tensileStrength === "number" ? results.tensileStrength : stressStrainMaximums?.maxStress;
+  const elongation = typeof results?.elongation === "number" ? results.elongation : stressStrainMaximums?.maxStrain;
+  const graphTitle = graphType === "stress-strain" ? t("view-stress-strain-graph") : t("view-load-displacement-graph");
+
+  return (
     <>
       <Grid container size={12} rowSpacing={5} columnSpacing={7} className='relative'>
         <Grid container size={12} rowSpacing={5} columnSpacing={7}>
-          <Grid size={12}>
-            <Typography variant='h6' component='h6' className='mb-3'>
-              {graphType === "stress-strain" ? t("view-stress-strain-graph") : t("view-load-displacement-graph")}
-            </Typography>
+          <Grid size={12} className='group/grid'>
+            <Box className=' flex flex-row items-center justify-between'>
+              <Typography variant='h6' component='h6' className='mb-3'>
+                {graphTitle}
+              </Typography>
+              <Button
+                size='tiny'
+                color='grey'
+                variant='text'
+                className='transition-all opacity-0 group-hover/grid:opacity-100'
+                aria-label={t("view-expand-graph")}
+                onClick={() => setIsGraphExpanded(true)}
+                startIcon={<Expand size={16} />}
+              >
+                {t("view-expand-graph")}
+              </Button>
+            </Box>
             <Card>
               <CardContent>
-                <Box
-                  ref={chartElementRef}
-                  role='img'
-                  aria-label={t("view-live-chart", {
-                    graph: graphType === "stress-strain" ? t("listing-graph-stress-strain") : t("listing-graph-load-displacement"),
-                  })}
-                  className='h-140 w-full'
-                />
+                <TestResultsChart graphType={graphType} chartData={chartData} yieldCalculation={yieldCalculation} chartClassName='h-140 w-full' />
               </CardContent>
             </Card>
           </Grid>
@@ -350,6 +383,24 @@ export default function TestResultsMachine({ test }: TestResultsMachineProps) {
           </Grid>
         </Grid>
       </Grid>
+      <Dialog fullScreen open={isGraphExpanded} onClose={() => setIsGraphExpanded(false)}>
+        <DialogTitle className='flex items-start justify-between gap-4'>
+          <Box className='min-w-0'>
+            <Typography variant='h6' component='h6' className='-mb-1'>
+              {test.name}
+            </Typography>
+            <Typography className='text-text-secondary'>
+              {graphTitle}
+            </Typography>
+          </Box>
+          <Button aria-label={t("close")} onClick={() => setIsGraphExpanded(false)} className='icon-only flex-none' color='grey'>
+            <X size={16} />
+          </Button>
+        </DialogTitle>
+        <DialogContent className='flex min-h-0 flex-1 flex-col'>
+          <TestResultsChart graphType={graphType} chartData={chartData} yieldCalculation={yieldCalculation} chartClassName='min-h-0 w-full flex-1' />
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

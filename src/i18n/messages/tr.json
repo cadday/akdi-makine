@@ -349,6 +349,7 @@
   "view-live-chart": "Canlı {{graph}} çizgi grafiği",
   "view-stress-strain-graph": "Gerilme-Gerinim Eğrisi",
   "view-load-displacement-graph": "Yük-Deplasman Eğrisi",
+  "view-expand-graph": "Tam Ekran",
   "view-results": "Sonuçlar",
   "view-yield-strength": "Akma Dayanımı",
   "view-tensile-strength": "Çekme Dayanımı",

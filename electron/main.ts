@@ -2,12 +2,43 @@ import { app, BrowserWindow, dialog, ipcMain, session, shell } from "electron";
 import { autoUpdater } from "electron-updater";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
+import { tmpdir } from "node:os";
+import { mkdirSync, realpathSync } from "node:fs";
 import { writeFile } from "node:fs/promises";
 import { registerBackupStorage } from "./backup-storage";
 import { registerImageStorage } from "./image-storage";
 import { initializePlcService, shutdownPlcService } from "./plc-service";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+if (process.env.AKDI_E2E === "1") {
+  const requestedUserDataPath = process.env.AKDI_E2E_USER_DATA;
+  if (!requestedUserDataPath || !path.isAbsolute(requestedUserDataPath)) {
+    throw new Error("AKDI E2E requires an absolute AKDI_E2E_USER_DATA path");
+  }
+
+  const e2eDataRoot = path.resolve(tmpdir(), "akdi-makine-e2e");
+  const userDataPath = path.resolve(requestedUserDataPath);
+  const relativeUserDataPath = path.relative(e2eDataRoot, userDataPath);
+  if (!relativeUserDataPath || relativeUserDataPath.startsWith("..") || path.isAbsolute(relativeUserDataPath)) {
+    throw new Error(`AKDI E2E user data must be inside ${e2eDataRoot}`);
+  }
+  mkdirSync(e2eDataRoot, { recursive: true });
+  mkdirSync(userDataPath, { recursive: true });
+  const realE2eDataRoot = realpathSync(e2eDataRoot);
+  const realUserDataPath = realpathSync(userDataPath);
+  const realRelativePath = path.relative(realE2eDataRoot, realUserDataPath);
+  if (!realRelativePath || realRelativePath.startsWith("..") || path.isAbsolute(realRelativePath)) {
+    throw new Error(`AKDI E2E user data must resolve inside ${realE2eDataRoot}`);
+  }
+  if (realUserDataPath === path.resolve(app.getPath("userData"))) {
+    throw new Error("AKDI E2E user data must not be the normal Electron profile");
+  }
+
+  app.setPath("userData", realUserDataPath);
+} else if (process.env.AKDI_E2E_USER_DATA) {
+  throw new Error("AKDI_E2E_USER_DATA is only allowed when AKDI_E2E=1");
+}
 
 process.env.APP_ROOT = path.join(__dirname, "..");
 

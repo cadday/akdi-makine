@@ -24,11 +24,21 @@ import {
   X,
   XSquare,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Box, Breadcrumbs, Button, FormControl, Grid, InputLabel, Select, Typography } from "@mui/material";
-import { getGridDateOperators, GridColDef, GridRenderCellParams, GridRowSelectionModel, GridRowSpacingParams } from "@mui/x-data-grid";
-import { PresetRecord, useDb } from "@/context/db-context";
+import {
+  getGridDateOperators,
+  GridColDef,
+  GridFilterModel,
+  GridLogicOperator,
+  GridPaginationModel,
+  GridRenderCellParams,
+  GridRowSelectionModel,
+  GridRowSpacingParams,
+  GridSortModel,
+} from "@mui/x-data-grid";
+import { PresetRecord, type RecordListingQuery, useDb } from "@/context/db-context";
 import { Filter } from "lucide-react";
 import Search from "@/components/layout/search/search";
 import DataGridDateTimeFilter from "@/components/data-grid/data-grid-date-time-filter";
@@ -44,55 +54,59 @@ export default function Page() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { openTab } = useTabs();
-  const { getPresets, deletePreset, deletePresets } = useDb();
+  const { getPresetListingPage, deletePreset, deletePresets } = useDb();
   const { showError } = useAppNotifications();
   const { requestDelete, dialog } = useDeleteConfirmation();
   const [presets, setPresets] = useState<PresetRecord[]>([]);
+  const [rowCount, setRowCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({ page: 0, pageSize: 10 });
+  const [sortModel, setSortModel] = useState<GridSortModel>([{ field: "createdAt", sort: "desc" }]);
+  const [filterModel, setFilterModel] = useState<GridFilterModel>({ items: [], quickFilterValues: [] });
+  const [refreshKey, setRefreshKey] = useState(0);
+  const requestId = useRef(0);
+  const query = useMemo<RecordListingQuery>(
+    () => ({
+      ...paginationModel,
+      quickFilterValues: filterModel.quickFilterValues?.map(String),
+      filterModel: {
+        items: filterModel.items.map(({ field, operator, value }) => ({ field, operator, value })),
+        logicOperator: filterModel.logicOperator === GridLogicOperator.Or ? "or" : "and",
+      },
+      sortModel: sortModel.map(({ field, sort }) => ({ field, sort })),
+    }),
+    [filterModel, paginationModel, sortModel],
+  );
 
-  const loadPresets = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const data = await getPresets();
-      setPresets(data);
-    } catch (err) {
-      const message = t("listing-load-presets-error", { error: String(err) });
-      setError(message);
-      showError(message);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [getPresets, showError, t]);
+  const loadPresets = useCallback(() => setRefreshKey((current) => current + 1), []);
 
   useEffect(() => {
-    let cancelled = false;
+    const activeRequestId = ++requestId.current;
+    setIsLoading(true);
+    setError(null);
+    void getPresetListingPage(query)
+      .then(({ rows: pageRows, totalCount }) => {
+        if (requestId.current !== activeRequestId) return;
+        setPresets(pageRows);
+        setRowCount(totalCount);
+        const lastPage = Math.max(0, Math.ceil(totalCount / paginationModel.pageSize) - 1);
+        if (paginationModel.page > lastPage) setPaginationModel((current) => ({ ...current, page: lastPage }));
+      })
+      .catch((loadError: unknown) => {
+        if (requestId.current !== activeRequestId) return;
+        const message = t("listing-load-presets-error", { error: String(loadError) });
+        setError(message);
+        showError(message);
+      })
+      .finally(() => {
+        if (requestId.current === activeRequestId) setIsLoading(false);
+      });
 
-    const load = async () => {
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        const data = await getPresets();
-        if (!cancelled) setPresets(data);
-      } catch (err) {
-        if (!cancelled) {
-          const message = t("listing-load-presets-error", { error: String(err) });
-          setError(message);
-          showError(message);
-        }
-      } finally {
-        if (!cancelled) setIsLoading(false);
-      }
-    };
-
-    void load();
     return () => {
-      cancelled = true;
+      requestId.current += 1;
     };
-  }, [getPresets, showError, t]);
+  }, [getPresetListingPage, paginationModel.page, paginationModel.pageSize, query, refreshKey, showError, t]);
 
   const deleteRows = useCallback(
     (ids: string[]) => {
@@ -106,7 +120,7 @@ export default function Page() {
           if (ids.length === 1) await deletePreset(ids[0]);
           else await deletePresets(ids);
 
-          setPresets((current) => current.filter((preset) => !ids.includes(preset.id)));
+          setRefreshKey((current) => current + 1);
           setRowSelectionModel({ type: "include", ids: new Set() });
         },
       });
@@ -257,9 +271,7 @@ export default function Page() {
                   {t("retry")}
                 </Button>
               </Box>
-            ) : isLoading ? (
-              <Box></Box>
-            ) : rows.length === 0 ? (
+            ) : rowCount === 0 && !isLoading ? (
               <NoPresetsFound />
             ) : (
               <DataGridWithRowActions
@@ -267,10 +279,28 @@ export default function Page() {
                 rows={rows}
                 columns={columns}
                 loading={isLoading}
-                initialState={{
-                  columns: { columnVisibilityModel: { id: false, createdAt: false } },
-                  pagination: { paginationModel: { pageSize: 10 } },
+                initialState={{ columns: { columnVisibilityModel: { id: false, createdAt: false } } }}
+                rowCount={rowCount}
+                paginationModel={paginationModel}
+                onPaginationModelChange={(model) => {
+                  setRowSelectionModel({ type: "include", ids: new Set() });
+                  setPaginationModel(model);
                 }}
+                paginationMode="server"
+                sortModel={sortModel}
+                onSortModelChange={(model) => {
+                  setRowSelectionModel({ type: "include", ids: new Set() });
+                  setSortModel(model);
+                  setPaginationModel((current) => ({ ...current, page: 0 }));
+                }}
+                sortingMode="server"
+                filterModel={filterModel}
+                onFilterModelChange={(model) => {
+                  setRowSelectionModel({ type: "include", ids: new Set() });
+                  setFilterModel(model);
+                  setPaginationModel((current) => ({ ...current, page: 0 }));
+                }}
+                filterMode="server"
                 getRowSpacing={getRowSpacing}
                 columnHeaderHeight={40}
                 checkboxSelection

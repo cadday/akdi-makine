@@ -18,6 +18,8 @@ import require$$14 from "zlib";
 import require$$4 from "http";
 import { fileURLToPath } from "node:url";
 import path$n from "node:path";
+import { tmpdir } from "node:os";
+import { mkdirSync, realpathSync } from "node:fs";
 import { writeFile as writeFile$1, stat as stat$5, readFile as readFile$1, mkdir as mkdir$4, rm } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import require$$0$5 from "buffer";
@@ -19831,6 +19833,32 @@ async function shutdownPlcService() {
   connectionStatus = { state: "disconnected", ipAddress: null, plcWorking: null };
 }
 const __dirname$1 = path$n.dirname(fileURLToPath(import.meta.url));
+if (process.env.AKDI_E2E === "1") {
+  const requestedUserDataPath = process.env.AKDI_E2E_USER_DATA;
+  if (!requestedUserDataPath || !path$n.isAbsolute(requestedUserDataPath)) {
+    throw new Error("AKDI E2E requires an absolute AKDI_E2E_USER_DATA path");
+  }
+  const e2eDataRoot = path$n.resolve(tmpdir(), "akdi-makine-e2e");
+  const userDataPath = path$n.resolve(requestedUserDataPath);
+  const relativeUserDataPath = path$n.relative(e2eDataRoot, userDataPath);
+  if (!relativeUserDataPath || relativeUserDataPath.startsWith("..") || path$n.isAbsolute(relativeUserDataPath)) {
+    throw new Error(`AKDI E2E user data must be inside ${e2eDataRoot}`);
+  }
+  mkdirSync(e2eDataRoot, { recursive: true });
+  mkdirSync(userDataPath, { recursive: true });
+  const realE2eDataRoot = realpathSync(e2eDataRoot);
+  const realUserDataPath = realpathSync(userDataPath);
+  const realRelativePath = path$n.relative(realE2eDataRoot, realUserDataPath);
+  if (!realRelativePath || realRelativePath.startsWith("..") || path$n.isAbsolute(realRelativePath)) {
+    throw new Error(`AKDI E2E user data must resolve inside ${realE2eDataRoot}`);
+  }
+  if (realUserDataPath === path$n.resolve(app.getPath("userData"))) {
+    throw new Error("AKDI E2E user data must not be the normal Electron profile");
+  }
+  app.setPath("userData", realUserDataPath);
+} else if (process.env.AKDI_E2E_USER_DATA) {
+  throw new Error("AKDI_E2E_USER_DATA is only allowed when AKDI_E2E=1");
+}
 process.env.APP_ROOT = path$n.join(__dirname$1, "..");
 const VITE_DEV_SERVER_URL = process.env["VITE_DEV_SERVER_URL"];
 const MAIN_DIST = path$n.join(process.env.APP_ROOT, "dist-electron");

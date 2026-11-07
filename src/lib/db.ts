@@ -148,6 +148,23 @@ export interface TestListingPage {
   totalCount: number;
 }
 
+export interface RecordListingQuery {
+  page: number;
+  pageSize: number;
+  fieldAliases?: Record<string, string>;
+  quickFilterValues?: string[];
+  filterModel?: {
+    items: Array<{ field: string; operator: string; value?: unknown }>;
+    logicOperator?: "and" | "or";
+  };
+  sortModel?: Array<{ field: string; sort: "asc" | "desc" | null }>;
+}
+
+export interface RecordListingPage<T> {
+  rows: T[];
+  totalCount: number;
+}
+
 export type TestListingExportRow = Pick<
   TestRecord,
   "id" | "name" | "machineIP" | "specimenSnapshot" | "presetSnapshot" | "customData" | "createdAt" | "updatedAt"
@@ -754,6 +771,79 @@ function getComparableTestListingValue(value: unknown): string | number | null {
   if (value == null) return null;
   if (typeof value === "object") return stringifyTestListingValue(value).toLocaleLowerCase();
   return normalizeFilterValue(value);
+}
+
+function getRecordListingValue(record: object, field: string, fieldAliases?: Record<string, string>) {
+  const recordValues = record as Record<string, unknown>;
+  if (field in recordValues) return recordValues[field];
+
+  const customData = recordValues.customData as Record<string, unknown> | undefined;
+  const alias = fieldAliases?.[field];
+  return customData?.[field] ?? (alias ? customData?.[alias] : undefined);
+}
+
+async function getRecordListingPage<T extends { id: string; createdAt: number }>(
+  table: Table<T, string>,
+  query: RecordListingQuery,
+  searchableValues: (record: T) => unknown[],
+): Promise<RecordListingPage<T>> {
+  const page = Math.max(0, Math.floor(query.page));
+  const pageSize = Math.max(1, Math.floor(query.pageSize));
+  const sortModel = (query.sortModel ?? []).filter((item): item is { field: string; sort: "asc" | "desc" } => item.sort === "asc" || item.sort === "desc");
+  const hasSearch = (query.quickFilterValues ?? []).some((value) => value.trim() !== "");
+  const filterItems = (query.filterModel?.items ?? []).filter(
+    (item) => (item.value != null && item.value !== "") || item.operator === "isEmpty" || item.operator === "isNotEmpty",
+  );
+  const defaultSort = sortModel.length === 0 || (sortModel.length === 1 && sortModel[0].field === "createdAt" && sortModel[0].sort === "desc");
+
+  if (!hasSearch && filterItems.length === 0 && defaultSort) {
+    const [totalCount, rows] = await Promise.all([table.count(), table.orderBy("createdAt").reverse().offset(page * pageSize).limit(pageSize).toArray()]);
+    return { rows, totalCount };
+  }
+
+  const quickTerms = (query.quickFilterValues ?? []).map((value) => value.trim().toLocaleLowerCase()).filter(Boolean);
+  const allRows = await table.orderBy("createdAt").reverse().toArray();
+  const matches = allRows.filter((record) => {
+    const values = searchableValues(record);
+    if (quickTerms.some((term) => !values.some((value) => stringifyTestListingValue(value).toLocaleLowerCase().includes(term)))) return false;
+    if (filterItems.length === 0) return true;
+
+    const results = filterItems.map((item) =>
+      matchesTestFilter(
+        getRecordListingValue(record, item.field, query.fieldAliases),
+        item.operator,
+        item.value,
+        item.field === "createdAt" || item.field === "updatedAt",
+      ),
+    );
+    return query.filterModel?.logicOperator === "or" ? results.some(Boolean) : results.every(Boolean);
+  });
+  if (sortModel.length > 0) {
+    matches.sort((first, second) => {
+      for (const { field, sort } of sortModel) {
+        const compared = compareTestListingValues(
+          getComparableTestListingValue(getRecordListingValue(first, field, query.fieldAliases)),
+          getComparableTestListingValue(getRecordListingValue(second, field, query.fieldAliases)),
+        );
+        if (compared !== 0) return compared * (sort === "asc" ? 1 : -1);
+      }
+      return second.createdAt - first.createdAt || second.id.localeCompare(first.id);
+    });
+  }
+
+  return { rows: matches.slice(page * pageSize, (page + 1) * pageSize), totalCount: matches.length };
+}
+
+export function getSpecimenListingPage(query: RecordListingQuery) {
+  return getRecordListingPage(db.specimens, query, (specimen) => [specimen.name, specimen.geometry, ...Object.values(specimen.customData ?? {})]);
+}
+
+export function getPresetListingPage(query: RecordListingQuery) {
+  return getRecordListingPage(db.presets, query, (preset) => [preset.name, preset.type, preset.method, ...preset.targets]);
+}
+
+export function getDataFieldListingPage(query: RecordListingQuery) {
+  return getRecordListingPage(db.dataFields, query, (dataField) => [dataField.name, dataField.container, dataField.type, dataField.unit, dataField.mandatory]);
 }
 
 function matchesTestListingQuery(test: TestRecord, query: TestListingQuery) {
