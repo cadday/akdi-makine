@@ -15,7 +15,7 @@ export default function TestProgress() {
             animationDuration: '10s !important',
           },
         }}
-        className="fixed w-[calc(100%-7.25rem)] h-0.5 top-14 z-5003 inset-s-29"
+        className="fixed w-[calc(100%-7.25rem)] h-0.5 top-12 z-5003 inset-s-29"
       />
     </>
   );
