@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router";
 import { DataGridPaginationFullPage } from "@/components/data-grid/data-grid-pagination";
 import { DataGridListingToolbar } from "@/components/data-grid/data-grid-listing-toolbar";
 import DataGridWithRowActions, { type DataGridRowAction } from "@/components/data-grid/data-grid-with-row-actions";
+import DataGridLoading from "@/components/data-grid/data-grid-loading";
 import ContentWrapper from "@/components/layout/containers/content-wrapper";
 import TitleWrapper from "@/components/layout/containers/title-wrapper";
 import { LINKS } from "@/constants";
@@ -299,7 +300,9 @@ export default function Page() {
                   {t("retry")}
                 </Button>
               </Box>
-            ) : rowCount === 0 && !isLoading ? (
+            ) : isLoading && rowCount === 0 ? (
+              <DataGridLoading />
+            ) : rowCount === 0 ? (
               <NoDataFieldsFound />
             ) : (
               <DataGridWithRowActions

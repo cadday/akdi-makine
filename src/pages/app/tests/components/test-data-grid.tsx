@@ -31,6 +31,7 @@ import {
   type GridSortModel,
 } from "@mui/x-data-grid";
 import DataGridWithRowActions, { type DataGridRowAction } from "@/components/data-grid/data-grid-with-row-actions";
+import DataGridLoading from "@/components/data-grid/data-grid-loading";
 import { StoredImagePreviews } from "@/components/data-fields/image-data-field-input";
 import { DataGridListingToolbar } from "@/components/data-grid/data-grid-listing-toolbar";
 import { DataGridPaginationFullPage } from "@/components/data-grid/data-grid-pagination";
@@ -349,7 +350,9 @@ export default function TestDataGrid({ tests: providedTests, dataFields, onTests
           </Button>
         </DialogActions>
       </Dialog>
-      {(isServerMode ? rowCount : tests.length) === 0 && !isLoading ? (
+      {isLoading && (isServerMode ? rowCount : tests.length) === 0 ? (
+        <DataGridLoading />
+      ) : (isServerMode ? rowCount : tests.length) === 0 ? (
         <NoTestsFound />
       ) : (
         <DataGridWithRowActions
