@@ -45,6 +45,7 @@ process.env.APP_ROOT = path.join(__dirname, "..");
 export const VITE_DEV_SERVER_URL = process.env["VITE_DEV_SERVER_URL"];
 export const MAIN_DIST = path.join(process.env.APP_ROOT, "dist-electron");
 export const RENDERER_DIST = path.join(process.env.APP_ROOT, "dist");
+const VIDEO_DEMO_MODE = !app.isPackaged && process.env.AKDI_VIDEO_DEMO === "1";
 
 process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, "public") : RENDERER_DIST;
 let mainWindow: BrowserWindow | null;
@@ -309,7 +310,7 @@ function createWindow() {
     frame: false,
     titleBarStyle: "hidden",
   });
-  initializePlcService(mainWindow);
+  initializePlcService(mainWindow, VIDEO_DEMO_MODE);
 
 
   // External link handling

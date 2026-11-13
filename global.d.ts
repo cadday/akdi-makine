@@ -93,6 +93,7 @@ declare global {
     state: "disconnected" | "connecting" | "online" | "offline";
     ipAddress: string | null;
     plcWorking?: boolean | null;
+    demoMode?: boolean;
     clearSelection?: boolean;
     error?: string;
     errorCode?: PlcConnectionErrorCode;

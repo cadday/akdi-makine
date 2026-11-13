@@ -9,14 +9,14 @@ interface ElectronFixtures {
   electronApp: ElectronApplication;
   appPage: Page;
   appUrl: string;
+  videoDemoMode: boolean;
 }
 
 const e2eRoot = path.join(tmpdir(), "akdi-makine-e2e");
 
 export const test = base.extend<ElectronFixtures>({
-  // Playwright requires an object pattern when no fixture dependencies are used.
-  // eslint-disable-next-line no-empty-pattern
-  electronApp: async ({}, use, testInfo) => {
+  videoDemoMode: [false, { option: true }],
+  electronApp: async ({ videoDemoMode }, use, testInfo) => {
     const testDirectory = path.join(e2eRoot, `${testInfo.testId}-${randomUUID()}`);
     const userDataPath = path.join(testDirectory, "profile");
     const backupPath = path.join(testDirectory, "seed.zip");
@@ -31,6 +31,7 @@ export const test = base.extend<ElectronFixtures>({
           ...process.env,
           AKDI_E2E: "1",
           AKDI_E2E_USER_DATA: userDataPath,
+          AKDI_VIDEO_DEMO: videoDemoMode ? "1" : "0",
         },
       });
       const page = await app.firstWindow();
@@ -47,7 +48,11 @@ export const test = base.extend<ElectronFixtures>({
       await page.getByRole("button", { name: "Select Backup" }).click();
       await page.getByRole("button", { name: "Replace and Restore" }).click();
       await expect(page).toHaveURL(/#\/overview$/);
-      await expect(page.getByRole("button", { name: "No machine connected!" })).toBeVisible();
+      if (videoDemoMode) {
+        await expect(page.getByRole("button", { name: /192\.168\.0\.100/ })).toBeVisible();
+      } else {
+        await expect(page.getByRole("button", { name: "No machine connected!" })).toBeVisible();
+      }
       await use(app);
     } finally {
       try {

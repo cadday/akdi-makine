@@ -42,6 +42,8 @@ import { usePlcData } from '@/context/plc-context';
 import { cn } from '@/lib/utils';
 
 type FlowScreen = 'initial' | 'connect' | 'complete' | 'error';
+const DEMO_MACHINE_ID = 'video-demo-machine';
+const DEFAULT_DEMO_IP_ADDRESS = '192.168.0.100';
 
 function isNetworkConnectionError(error: unknown) {
   const message = String(error);
@@ -65,10 +67,25 @@ export default function Machines() {
   const [connectionError, setConnectionError] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [isSavingMachine, setIsSavingMachine] = useState(false);
+  const [demoMachineVisible, setDemoMachineVisible] = useState(true);
+  const [demoMachineIpAddress, setDemoMachineIpAddress] = useState(DEFAULT_DEMO_IP_ADDRESS);
   const anchorRef = useRef<HTMLButtonElement>(null);
   const candidateTokenRef = useRef<string | null>(null);
   const lastConnectionErrorRef = useRef<string | null>(null);
-  const connectedMachine = machines.find((machine) => machine.connected) ?? null;
+  const demoMode = connectionStatus.demoMode === true;
+  const demoMachine: MachineRecord | null = demoMode && demoMachineVisible
+    ? {
+        id: DEMO_MACHINE_ID,
+        ipAddress: connectionStatus.ipAddress ?? demoMachineIpAddress,
+        connected: connectionStatus.state === 'online',
+        createdAt: 0,
+        updatedAt: 0,
+      }
+    : null;
+  const connectedMachine = demoMode ? demoMachine : machines.find((machine) => machine.connected) ?? null;
+  const visibleMachines = demoMode
+    ? [...(demoMachine ? [demoMachine] : []), ...machines.filter((machine) => machine.ipAddress !== demoMachine?.ipAddress)]
+    : machines;
   const selectedMachineIsOnline =
     connectionStatus.state === 'online' && connectionStatus.ipAddress === connectedMachine?.ipAddress;
   const selectedMachineIsWorking = selectedMachineIsOnline && connectionStatus.plcWorking === true;
@@ -104,6 +121,12 @@ export default function Machines() {
         if (existingMachine) {
           formik.setFieldError('ipAddress', t('machine-duplicate-ip'));
           setScreen('connect');
+          return;
+        }
+
+        if (demoMode) {
+          setConnectionError('');
+          setScreen('complete');
           return;
         }
 
@@ -196,7 +219,7 @@ export default function Machines() {
   };
 
   const handleAddMachine = () => {
-    formik.resetForm();
+    formik.resetForm({ values: { ipAddress: demoMode ? demoMachineIpAddress : '' } });
     setSubmitted(false);
     setSubmittedIpAddress('');
     setConnectionError('');
@@ -220,6 +243,31 @@ export default function Machines() {
   };
 
   const handleSelectMachine = async (id: string | null) => {
+    if (demoMode) {
+      if (id === null) {
+        try {
+          await window.plcAPI.disconnect();
+        } catch (error) {
+          showError(t('machine-disconnect-error', { error: String(error) }));
+        }
+        return;
+      }
+
+      const machine = id === DEMO_MACHINE_ID ? demoMachine : machines.find((record) => record.id === id);
+      if (!machine) return;
+      setConnectingMachineId(id);
+      try {
+        const status = await window.plcAPI.connect(machine.ipAddress);
+        setDemoMachineIpAddress(status.ipAddress ?? machine.ipAddress);
+        setDemoMachineVisible(true);
+      } catch (error) {
+        showError(t('machine-connect-error', { ipAddress: machine.ipAddress, error: String(error) }));
+      } finally {
+        setConnectingMachineId(null);
+      }
+      return;
+    }
+
     const previousMachine = connectedMachine;
     if (id === null) {
       try {
@@ -287,14 +335,40 @@ export default function Machines() {
       message: t('machine-delete-confirm', { ipAddress: machine.ipAddress }),
       errorMessage: (error) => t('machine-delete-error', { error: String(error) }),
       onConfirm: async () => {
+        if (demoMode && machine.id === DEMO_MACHINE_ID) {
+          await window.plcAPI.disconnect();
+          setDemoMachineVisible(false);
+          return;
+        }
         await deleteMachine(machine.id);
-        if (machine.connected) await window.plcAPI.disconnect();
+        if (machine.connected && !demoMode) await window.plcAPI.disconnect();
         await refreshMachines();
       },
     });
   };
 
   const handleComplete = async () => {
+    if (demoMode) {
+      setIsSavingMachine(true);
+      try {
+        const status = await window.plcAPI.connect(submittedIpAddress);
+        setDemoMachineIpAddress(status.ipAddress ?? submittedIpAddress);
+        setDemoMachineVisible(true);
+      } catch (error) {
+        const message = t('machine-connect-error', { ipAddress: submittedIpAddress, error: String(error) });
+        setConnectionError(message);
+        setScreen('error');
+        showError(message);
+        return;
+      } finally {
+        setIsSavingMachine(false);
+      }
+      formik.resetForm();
+      setSubmitted(false);
+      setScreen('initial');
+      return;
+    }
+
     const token = candidateTokenRef.current;
     if (!token) {
       setConnectionError(t('machine-connection-expired'));
@@ -392,7 +466,7 @@ export default function Machines() {
       </Box>
       <Box className="mb-4">
         <List className="max-h-72 overflow-auto">
-          {machines.map((machine) => (
+              {visibleMachines.map((machine) => (
             <ListItem key={machine.id} className="py-0 px-0 relative items-center">
               <ListItemButton
                 disabled={connectingMachineId !== null}
@@ -413,7 +487,7 @@ export default function Machines() {
                 </ListItemText>
               </ListItemButton>
               <Box className="flex flex-row gap-1 absolute inset-e-4">
-                {machine.connected && selectedMachineIsOnline ? (
+                {machine.ipAddress === connectionStatus.ipAddress && selectedMachineIsOnline ? (
                   <Tooltip title={t('disconnect')}>
                     <Button
                       onClick={() => void handleSelectMachine(null)}
@@ -457,7 +531,7 @@ export default function Machines() {
             </ListItem>
           ))}
         </List>
-        {machines.length === 0 && <Typography className="px-4 py-3 pb-0">{t('no-machines-found')}</Typography>}
+        {visibleMachines.length === 0 && <Typography className="px-4 py-3 pb-0">{t('no-machines-found')}</Typography>}
       </Box>
       <CardActions disableSpacing>
         <Button onClick={handleAddMachine} variant="outlined" size="tiny" color="grey" className="w-full">
@@ -525,7 +599,7 @@ export default function Machines() {
       <Box className="flex flex-row gap-2 px-4 mb-4">
         <CheckCircle className="flex-none text-success" />
         <Typography variant="body1" className="text-text-primary">
-          {t('machine-connection-ready-description')}
+          {t(demoMode ? 'video-demo-connection-ready-description' : 'machine-connection-ready-description')}
         </Typography>
       </Box>
       <Box className="px-4">

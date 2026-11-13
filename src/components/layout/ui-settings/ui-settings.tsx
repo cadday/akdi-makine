@@ -91,41 +91,6 @@ export default function UISettings() {
                   </MenuPortal>
                 </MenuSubmenuRoot>
                 <MenuSubmenuRoot>
-                  <MenuSubmenuTrigger>{t("container")}</MenuSubmenuTrigger>
-                  <MenuPortal>
-                    <MenuPositioner sideOffset={4} alignOffset={-2}>
-                      <MenuPopup>
-                        <MenuRadioGroup
-                          value={content}
-                          onValueChange={(value) => {
-                            setContent(value);
-                            setSettingsOpen(false);
-                          }}
-                        >
-                          <MenuRadioItem
-                            value='boxed'
-                            className='[&_.MuiListItemText-root_span.MuiTypography-root]:flex [&_.MuiListItemText-root_span.MuiTypography-root]:flex-row [&_.MuiListItemText-root_span.MuiTypography-root]:gap-2'
-                          >
-                            <Box className='w-5 h-5 flex items-center justify-center '>
-                              <FoldHorizontal />
-                            </Box>
-                            {t("expand-boxed")}
-                          </MenuRadioItem>
-                          <MenuRadioItem
-                            value='fluid'
-                            className='[&_.MuiListItemText-root_span.MuiTypography-root]:flex [&_.MuiListItemText-root_span.MuiTypography-root]:flex-row [&_.MuiListItemText-root_span.MuiTypography-root]:gap-2'
-                          >
-                            <Box className='w-5 h-5 flex items-center justify-center '>
-                              <UnfoldHorizontal />
-                            </Box>
-                            {t("expand-fluid")}
-                          </MenuRadioItem>
-                        </MenuRadioGroup>
-                      </MenuPopup>
-                    </MenuPositioner>
-                  </MenuPortal>
-                </MenuSubmenuRoot>
-                <MenuSubmenuRoot>
                   <MenuSubmenuTrigger>{t("language")}</MenuSubmenuTrigger>
                   <MenuPortal>
                     <MenuPositioner sideOffset={4} alignOffset={-2}>
@@ -154,6 +119,41 @@ export default function UISettings() {
                               <ENFlag />
                             </Box>
                             {t("en")}
+                          </MenuRadioItem>
+                        </MenuRadioGroup>
+                      </MenuPopup>
+                    </MenuPositioner>
+                  </MenuPortal>
+                </MenuSubmenuRoot>
+                <MenuSubmenuRoot>
+                  <MenuSubmenuTrigger>{t("container")}</MenuSubmenuTrigger>
+                  <MenuPortal>
+                    <MenuPositioner sideOffset={4} alignOffset={-2}>
+                      <MenuPopup>
+                        <MenuRadioGroup
+                          value={content}
+                          onValueChange={(value) => {
+                            setContent(value);
+                            setSettingsOpen(false);
+                          }}
+                        >
+                          <MenuRadioItem
+                            value='boxed'
+                            className='[&_.MuiListItemText-root_span.MuiTypography-root]:flex [&_.MuiListItemText-root_span.MuiTypography-root]:flex-row [&_.MuiListItemText-root_span.MuiTypography-root]:gap-2'
+                          >
+                            <Box className='w-5 h-5 flex items-center justify-center '>
+                              <FoldHorizontal />
+                            </Box>
+                            {t("expand-boxed")}
+                          </MenuRadioItem>
+                          <MenuRadioItem
+                            value='fluid'
+                            className='[&_.MuiListItemText-root_span.MuiTypography-root]:flex [&_.MuiListItemText-root_span.MuiTypography-root]:flex-row [&_.MuiListItemText-root_span.MuiTypography-root]:gap-2'
+                          >
+                            <Box className='w-5 h-5 flex items-center justify-center '>
+                              <UnfoldHorizontal />
+                            </Box>
+                            {t("expand-fluid")}
                           </MenuRadioItem>
                         </MenuRadioGroup>
                       </MenuPopup>

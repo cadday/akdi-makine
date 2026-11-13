@@ -17,6 +17,8 @@ import {
   writePlcLimits,
 } from "./plc-operations";
 import { PlcTestRunManager } from "./plc-test-run";
+import { PlcDemoTestRunManager } from "./plc-demo-test-run";
+import { PlcDemoMachine } from "./plc-demo-machine";
 
 const PLC_PORT = 502;
 const CONNECTION_TIMEOUT_MS = 5000;
@@ -27,6 +29,7 @@ export interface PlcConnectionStatus {
   state: "disconnected" | "connecting" | "online" | "offline";
   ipAddress: string | null;
   plcWorking?: boolean | null;
+  demoMode?: boolean;
   clearSelection?: boolean;
   error?: string;
   errorCode?: PlcConnectionErrorCode;
@@ -45,17 +48,27 @@ let activeClient: InstanceType<typeof Modbus.client.TCP> | null = null;
 let activeIpAddress: string | null = null;
 let healthPollTimeout: NodeJS.Timeout | null = null;
 let connectionStatus: PlcConnectionStatus = { state: "disconnected", ipAddress: null };
+let videoDemoMode = false;
 let isRegistered = false;
 const preparedConnections = new Map<string, PreparedConnection>();
 const plcTestRuns = new PlcTestRunManager((update) => {
   if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send("plc:test-run-update", update);
 });
+const demoTestRuns = new PlcDemoTestRunManager((update) => {
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send("plc:test-run-update", update);
+});
+const demoMachine = new PlcDemoMachine();
+
+function assertHardwareAvailable() {
+  if (videoDemoMode) throw new Error("Physical PLC controls are disabled in video demo mode");
+}
 
 function sendStatus(status: PlcConnectionStatus) {
   const unchanged =
     connectionStatus.state === status.state &&
     connectionStatus.ipAddress === status.ipAddress &&
     connectionStatus.plcWorking === status.plcWorking &&
+    connectionStatus.demoMode === status.demoMode &&
     connectionStatus.clearSelection === status.clearSelection &&
     connectionStatus.error === status.error;
   connectionStatus = status;
@@ -237,6 +250,7 @@ function openSocket(ipAddress: string) {
 }
 
 async function prepareConnection(value: unknown) {
+  assertHardwareAvailable();
   if (plcTestRuns.hasActiveRun) throw new Error("Stop the active test before changing PLC connections");
   const ipAddress = normalizeIpAddress(value);
   const { socket, client } = await openSocket(ipAddress);
@@ -277,6 +291,7 @@ function startHealthPolling(socket: net.Socket, client: InstanceType<typeof Modb
 }
 
 function activateConnection(token: unknown): PlcConnectionStatus {
+  assertHardwareAvailable();
   if (plcTestRuns.hasActiveRun) throw new Error("Stop the active test before changing PLC connections");
   if (typeof token !== "string") throw new Error("Invalid prepared PLC connection");
 
@@ -306,6 +321,18 @@ function activateConnection(token: unknown): PlcConnectionStatus {
 }
 
 function disconnect() {
+  if (videoDemoMode) {
+    if (demoTestRuns.hasActiveRun) throw new Error("Stop the active test before disconnecting");
+    const status: PlcConnectionStatus = {
+      state: "disconnected",
+      ipAddress: connectionStatus.ipAddress,
+      plcWorking: null,
+      demoMode: true,
+    };
+    sendStatus(status);
+    return status;
+  }
+  assertHardwareAvailable();
   if (plcTestRuns.hasActiveRun) throw new Error("Stop the active test before disconnecting");
   stopHealthPolling();
   const previousSocket = activeSocket;
@@ -328,6 +355,19 @@ function disconnect() {
 }
 
 async function connect(ipAddress: unknown) {
+  if (videoDemoMode) {
+    if (demoTestRuns.hasActiveRun) throw new Error("Stop the active test before changing PLC connections");
+    const normalizedIpAddress = normalizeIpAddress(ipAddress);
+    const status: PlcConnectionStatus = {
+      state: "online",
+      ipAddress: normalizedIpAddress,
+      plcWorking: true,
+      demoMode: true,
+    };
+    sendStatus(status);
+    return status;
+  }
+  assertHardwareAvailable();
   if (plcTestRuns.hasActiveRun) throw new Error("Stop the active test before changing PLC connections");
   const normalizedIpAddress = normalizeIpAddress(ipAddress);
   const previousSocket = activeSocket;
@@ -409,17 +449,23 @@ function validateTestRunRequest(value: unknown): PlcTestRunRequest {
   };
 }
 
-export function initializePlcService(window: BrowserWindow | null): void {
+export function initializePlcService(window: BrowserWindow | null, isDemoMode = false): void {
   mainWindow = window;
+  videoDemoMode = isDemoMode;
+  connectionStatus = isDemoMode
+    ? { state: "online", ipAddress: "192.168.0.100", plcWorking: true, demoMode: true }
+    : { state: "disconnected", ipAddress: null };
   if (isRegistered) return;
 
   ipcMain.handle("plc:prepare-connection", async (event, ipAddress: unknown) => {
     assertTrustedRequest(event.sender);
+    assertHardwareAvailable();
     return prepareConnection(ipAddress);
   });
 
   ipcMain.handle("plc:activate-connection", (event, token: unknown) => {
     assertTrustedRequest(event.sender);
+    assertHardwareAvailable();
     return activateConnection(token);
   });
 
@@ -431,17 +477,23 @@ export function initializePlcService(window: BrowserWindow | null): void {
 
   ipcMain.handle("plc:connect", async (event, ipAddress: unknown) => {
     assertTrustedRequest(event.sender);
+    assertHardwareAvailable();
     return connect(ipAddress);
   });
 
   ipcMain.handle("plc:disconnect", (event) => {
     assertTrustedRequest(event.sender);
+    assertHardwareAvailable();
     return disconnect();
   });
 
   ipcMain.handle("plc:start-test-run", async (event, value: unknown) => {
     assertTrustedRequest(event.sender);
     const request = validateTestRunRequest(value);
+    if (videoDemoMode) {
+      await demoTestRuns.start(request);
+      return;
+    }
     if (!activeClient || activeClient.connectionState !== "online" || connectionStatus.state !== "online") {
       throw new Error("Cannot start a test while the PLC is offline");
     }
@@ -452,6 +504,10 @@ export function initializePlcService(window: BrowserWindow | null): void {
   ipcMain.handle("plc:stop-test-run", async (event, testId: unknown) => {
     assertTrustedRequest(event.sender);
     if (typeof testId !== "string") throw new Error("Invalid test ID");
+    if (videoDemoMode) {
+      await demoTestRuns.stop(testId);
+      return;
+    }
     await plcTestRuns.stop(testId);
   });
 
@@ -462,6 +518,7 @@ export function initializePlcService(window: BrowserWindow | null): void {
 
   ipcMain.handle("plc:read-overview-values", async (event) => {
     assertTrustedRequest(event.sender);
+    if (videoDemoMode) return demoMachine.readOverviewValues();
     if (!activeClient || activeClient.connectionState !== "online" || connectionStatus.state !== "online") {
       throw new Error("Cannot read overview values while the PLC is offline");
     }
@@ -471,6 +528,7 @@ export function initializePlcService(window: BrowserWindow | null): void {
 
   ipcMain.handle("plc:read-limits", async (event) => {
     assertTrustedRequest(event.sender);
+    if (videoDemoMode) return demoMachine.readLimits();
     if (!activeClient || activeClient.connectionState !== "online" || connectionStatus.state !== "online") {
       throw new Error("Cannot read limits while the PLC is offline");
     }
@@ -480,6 +538,7 @@ export function initializePlcService(window: BrowserWindow | null): void {
 
   ipcMain.handle("plc:write-limits", async (event, values: unknown) => {
     assertTrustedRequest(event.sender);
+    if (videoDemoMode) return demoMachine.writeLimits(values);
     if (!activeClient || activeClient.connectionState !== "online" || connectionStatus.state !== "online") {
       throw new Error("Cannot write limits while the PLC is offline");
     }
@@ -489,6 +548,7 @@ export function initializePlcService(window: BrowserWindow | null): void {
 
   ipcMain.handle("plc:read-adjustments", async (event) => {
     assertTrustedRequest(event.sender);
+    if (videoDemoMode) return demoMachine.readAdjustments();
     if (!activeClient || activeClient.connectionState !== "online" || connectionStatus.state !== "online") {
       throw new Error("Cannot read adjustments while the PLC is offline");
     }
@@ -498,6 +558,7 @@ export function initializePlcService(window: BrowserWindow | null): void {
 
   ipcMain.handle("plc:write-adjustments", async (event, values: unknown) => {
     assertTrustedRequest(event.sender);
+    if (videoDemoMode) return demoMachine.writeAdjustments(values);
     if (!activeClient || activeClient.connectionState !== "online" || connectionStatus.state !== "online") {
       throw new Error("Cannot write adjustments while the PLC is offline");
     }
@@ -508,6 +569,8 @@ export function initializePlcService(window: BrowserWindow | null): void {
   ipcMain.handle("plc:set-move-up", async (event, enabled: unknown) => {
     assertTrustedRequest(event.sender);
     if (typeof enabled !== "boolean") throw new Error("Invalid Move Up command value");
+    if (videoDemoMode) return demoMachine.setMoveUp(enabled);
+    assertHardwareAvailable();
     if (!activeClient || activeClient.connectionState !== "online" || connectionStatus.state !== "online") {
       throw new Error("Cannot control Move Up while the PLC is offline");
     }
@@ -518,6 +581,8 @@ export function initializePlcService(window: BrowserWindow | null): void {
   ipcMain.handle("plc:set-move-down", async (event, enabled: unknown) => {
     assertTrustedRequest(event.sender);
     if (typeof enabled !== "boolean") throw new Error("Invalid Move Down command value");
+    if (videoDemoMode) return demoMachine.setMoveDown(enabled);
+    assertHardwareAvailable();
     if (!activeClient || activeClient.connectionState !== "online" || connectionStatus.state !== "online") {
       throw new Error("Cannot control Move Down while the PLC is offline");
     }
@@ -527,6 +592,8 @@ export function initializePlcService(window: BrowserWindow | null): void {
 
   ipcMain.handle("plc:halt-machine", async (event) => {
     assertTrustedRequest(event.sender);
+    if (videoDemoMode) return demoMachine.halt();
+    assertHardwareAvailable();
     if (!activeClient || activeClient.connectionState !== "online" || connectionStatus.state !== "online") {
       throw new Error("Cannot halt machine while the PLC is offline");
     }
@@ -536,6 +603,8 @@ export function initializePlcService(window: BrowserWindow | null): void {
 
   ipcMain.handle("plc:resume-machine", async (event) => {
     assertTrustedRequest(event.sender);
+    if (videoDemoMode) return demoMachine.resume();
+    assertHardwareAvailable();
     if (!activeClient || activeClient.connectionState !== "online" || connectionStatus.state !== "online") {
       throw new Error("Cannot resume machine while the PLC is offline");
     }
@@ -545,6 +614,8 @@ export function initializePlcService(window: BrowserWindow | null): void {
 
   ipcMain.handle("plc:reset-load", async (event) => {
     assertTrustedRequest(event.sender);
+    if (videoDemoMode) return demoMachine.resetLoad();
+    assertHardwareAvailable();
     if (!activeClient || activeClient.connectionState !== "online" || connectionStatus.state !== "online") {
       throw new Error("Cannot reset load while the PLC is offline");
     }
@@ -554,6 +625,8 @@ export function initializePlcService(window: BrowserWindow | null): void {
 
   ipcMain.handle("plc:reset-stroke", async (event) => {
     assertTrustedRequest(event.sender);
+    if (videoDemoMode) return demoMachine.resetStroke();
+    assertHardwareAvailable();
     if (!activeClient || activeClient.connectionState !== "online" || connectionStatus.state !== "online") {
       throw new Error("Cannot reset stroke while the PLC is offline");
     }
@@ -566,6 +639,7 @@ export function initializePlcService(window: BrowserWindow | null): void {
 
 export async function shutdownPlcService(): Promise<void> {
   stopHealthPolling();
+  await demoTestRuns.shutdown();
   await plcTestRuns.shutdown();
   for (const token of preparedConnections.keys()) {
     clearPreparedConnection(token, true);

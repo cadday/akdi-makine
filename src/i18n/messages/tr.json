@@ -147,6 +147,7 @@
   "back-to-ip-address": "IP Adresine Dön",
   "connection-ready": "Bağlantı Hazır",
   "machine-connection-ready-description": "Makineyle TCP bağlantısı kuruldu. Bu IP adresini kaydedip seçmek için Tamamla düğmesine tıklayın.",
+  "video-demo-connection-ready-description": "Sanal makine girilen adreste hazır. Bağlamak için Tamamla düğmesine tıklayın.",
   "complete": "Tamamla",
   "machine-not-found": "Makine Bulunamadı!",
   "machine-flow-connect-error": "{{ipAddress}} adresindeki makineye bağlanılamadı ({{error}}). Şunları kontrol edin:",

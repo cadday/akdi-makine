@@ -147,6 +147,7 @@
   "back-to-ip-address": "Back to IP Address",
   "connection-ready": "Connection Ready",
   "machine-connection-ready-description": "A TCP connection to this machine succeeded. Select Complete to save and use this IP address.",
+  "video-demo-connection-ready-description": "This virtual machine is ready at the entered address. Select Complete to connect it.",
   "complete": "Complete",
   "machine-not-found": "Machine Not Found!",
   "machine-flow-connect-error": "Could not connect to {{ipAddress}}: {{error}} Please check:",

@@ -19380,6 +19380,168 @@ class PlcTestRunManager {
     });
   }
 }
+const DEMO_SAMPLE_INTERVAL_MS = 200;
+const DEMO_RUN_DURATION_MS = 5e3;
+class PlcDemoTestRunManager {
+  constructor(publishUpdate) {
+    __publicField(this, "activeRun", null);
+    this.publishUpdate = publishUpdate;
+  }
+  get hasActiveRun() {
+    return this.activeRun !== null;
+  }
+  async start(request2) {
+    if (this.activeRun) throw new Error("A demo test is already active");
+    const run = { request: request2, startedAt: Date.now(), timer: null };
+    this.activeRun = run;
+    this.publishUpdate({ testId: request2.testId, state: "starting" });
+    this.scheduleSample(run);
+  }
+  async stop(testId) {
+    const run = this.activeRun;
+    if (!run) throw new Error("There is no active demo test");
+    if (testId !== run.request.testId) throw new Error("The requested test is not the active demo test");
+    this.publishUpdate({ testId, state: "stopping" });
+    this.finish(run, "stopped");
+  }
+  async shutdown() {
+    if (this.activeRun) this.finish(this.activeRun, "stopped");
+  }
+  scheduleSample(run) {
+    run.timer = setTimeout(() => this.publishSample(run), DEMO_SAMPLE_INTERVAL_MS);
+  }
+  publishSample(run) {
+    if (this.activeRun !== run) return;
+    const elapsedMs = Math.min(Date.now() - run.startedAt, DEMO_RUN_DURATION_MS);
+    const progress = elapsedMs / DEMO_RUN_DURATION_MS;
+    const target = Math.abs(run.request.preset.targets[0] ?? 100);
+    const load2 = run.request.preset.method === "Load" ? target * progress : 100 * progress;
+    const displacement = run.request.preset.method === "Distance" ? target * progress : 0.5 * progress;
+    this.publishUpdate({
+      testId: run.request.testId,
+      state: "running",
+      sample: { elapsedMs, load: load2, displacement }
+    });
+    if (elapsedMs >= DEMO_RUN_DURATION_MS) {
+      this.finish(run, "completed");
+      return;
+    }
+    this.scheduleSample(run);
+  }
+  finish(run, state) {
+    if (this.activeRun !== run) return;
+    if (run.timer) clearTimeout(run.timer);
+    run.timer = null;
+    this.activeRun = null;
+    this.publishUpdate({ testId: run.request.testId, state });
+  }
+}
+class PlcDemoMachine {
+  constructor() {
+    __publicField(this, "distance", 0);
+    __publicField(this, "load", 0);
+    __publicField(this, "movement", 0);
+    __publicField(this, "halted", false);
+    __publicField(this, "lastUpdatedAt", Date.now());
+    __publicField(this, "limits", { testDistanceLimit: 100, testLoadLimit: 1e3 });
+    __publicField(this, "adjustments", {
+      manualVelocity: 1,
+      topDistanceLimit: 100,
+      bottomDistanceLimit: -100,
+      topLoadLimit: 1e3,
+      bottomLoadLimit: -1e3
+    });
+  }
+  readOverviewValues() {
+    const now = Date.now();
+    const elapsedSeconds = Math.min((now - this.lastUpdatedAt) / 1e3, 0.5);
+    this.lastUpdatedAt = now;
+    if (this.movement !== 0 && !this.halted) {
+      this.distance = Math.max(-100, Math.min(100, this.distance + this.movement * elapsedSeconds * 2.5));
+      this.load = 25 + Math.abs(this.distance) * 0.4;
+    }
+    return {
+      load: Math.round(this.load * 10),
+      distance: Math.round(this.distance * 1e4),
+      status: this.movement === 0 ? 0 : 1,
+      emergencyHaltActive: false,
+      machineHalted: this.halted
+    };
+  }
+  setMoveUp(enabled) {
+    this.setMovement(enabled, 1);
+  }
+  setMoveDown(enabled) {
+    this.setMovement(enabled, -1);
+  }
+  halt() {
+    this.readOverviewValues();
+    this.movement = 0;
+    this.halted = true;
+  }
+  resume() {
+    this.halted = false;
+  }
+  resetLoad() {
+    this.load = 0;
+  }
+  resetStroke() {
+    this.distance = 0;
+    this.lastUpdatedAt = Date.now();
+  }
+  readLimits() {
+    return { ...this.limits };
+  }
+  writeLimits(value) {
+    const values = this.readNumericValues(value, ["testDistanceLimit", "testLoadLimit"]);
+    this.limits = { testDistanceLimit: values.testDistanceLimit, testLoadLimit: values.testLoadLimit };
+  }
+  readAdjustments() {
+    return { ...this.adjustments };
+  }
+  writeAdjustments(value) {
+    const values = this.readNumericValues(value, [
+      "manualVelocity",
+      "topDistanceLimit",
+      "bottomDistanceLimit",
+      "topLoadLimit",
+      "bottomLoadLimit"
+    ]);
+    this.adjustments = {
+      manualVelocity: values.manualVelocity,
+      topDistanceLimit: values.topDistanceLimit,
+      bottomDistanceLimit: values.bottomDistanceLimit,
+      topLoadLimit: values.topLoadLimit,
+      bottomLoadLimit: values.bottomLoadLimit
+    };
+  }
+  setMovement(enabled, direction) {
+    if (enabled && this.halted) throw new Error("Resume the demo machine before moving it");
+    if (enabled) {
+      this.readOverviewValues();
+      this.movement = direction;
+      if (this.load === 0) this.load = 25;
+    } else if (this.movement === direction) {
+      this.readOverviewValues();
+      this.movement = 0;
+    }
+  }
+  readNumericValues(value, fields) {
+    if (typeof value !== "object" || value === null || Array.isArray(value)) {
+      throw new Error("Invalid demo PLC settings");
+    }
+    const values = value;
+    const result = {};
+    for (const field of fields) {
+      const fieldValue = values[field];
+      if (typeof fieldValue !== "number" || !Number.isFinite(fieldValue)) {
+        throw new Error(`Invalid demo PLC value for ${field}`);
+      }
+      result[field] = fieldValue;
+    }
+    return result;
+  }
+}
 const PLC_PORT = 502;
 const CONNECTION_TIMEOUT_MS = 5e3;
 const PREPARED_CONNECTION_TIMEOUT_MS = 6e4;
@@ -19390,13 +19552,21 @@ let activeClient = null;
 let activeIpAddress = null;
 let healthPollTimeout = null;
 let connectionStatus = { state: "disconnected", ipAddress: null };
+let videoDemoMode = false;
 let isRegistered = false;
 const preparedConnections = /* @__PURE__ */ new Map();
 const plcTestRuns = new PlcTestRunManager((update) => {
   if (mainWindow$1 && !mainWindow$1.isDestroyed()) mainWindow$1.webContents.send("plc:test-run-update", update);
 });
+const demoTestRuns = new PlcDemoTestRunManager((update) => {
+  if (mainWindow$1 && !mainWindow$1.isDestroyed()) mainWindow$1.webContents.send("plc:test-run-update", update);
+});
+const demoMachine = new PlcDemoMachine();
+function assertHardwareAvailable() {
+  if (videoDemoMode) throw new Error("Physical PLC controls are disabled in video demo mode");
+}
 function sendStatus(status) {
-  const unchanged = connectionStatus.state === status.state && connectionStatus.ipAddress === status.ipAddress && connectionStatus.plcWorking === status.plcWorking && connectionStatus.clearSelection === status.clearSelection && connectionStatus.error === status.error;
+  const unchanged = connectionStatus.state === status.state && connectionStatus.ipAddress === status.ipAddress && connectionStatus.plcWorking === status.plcWorking && connectionStatus.demoMode === status.demoMode && connectionStatus.clearSelection === status.clearSelection && connectionStatus.error === status.error;
   connectionStatus = status;
   if (!unchanged && mainWindow$1 && !mainWindow$1.isDestroyed()) {
     mainWindow$1.webContents.send("plc:status", status);
@@ -19543,6 +19713,7 @@ function openSocket(ipAddress) {
   });
 }
 async function prepareConnection(value) {
+  assertHardwareAvailable();
   if (plcTestRuns.hasActiveRun) throw new Error("Stop the active test before changing PLC connections");
   const ipAddress = normalizeIpAddress(value);
   const { socket, client } = await openSocket(ipAddress);
@@ -19576,6 +19747,7 @@ function startHealthPolling(socket, client, ipAddress) {
   void poll();
 }
 function activateConnection(token) {
+  assertHardwareAvailable();
   if (plcTestRuns.hasActiveRun) throw new Error("Stop the active test before changing PLC connections");
   if (typeof token !== "string") throw new Error("Invalid prepared PLC connection");
   const prepared = preparedConnections.get(token);
@@ -19600,6 +19772,18 @@ function activateConnection(token) {
   return status;
 }
 function disconnect() {
+  if (videoDemoMode) {
+    if (demoTestRuns.hasActiveRun) throw new Error("Stop the active test before disconnecting");
+    const status2 = {
+      state: "disconnected",
+      ipAddress: connectionStatus.ipAddress,
+      plcWorking: null,
+      demoMode: true
+    };
+    sendStatus(status2);
+    return status2;
+  }
+  assertHardwareAvailable();
   if (plcTestRuns.hasActiveRun) throw new Error("Stop the active test before disconnecting");
   stopHealthPolling();
   const previousSocket = activeSocket;
@@ -19618,6 +19802,19 @@ function disconnect() {
   return status;
 }
 async function connect(ipAddress) {
+  if (videoDemoMode) {
+    if (demoTestRuns.hasActiveRun) throw new Error("Stop the active test before changing PLC connections");
+    const normalizedIpAddress2 = normalizeIpAddress(ipAddress);
+    const status = {
+      state: "online",
+      ipAddress: normalizedIpAddress2,
+      plcWorking: true,
+      demoMode: true
+    };
+    sendStatus(status);
+    return status;
+  }
+  assertHardwareAvailable();
   if (plcTestRuns.hasActiveRun) throw new Error("Stop the active test before changing PLC connections");
   const normalizedIpAddress = normalizeIpAddress(ipAddress);
   const previousSocket = activeSocket;
@@ -19694,15 +19891,19 @@ function validateTestRunRequest(value) {
     }
   };
 }
-function initializePlcService(window2) {
+function initializePlcService(window2, isDemoMode = false) {
   mainWindow$1 = window2;
+  videoDemoMode = isDemoMode;
+  connectionStatus = isDemoMode ? { state: "online", ipAddress: "192.168.0.100", plcWorking: true, demoMode: true } : { state: "disconnected", ipAddress: null };
   if (isRegistered) return;
   ipcMain.handle("plc:prepare-connection", async (event, ipAddress) => {
     assertTrustedRequest(event.sender);
+    assertHardwareAvailable();
     return prepareConnection(ipAddress);
   });
   ipcMain.handle("plc:activate-connection", (event, token) => {
     assertTrustedRequest(event.sender);
+    assertHardwareAvailable();
     return activateConnection(token);
   });
   ipcMain.handle("plc:cancel-connection", (event, token) => {
@@ -19712,15 +19913,21 @@ function initializePlcService(window2) {
   });
   ipcMain.handle("plc:connect", async (event, ipAddress) => {
     assertTrustedRequest(event.sender);
+    assertHardwareAvailable();
     return connect(ipAddress);
   });
   ipcMain.handle("plc:disconnect", (event) => {
     assertTrustedRequest(event.sender);
+    assertHardwareAvailable();
     return disconnect();
   });
   ipcMain.handle("plc:start-test-run", async (event, value) => {
     assertTrustedRequest(event.sender);
     const request2 = validateTestRunRequest(value);
+    if (videoDemoMode) {
+      await demoTestRuns.start(request2);
+      return;
+    }
     if (!activeClient || activeClient.connectionState !== "online" || connectionStatus.state !== "online") {
       throw new Error("Cannot start a test while the PLC is offline");
     }
@@ -19729,6 +19936,10 @@ function initializePlcService(window2) {
   ipcMain.handle("plc:stop-test-run", async (event, testId) => {
     assertTrustedRequest(event.sender);
     if (typeof testId !== "string") throw new Error("Invalid test ID");
+    if (videoDemoMode) {
+      await demoTestRuns.stop(testId);
+      return;
+    }
     await plcTestRuns.stop(testId);
   });
   ipcMain.handle("plc:get-status", (event) => {
@@ -19737,6 +19948,7 @@ function initializePlcService(window2) {
   });
   ipcMain.handle("plc:read-overview-values", async (event) => {
     assertTrustedRequest(event.sender);
+    if (videoDemoMode) return demoMachine.readOverviewValues();
     if (!activeClient || activeClient.connectionState !== "online" || connectionStatus.state !== "online") {
       throw new Error("Cannot read overview values while the PLC is offline");
     }
@@ -19744,6 +19956,7 @@ function initializePlcService(window2) {
   });
   ipcMain.handle("plc:read-limits", async (event) => {
     assertTrustedRequest(event.sender);
+    if (videoDemoMode) return demoMachine.readLimits();
     if (!activeClient || activeClient.connectionState !== "online" || connectionStatus.state !== "online") {
       throw new Error("Cannot read limits while the PLC is offline");
     }
@@ -19751,6 +19964,7 @@ function initializePlcService(window2) {
   });
   ipcMain.handle("plc:write-limits", async (event, values) => {
     assertTrustedRequest(event.sender);
+    if (videoDemoMode) return demoMachine.writeLimits(values);
     if (!activeClient || activeClient.connectionState !== "online" || connectionStatus.state !== "online") {
       throw new Error("Cannot write limits while the PLC is offline");
     }
@@ -19758,6 +19972,7 @@ function initializePlcService(window2) {
   });
   ipcMain.handle("plc:read-adjustments", async (event) => {
     assertTrustedRequest(event.sender);
+    if (videoDemoMode) return demoMachine.readAdjustments();
     if (!activeClient || activeClient.connectionState !== "online" || connectionStatus.state !== "online") {
       throw new Error("Cannot read adjustments while the PLC is offline");
     }
@@ -19765,6 +19980,7 @@ function initializePlcService(window2) {
   });
   ipcMain.handle("plc:write-adjustments", async (event, values) => {
     assertTrustedRequest(event.sender);
+    if (videoDemoMode) return demoMachine.writeAdjustments(values);
     if (!activeClient || activeClient.connectionState !== "online" || connectionStatus.state !== "online") {
       throw new Error("Cannot write adjustments while the PLC is offline");
     }
@@ -19773,6 +19989,8 @@ function initializePlcService(window2) {
   ipcMain.handle("plc:set-move-up", async (event, enabled) => {
     assertTrustedRequest(event.sender);
     if (typeof enabled !== "boolean") throw new Error("Invalid Move Up command value");
+    if (videoDemoMode) return demoMachine.setMoveUp(enabled);
+    assertHardwareAvailable();
     if (!activeClient || activeClient.connectionState !== "online" || connectionStatus.state !== "online") {
       throw new Error("Cannot control Move Up while the PLC is offline");
     }
@@ -19781,6 +19999,8 @@ function initializePlcService(window2) {
   ipcMain.handle("plc:set-move-down", async (event, enabled) => {
     assertTrustedRequest(event.sender);
     if (typeof enabled !== "boolean") throw new Error("Invalid Move Down command value");
+    if (videoDemoMode) return demoMachine.setMoveDown(enabled);
+    assertHardwareAvailable();
     if (!activeClient || activeClient.connectionState !== "online" || connectionStatus.state !== "online") {
       throw new Error("Cannot control Move Down while the PLC is offline");
     }
@@ -19788,6 +20008,8 @@ function initializePlcService(window2) {
   });
   ipcMain.handle("plc:halt-machine", async (event) => {
     assertTrustedRequest(event.sender);
+    if (videoDemoMode) return demoMachine.halt();
+    assertHardwareAvailable();
     if (!activeClient || activeClient.connectionState !== "online" || connectionStatus.state !== "online") {
       throw new Error("Cannot halt machine while the PLC is offline");
     }
@@ -19795,6 +20017,8 @@ function initializePlcService(window2) {
   });
   ipcMain.handle("plc:resume-machine", async (event) => {
     assertTrustedRequest(event.sender);
+    if (videoDemoMode) return demoMachine.resume();
+    assertHardwareAvailable();
     if (!activeClient || activeClient.connectionState !== "online" || connectionStatus.state !== "online") {
       throw new Error("Cannot resume machine while the PLC is offline");
     }
@@ -19802,6 +20026,8 @@ function initializePlcService(window2) {
   });
   ipcMain.handle("plc:reset-load", async (event) => {
     assertTrustedRequest(event.sender);
+    if (videoDemoMode) return demoMachine.resetLoad();
+    assertHardwareAvailable();
     if (!activeClient || activeClient.connectionState !== "online" || connectionStatus.state !== "online") {
       throw new Error("Cannot reset load while the PLC is offline");
     }
@@ -19809,6 +20035,8 @@ function initializePlcService(window2) {
   });
   ipcMain.handle("plc:reset-stroke", async (event) => {
     assertTrustedRequest(event.sender);
+    if (videoDemoMode) return demoMachine.resetStroke();
+    assertHardwareAvailable();
     if (!activeClient || activeClient.connectionState !== "online" || connectionStatus.state !== "online") {
       throw new Error("Cannot reset stroke while the PLC is offline");
     }
@@ -19818,6 +20046,7 @@ function initializePlcService(window2) {
 }
 async function shutdownPlcService() {
   stopHealthPolling();
+  await demoTestRuns.shutdown();
   await plcTestRuns.shutdown();
   for (const token of preparedConnections.keys()) {
     clearPreparedConnection(token, true);
@@ -19863,6 +20092,7 @@ process.env.APP_ROOT = path$n.join(__dirname$1, "..");
 const VITE_DEV_SERVER_URL = process.env["VITE_DEV_SERVER_URL"];
 const MAIN_DIST = path$n.join(process.env.APP_ROOT, "dist-electron");
 const RENDERER_DIST = path$n.join(process.env.APP_ROOT, "dist");
+const VIDEO_DEMO_MODE = !app.isPackaged && process.env.AKDI_VIDEO_DEMO === "1";
 process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path$n.join(process.env.APP_ROOT, "public") : RENDERER_DIST;
 let mainWindow;
 let updaterMessages = {
@@ -20060,7 +20290,7 @@ function createWindow() {
     frame: false,
     titleBarStyle: "hidden"
   });
-  initializePlcService(mainWindow);
+  initializePlcService(mainWindow, VIDEO_DEMO_MODE);
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     if (url.startsWith("http:") || url.startsWith("https:")) {
       shell.openExternal(url);

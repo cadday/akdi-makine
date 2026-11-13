@@ -96,12 +96,12 @@ export default function MachineControls() {
 
   useEffect(() => {
     const subscription = liveQuery(async () => (await db.machines.toArray()).some((machine) => machine.connected)).subscribe({
-      next: setHasConnectedMachine,
+      next: (hasMachine) => setHasConnectedMachine(connectionStatus.demoMode === true || hasMachine),
       error: (error: unknown) => showError(t("machine-controls-check-machines-error", { error: String(error) })),
     });
 
     return () => subscription.unsubscribe();
-  }, [db, showError, t]);
+  }, [connectionStatus.demoMode, db, showError, t]);
 
   useEffect(() => {
     if (!quickTestOpen) return;

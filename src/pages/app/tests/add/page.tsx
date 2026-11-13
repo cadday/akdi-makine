@@ -198,7 +198,9 @@ export default function Page() {
         return;
       }
 
-      const connectedMachine = await getConnectedMachine();
+      const connectedMachine = connectionStatus.demoMode
+        ? { ipAddress: connectionStatus.ipAddress }
+        : await getConnectedMachine();
       if (!connectedMachine) {
         setMachineConnectionError(true);
         return;
@@ -332,7 +334,14 @@ export default function Page() {
                 return;
               }
               setIsCheckingMachine(true);
-              void getConnectedMachine()
+              const machineCheck = connectionStatus.demoMode
+                ? Promise.resolve(
+                    connectionStatus.state === "online" && connectionStatus.ipAddress
+                      ? { ipAddress: connectionStatus.ipAddress }
+                      : null,
+                  )
+                : getConnectedMachine();
+              void machineCheck
                 .then((connectedMachine) => {
                   if (!connectedMachine) {
                     setMachineConnectionError(true);

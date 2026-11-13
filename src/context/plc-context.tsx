@@ -70,6 +70,9 @@ export const PlcProvider = ({ children }: { children: ReactNode }) => {
         }
       }
 
+      if (status.demoMode && status.state === "online" && status.ipAddress) {
+        setStoredInterlockStatus({ ipAddress: status.ipAddress, emergencyHaltActive: false, machineHalted: false });
+      }
       if (!cancelled) setConnectionStatus(status);
     };
     const unsubscribe = window.plcAPI.onStatusChange((status) => {
@@ -81,6 +84,10 @@ export const PlcProvider = ({ children }: { children: ReactNode }) => {
         const status = await window.plcAPI.getStatus();
         if (cancelled) return;
         await updateStatus(status);
+        if (status.demoMode && status.ipAddress) {
+          setStoredInterlockStatus({ ipAddress: status.ipAddress, emergencyHaltActive: false, machineHalted: false });
+          return;
+        }
       } catch (error) {
         if (!cancelled) {
           setConnectionStatus({ state: "offline", ipAddress: null, error: String(error), errorCode: "read-status" });

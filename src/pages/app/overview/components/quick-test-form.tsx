@@ -113,7 +113,9 @@ export default function QuickTestForm({ onTestCreated }: { onTestCreated?: () =>
       }
 
       try {
-        const connectedMachine = await getConnectedMachine();
+        const connectedMachine = connectionStatus.demoMode
+          ? { ipAddress: connectionStatus.ipAddress }
+          : await getConnectedMachine();
         if (!connectedMachine) {
           showError(t("quick-test-machine-required"));
           return;
