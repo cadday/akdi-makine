@@ -191,6 +191,10 @@
   "settings-limits-title": "Test Limits",
   "settings-limits-test-distance-limit": "Distance Limit",
   "settings-limits-test-load-limit": "Load Limit",
+  "settings-information-title": "About Application",
+  "settings-information-version": "Version",
+  "settings-information-compatible-machines": "Compatible Machines",
+  "settings-information-contact": "Contact",
 
   "settings-validation-error-summary": "The following inputs have errors!",
   "settings-validation-number": "{{label}} must be a number",

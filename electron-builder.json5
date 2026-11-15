@@ -3,7 +3,7 @@
   "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
   "appId": "com.akdimakine.AKDI-MAKINE",
   "asar": true,
-  "productName": "AKDIMAKINE",
+  "productName": "Akdı Makine",
   "directories": {
     "output": "release/${version}"
   },

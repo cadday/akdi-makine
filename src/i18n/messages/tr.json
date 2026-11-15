@@ -191,6 +191,10 @@
   "settings-limits-title": "Test Limitleri",
   "settings-limits-test-distance-limit": "Mesafe Limiti",
   "settings-limits-test-load-limit": "Yük Limiti",
+  "settings-information-title": "Uygulama Hakkında",
+  "settings-information-version": "Sürüm",
+  "settings-information-compatible-machines": "Uyumlu Makineler",
+  "settings-information-contact": "İletişim",
 
   "settings-validation-error-summary": "Aşağıdaki alanlarda hata var!",
   "settings-validation-number": "{{label}} bir sayı olmalıdır",

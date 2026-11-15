@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next";
 import Adjustments from "@/pages/app/settings/components/adjustments";
 import BackupAndRestore from "@/pages/app/settings/components/backup-and-restore";
 import Limits from "@/pages/app/settings/components/limits";
+import AboutApplication from "@/pages/app/settings/components/about-application";
 import { AlertTriangleIcon } from "lucide-react";
 
 export default function Page() {
@@ -41,6 +42,7 @@ export default function Page() {
           <Grid size={{ lg: 8, xs: 12 }} container rowSpacing={5} columnSpacing={7}>
             <Adjustments />
             <Limits />
+            <AboutApplication />
           </Grid>
           <BackupAndRestore />
         </Grid>

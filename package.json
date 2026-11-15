@@ -1,7 +1,7 @@
 {
   "name": "AKDI-MAKINE",
   "private": true,
-  "version": "1.4.0",
+  "version": "1.4.3",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -91,7 +91,7 @@
   },
   "build": {
     "appId": "com.akdimakine.AKDI-MAKINE",
-    "productName": "AKDI MAKINE",
+    "productName": "Akdı Makine",
     "mac": {
       "category": "public.app-category.utilities"
     },
