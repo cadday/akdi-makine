@@ -754,6 +754,12 @@ function matchesTestFilter(value: unknown, operator: string, filterValue: unknow
   const filterText = stringifyTestListingValue(filterValue).toLocaleLowerCase();
   const actual = normalizeFilterValue(value);
   const expected = normalizeFilterValue(filterValue);
+  const matchesEqual = (candidate: unknown, expectedValue: unknown) => {
+    const normalizedExpected = normalizeFilterValue(expectedValue);
+    return Array.isArray(candidate)
+      ? candidate.some((item) => normalizeFilterValue(item) === normalizedExpected)
+      : normalizeFilterValue(candidate) === normalizedExpected;
+  };
 
   if (isDateField && typeof actual === "number" && typeof expected === "number") {
     const filterDate = new Date(expected);
@@ -787,11 +793,11 @@ function matchesTestFilter(value: unknown, operator: string, filterValue: unknow
       return !text.includes(filterText);
     case "equals":
     case "is":
-      return actual === expected;
+      return matchesEqual(value, filterValue);
     case "doesNotEqual":
     case "not":
     case "!=":
-      return actual !== expected;
+      return !matchesEqual(value, filterValue);
     case "startsWith":
       return text.startsWith(filterText);
     case "endsWith":
@@ -801,7 +807,7 @@ function matchesTestFilter(value: unknown, operator: string, filterValue: unknow
     case "isNotEmpty":
       return value != null && text !== "";
     case "isAnyOf":
-      return Array.isArray(filterValue) && filterValue.some((item) => matchesTestFilter(value, "equals", item));
+      return Array.isArray(filterValue) && filterValue.some((item) => matchesEqual(value, item));
     case ">":
     case "after":
       return typeof actual === "number" && typeof expected === "number" && actual > expected;

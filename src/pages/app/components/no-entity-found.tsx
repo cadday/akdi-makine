@@ -39,6 +39,15 @@ export function NothingToDisplay({ message }: { message?: string }) {
   );
 }
 
+export function NoGridResults() {
+  const { t } = useTranslation();
+  return (
+    <Box className='flex h-full w-full items-center justify-center'>
+      <Typography className='text-center'>{t("no-search-results")}</Typography>
+    </Box>
+  );
+}
+
 export function NoTestsFound() {
   const { t } = useTranslation();
   return (

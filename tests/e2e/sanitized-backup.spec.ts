@@ -31,7 +31,7 @@ test("restores an anonymized copy of the supplied backup without connecting a ma
       },
     });
     const page = await app.firstWindow();
-    await expect(page).toHaveTitle("AKDI MAKINE");
+    await expect(page).toHaveTitle("Akdı Makine");
     await app.evaluate(({ dialog }, selectedBackupPath) => {
       dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [selectedBackupPath] });
     }, backupPath);

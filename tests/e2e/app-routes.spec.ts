@@ -36,6 +36,51 @@ test("searches specimen, preset, and data-field listings through async queries",
   }
 });
 
+test("keeps listing grids available when search has no matches", async ({ appPage, appUrl }) => {
+  const listings = [
+    ["/tests", "E2E Test 25"],
+    ["/specimens", "E2E Specimen 1"],
+    ["/presets", "E2E Preset 1"],
+    ["/data-fields", "E2E Data Field 1"],
+  ] as const;
+
+  for (const [route, existingName] of listings) {
+    await appPage.goto(`${appUrl}#${route}`);
+    const grid = appPage.getByRole("grid");
+    const search = appPage.getByRole("textbox", { name: "Search" });
+    await expect(grid.getByText(existingName, { exact: true })).toBeVisible();
+
+    await search.fill("No matching record 12345");
+    const noResults = appPage.getByText("No results found!", { exact: true });
+    await expect(noResults).toBeVisible();
+    await expect(noResults.locator("xpath=..").locator("svg")).toHaveCount(0);
+    await expect(grid).toBeVisible();
+    await expect(appPage.getByRole("button", { name: /Add/ })).toBeVisible();
+
+    await search.fill("");
+    await expect(grid.getByText(existingName, { exact: true })).toBeVisible();
+  }
+});
+
+test("keeps the test grid available when a column filter has no matches", async ({ appPage, appUrl }) => {
+  await appPage.goto(`${appUrl}#/tests`);
+  const grid = appPage.getByRole("grid");
+  await expect(grid.getByText("E2E Test 25", { exact: true })).toBeVisible();
+  await appPage.getByRole("button", { name: "Filters" }).click();
+  const filterForm = appPage.locator(".MuiDataGrid-filterForm").first();
+  await expect(filterForm).toBeVisible();
+  await filterForm.getByRole("textbox", { name: "Value" }).fill("No matching record 12345");
+
+  const noResults = appPage.getByText("No results found!", { exact: true });
+  await expect(noResults).toBeVisible();
+  await expect(noResults.locator("xpath=..").locator("svg")).toHaveCount(0);
+  await expect(grid).toBeVisible();
+  await expect(appPage.getByRole("button", { name: /Add/ })).toBeVisible();
+
+  await filterForm.getByRole("textbox", { name: "Value" }).fill("");
+  await expect(grid.getByText("E2E Test 25", { exact: true })).toBeVisible();
+});
+
 test("expands a test result graph into a full-screen dialog and closes it", async ({ appPage, appUrl }) => {
   await appPage.goto(`${appUrl}#/tests/e2e-test-25`);
   await appPage.getByRole("button", { name: "Expand Graph" }).click();

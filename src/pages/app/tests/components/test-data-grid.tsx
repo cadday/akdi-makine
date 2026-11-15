@@ -31,6 +31,7 @@ import {
   type GridSortModel,
 } from "@mui/x-data-grid";
 import DataGridWithRowActions, { type DataGridRowAction } from "@/components/data-grid/data-grid-with-row-actions";
+import { hasActiveGridQuery } from "@/components/data-grid/data-grid-filter-utils";
 import DataGridLoading from "@/components/data-grid/data-grid-loading";
 import { StoredImagePreviews } from "@/components/data-fields/image-data-field-input";
 import { DataGridListingToolbar } from "@/components/data-grid/data-grid-listing-toolbar";
@@ -40,7 +41,7 @@ import DataGridDateTimeFilter from "@/components/data-grid/data-grid-date-time-f
 import { useDb, type DataFieldDefinition, type TestListingQuery, type TestRecord, type UploadedImage } from "@/context/db-context";
 import useAppNotifications from "@/hooks/use-app-notifications";
 import useDeleteConfirmation from "@/hooks/use-delete-confirmation";
-import { NoTestsFound } from "@/pages/app/components/no-entity-found";
+import { NoGridResults, NoTestsFound } from "@/pages/app/components/no-entity-found";
 import { getTestGraphType } from "@/lib/db";
 import { useTranslation } from "react-i18next";
 
@@ -184,6 +185,7 @@ export default function TestDataGrid({ tests: providedTests, dataFields, onTests
     () => tests.map((test) => ({ ...test, specimenName: test.specimenSnapshot.name, presetName: test.presetSnapshot.name })),
     [tests],
   );
+  const hasActiveQuery = hasActiveGridQuery(filterModel);
   const columns = useMemo<GridColDef<TestGridRow>[]>(
     () => [
       { field: "id", headerName: t("listing-id"), width: 90, filterable: false },
@@ -243,9 +245,10 @@ export default function TestDataGrid({ tests: providedTests, dataFields, onTests
               ? "number"
               : dataField.type === "Boolean"
                 ? "boolean"
-                : dataField.type === "Select" && !dataField.multipleSelection
+                : dataField.type === "Select"
                   ? "singleSelect"
                   : "string",
+          ...(dataField.type === "Select" && { valueOptions: dataField.options ?? [] }),
           valueGetter: (_value: unknown, row: TestGridRow) => row.customData?.[dataField.id] ?? row.customData?.[dataField.name],
           renderCell: (params: GridRenderCellParams<TestGridRow>) => {
             const value = params.value;
@@ -350,9 +353,9 @@ export default function TestDataGrid({ tests: providedTests, dataFields, onTests
           </Button>
         </DialogActions>
       </Dialog>
-      {isLoading && (isServerMode ? rowCount : tests.length) === 0 ? (
+      {isLoading && (isServerMode ? rowCount : tests.length) === 0 && !hasActiveQuery ? (
         <DataGridLoading />
-      ) : (isServerMode ? rowCount : tests.length) === 0 ? (
+      ) : (isServerMode ? rowCount : tests.length) === 0 && !hasActiveQuery ? (
         <NoTestsFound />
       ) : (
         <DataGridWithRowActions
@@ -402,6 +405,7 @@ export default function TestDataGrid({ tests: providedTests, dataFields, onTests
           }}
           classes={{ main: "overflow-visible" }}
           slots={{
+            noRowsOverlay: hasActiveQuery ? NoGridResults : undefined,
             basePagination: DataGridPaginationFullPage,
             columnSortedDescendingIcon: () => <ArrowDown size={16} />,
             columnSortedAscendingIcon: () => <ArrowUp size={16} />,

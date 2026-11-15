@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Box, Button, ListItemIcon, ListItemText, Menu, MenuItem } from "@mui/material";
 import { DataGrid, type DataGridProps, type GridColDef, type GridValidRowModel } from "@mui/x-data-grid";
 import { enUS, trTR } from "@mui/x-data-grid/locales";
@@ -36,7 +36,20 @@ export interface DataGridWithRowActionsProps<Row extends GridValidRowModel> exte
 export default function DataGridWithRowActions<Row extends GridValidRowModel>({ columns, getRowActions, ...gridProps }: DataGridWithRowActionsProps<Row>) {
   const { t, i18n } = useTranslation();
   const localeText = (i18n.language.startsWith("tr") ? trTR : enUS).components.MuiDataGrid.defaultProps.localeText;
+  const [showLoading, setShowLoading] = useState(false);
   const [rowMenu, setRowMenu] = useState<RowMenuState | null>(null);
+  const loading = gridProps.loading ?? false;
+
+  useEffect(() => {
+    if (!loading) {
+      setShowLoading(false);
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => setShowLoading(true), 250);
+    return () => window.clearTimeout(timeoutId);
+  }, [loading]);
+
   const activeRowId = rowMenu?.open ? rowMenu.rowId : null;
   const closeRowMenu = useCallback(() => {
     setRowMenu((current) => (current ? { ...current, open: false } : null));
@@ -96,6 +109,7 @@ export default function DataGridWithRowActions<Row extends GridValidRowModel>({ 
       <Box onContextMenu={handleRowContextMenu}>
         <DataGrid
           {...gridProps}
+          loading={showLoading}
           localeText={localeText}
           columns={columnsWithActions}
           getRowClassName={(params) => (String(params.id) === activeRowId ? "outline-primary-light/40 outline-2" : "")}

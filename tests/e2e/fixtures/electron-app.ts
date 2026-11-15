@@ -34,7 +34,7 @@ export const test = base.extend<ElectronFixtures>({
         },
       });
       const page = await app.firstWindow();
-      await expect(page).toHaveTitle("AKDI MAKINE");
+      await expect(page).toHaveTitle("Akdı Makine");
       await app.evaluate(({ app: electronApp }) => electronApp.getPath("userData"), userDataPath).then((actualPath) => {
         expect(actualPath).toBe(userDataPath);
       });

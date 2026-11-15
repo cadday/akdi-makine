@@ -4,6 +4,7 @@ import { DataGridPaginationFullPage } from "@/components/data-grid/data-grid-pag
 import { DataGridListingToolbar } from "@/components/data-grid/data-grid-listing-toolbar";
 import DataGridLoading from "@/components/data-grid/data-grid-loading";
 import DataGridWithRowActions, { type DataGridRowAction } from "@/components/data-grid/data-grid-with-row-actions";
+import { hasActiveGridQuery } from "@/components/data-grid/data-grid-filter-utils";
 import ContentWrapper from "@/components/layout/containers/content-wrapper";
 import TitleWrapper from "@/components/layout/containers/title-wrapper";
 import { LINKS } from "@/constants";
@@ -45,7 +46,7 @@ import Search from "@/components/layout/search/search";
 import DataGridDateTimeFilter from "@/components/data-grid/data-grid-date-time-filter";
 import useAppNotifications from "@/hooks/use-app-notifications";
 import useDeleteConfirmation from "@/hooks/use-delete-confirmation";
-import { NoPresetsFound } from "../components/no-entity-found";
+import { NoGridResults, NoPresetsFound } from "../components/no-entity-found";
 import { useTabs } from "@/components/layout/tabs/tab-context";
 import PresetTypeTag from "./components/preset-type-tag";
 
@@ -65,6 +66,7 @@ export default function Page() {
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({ page: 0, pageSize: 10 });
   const [sortModel, setSortModel] = useState<GridSortModel>([{ field: "createdAt", sort: "desc" }]);
   const [filterModel, setFilterModel] = useState<GridFilterModel>({ items: [], quickFilterValues: [] });
+  const hasActiveQuery = hasActiveGridQuery(filterModel);
   const [refreshKey, setRefreshKey] = useState(0);
   const requestId = useRef(0);
   const query = useMemo<RecordListingQuery>(
@@ -272,9 +274,9 @@ export default function Page() {
                   {t("retry")}
                 </Button>
               </Box>
-            ) : isLoading && rowCount === 0 ? (
+            ) : isLoading && rowCount === 0 && !hasActiveQuery ? (
               <DataGridLoading />
-            ) : rowCount === 0 ? (
+            ) : rowCount === 0 && !hasActiveQuery ? (
               <NoPresetsFound />
             ) : (
               <DataGridWithRowActions
@@ -322,6 +324,7 @@ export default function Page() {
                 }}
                 classes={{ main: "overflow-visible" }}
                 slots={{
+                  noRowsOverlay: hasActiveQuery ? NoGridResults : undefined,
                   basePagination: DataGridPaginationFullPage,
                   columnSortedDescendingIcon: () => <ArrowDown size={16} />,
                   columnSortedAscendingIcon: () => <ArrowUp size={16} />,
