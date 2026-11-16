@@ -51,6 +51,7 @@ import usePrintReadiness from "@/hooks/use-print-readiness";
 import { cn } from "@/lib/utils";
 import { getTestGraphType } from "@/lib/db";
 import TestProgress from "../components/test-progress";
+import TestVideoShort from "../components/test-video-short";
 
 interface RawGraphDataRow {
   id: number;
@@ -267,6 +268,8 @@ export default function Page({ printMode = false }: { printMode?: boolean }) {
                 {!loadError && test && (
                   <Grid size={12} container rowSpacing={5} columnSpacing={7} className={cn("w-full")}>
                     <Grid container rowSpacing={5} columnSpacing={7} size={{ lg: 8, xs: 12 }} className={cn(isTestRunning && "relative z-5001")}>
+                      <TestVideoShort test={test} />
+
                       <TestResultsMachine test={test} />
 
                       <Grid size={12}>
