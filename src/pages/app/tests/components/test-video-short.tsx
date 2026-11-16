@@ -86,8 +86,7 @@ export default function TestVideoShort({ test }: TestVideoShortProps) {
         right: 12,
         bottom: 12,
         left: 12,
-        show: true,
-        borderColor: "rgba(128, 128, 128, 0.24)",
+        show: false,
       },
       tooltip: { show: false },
       xAxis: {
@@ -96,7 +95,12 @@ export default function TestVideoShort({ test }: TestVideoShortProps) {
         axisLabel: { show: false },
         axisTick: { show: false },
         axisLine: { show: false },
-        splitLine: { show: true, lineStyle: { color: "rgba(128, 128, 128, 0.24)" } },
+        splitLine: {
+          show: true,
+          showMinLine: false,
+          showMaxLine: false,
+          lineStyle: { color: "rgba(128, 128, 128, 0.24)" },
+        },
       },
       yAxis: {
         type: "value",
@@ -104,7 +108,12 @@ export default function TestVideoShort({ test }: TestVideoShortProps) {
         axisLabel: { show: false },
         axisTick: { show: false },
         axisLine: { show: false },
-        splitLine: { show: true, lineStyle: { color: "rgba(128, 128, 128, 0.24)" } },
+        splitLine: {
+          show: true,
+          showMinLine: false,
+          showMaxLine: false,
+          lineStyle: { color: "rgba(128, 128, 128, 0.24)" },
+        },
       },
       series: [
         {
@@ -175,10 +184,16 @@ export default function TestVideoShort({ test }: TestVideoShortProps) {
           </Button>
         )}
       </Box>
-      <Card>
-        <CardContent className='flex flex-col gap-4 py-6'>
+      <Card className="rounded-none">
+        <CardContent className='flex flex-col gap-4 pb-7 pt-4'>
           {hasPlayableData ? (
-            <Box ref={chartElementRef} role='img' aria-label={t("video-sim-chart")} className='h-64 w-full' />
+            <Box className='relative h-64 w-full'>
+              <Box ref={chartElementRef} role='img' aria-label={t("video-sim-chart")} className='absolute inset-0' />
+              <Box
+                aria-hidden='true'
+                className='pointer-events-none absolute inset-3 rounded-xl border border-grey-100'
+              />
+            </Box>
           ) : (
             <Box className='flex h-64 items-center justify-center'>
               <Typography color='textSecondary'>{t("video-sim-no-data")}</Typography>
@@ -191,7 +206,7 @@ export default function TestVideoShort({ test }: TestVideoShortProps) {
                 <Box className='flex flex-none items-center justify-center  text-primary'>
                   <WeightTilde width={42} height={42} strokeWidth={2.75} />
                 </Box>
-                <Typography variant='h3' component='p' className='mb-0 font-extrabold text-primary'>
+                <Typography variant='h2' component='p' className='mb-0 font-extrabold text-primary'>
                   {`${currentLoad.toFixed(1)} N`}
                 </Typography>
               </Box>
@@ -201,7 +216,7 @@ export default function TestVideoShort({ test }: TestVideoShortProps) {
                 <Box className='flex flex-none items-center justify-center '>
                   <WeightUp width={42} height={42} strokeWidth={2.5} />
                 </Box>
-                <Typography variant='h3' component='p' className='mb-0 font-bold'>
+                <Typography variant='h2' component='p' className='mb-0 font-bold'>
                   {`${peakLoad.toFixed(1)} N`}
                 </Typography>
               </Box>
