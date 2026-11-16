@@ -82,10 +82,10 @@ export default function TestVideoShort({ test }: TestVideoShortProps) {
     const option: EChartsOption = {
       animation: false,
       grid: {
-        top: 12,
-        right: 12,
-        bottom: 12,
-        left: 12,
+        top: 0,
+        right: 0,
+        bottom: 0,
+        left: 0,
         show: false,
       },
       tooltip: { show: false },
@@ -184,15 +184,14 @@ export default function TestVideoShort({ test }: TestVideoShortProps) {
           </Button>
         )}
       </Box>
-      <Card className="rounded-none">
+      <Card className='rounded-none'>
         <CardContent className='flex flex-col gap-4 pb-7 pt-4'>
           {hasPlayableData ? (
-            <Box className='relative h-64 w-full'>
-              <Box ref={chartElementRef} role='img' aria-label={t("video-sim-chart")} className='absolute inset-0' />
-              <Box
-                aria-hidden='true'
-                className='pointer-events-none absolute inset-3 rounded-xl border border-grey-100'
-              />
+            <Box className="p-3">
+              <Box className='relative h-64 w-full'>
+                <Box ref={chartElementRef} role='img' aria-label={t("video-sim-chart")} className='absolute inset-0 ' />
+                <Box aria-hidden='true' className='pointer-events-none absolute inset-0 rounded-xl border border-grey-100' />
+              </Box>
             </Box>
           ) : (
             <Box className='flex h-64 items-center justify-center'>
